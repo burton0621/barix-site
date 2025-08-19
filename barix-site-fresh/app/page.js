@@ -117,34 +117,7 @@ export default function Page() {
         </div>
       </section>
 
-      {/* Pricing (simple) */}
-      <section id="pricing" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
-            <div className="text-sm font-medium text-slate-600">Starter</div>
-            <div className="mt-2 text-4xl font-bold">$0<span className="text-base font-medium text-slate-500">/mo</span></div>
-            <ul className="mt-4 space-y-2 text-sm text-slate-600">
-              <li>Unlimited invoices</li>
-              <li>Online payments (card/ACH)</li>
-              <li>Basic dashboard</li>
-              <li>Email support</li>
-            </ul>
-          </div>
-          <div className="rounded-2xl border border-slate-900 bg-white p-6 shadow-lg">
-            <div className="text-sm font-medium text-slate-600">Pro</div>
-            <div className="mt-2 text-4xl font-bold">$39<span className="text-base font-medium text-slate-500">/mo</span></div>
-            <ul className="mt-4 space-y-2 text-sm text-slate-600">
-              <li>Everything in Starter</li>
-              <li>Automated reminders</li>
-              <li>QuickBooks sync</li>
-              <li>Advanced reports</li>
-              <li>Priority support</li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      {/* Company */}
+      {/* Company description */}
       <section id="company" className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-16">
         <h3 className="text-xl font-bold">About Barix</h3>
         <p className="mt-4 text-slate-600">
@@ -161,10 +134,11 @@ export default function Page() {
             <h3 className="text-2xl font-bold">Be first to onboard</h3>
             <p className="mt-2 text-slate-300">Drop your email and we’ll send a setup link or book a 10-minute call.</p>
           </div>
-          <form className="flex gap-3" onSubmit={(e) => e.preventDefault()}>
+          {/* Plain HTML form (no client handler) */}
+          <form className="flex gap-3" action="#" method="post">
             <input type="email" required placeholder="you@company.com"
               className="w-full rounded-xl bg-white/10 px-4 py-3 text-white placeholder:text-slate-300 outline-none ring-1 ring-white/20 focus:ring-2 focus:ring-white/40" />
-            <button className="rounded-xl bg-white text-slate-900 px-5 py-3 font-semibold hover:bg-slate-100">
+            <button className="rounded-xl bg-white text-slate-900 px-5 py-3 font-semibold hover:bg-slate-100" type="submit">
               Notify me
             </button>
           </form>
