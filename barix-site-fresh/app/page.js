@@ -5,14 +5,17 @@ export default function Page() {
       {/* Header */}
       <header className="border-b border-slate-200 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <a href="/" className="flex items-center gap-3 font-semibold text-lg">
-            <img src="/logo.svg" alt="Barix" className="h-7 w-7" />
-            <span>Barix Billing</span>
+          <a href="/" className="flex items-center gap-3">
+            <img
+              src="/Barix%20Full%20Logo.png"
+              alt="Barix"
+              className="h-8 w-auto"
+            />
           </a>
           <nav className="hidden md:flex items-center gap-6 text-sm">
             <a href="#product" className="hover:text-slate-600">Product</a>
+            <a href="#pricing" className="hover:text-slate-600">Pricing</a>
             <a href="#company" className="hover:text-slate-600">Company</a>
-            <a href="#contact" className="hover:text-slate-600">Contact</a>
           </nav>
           <a
             href="https://calendly.com/your-handle/10min-demo"
@@ -28,15 +31,15 @@ export default function Page() {
         <div>
           <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
             <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
-            Launching in 2025
+            Made for contractors
           </span>
           <h1 className="mt-3 text-4xl sm:text-5xl font-bold leading-tight">
             Get paid faster. <span className="text-slate-500">Run smarter.</span>
           </h1>
           <p className="mt-5 text-lg text-slate-600">
-            Barix is billing built for contractors. Create clean invoices in seconds,
-            accept card & ACH online, and see who owes what at a glance. Keep your
-            QuickBooks — Barix just makes it faster.
+            Create clean invoices in seconds, accept card & ACH online, and see
+            who owes what at a glance. Keep your QuickBooks — Barix just makes
+            it faster.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <a
@@ -57,7 +60,7 @@ export default function Page() {
           </p>
         </div>
 
-        {/* Simple product mock */}
+        {/* Product mock */}
         <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-5">
           <div className="flex items-center justify-between">
             <div className="font-semibold">New Invoice</div>
@@ -74,9 +77,7 @@ export default function Page() {
             </div>
             <div className="col-span-2">
               <label className="text-slate-500">Description</label>
-              <div className="mt-1 rounded-lg border border-slate-300 px-3 py-2">
-                Tear-off & install 30-yr shingles
-              </div>
+              <div className="mt-1 rounded-lg border border-slate-300 px-3 py-2">Tear-off & install 30-yr shingles</div>
             </div>
             <div>
               <label className="text-slate-500">Amount</label>
@@ -84,21 +85,17 @@ export default function Page() {
             </div>
             <div>
               <label className="text-slate-500">Status</label>
-              <div className="mt-1 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-700">
-                • Ready to send
-              </div>
+              <div className="mt-1 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-700">• Ready to send</div>
             </div>
           </div>
           <div className="mt-6 flex items-center justify-between">
             <div className="text-sm text-slate-500">Card • ACH • Financing options</div>
-            <button className="rounded-xl bg-slate-900 text-white px-4 py-2 text-sm font-semibold hover:bg-slate-800">
-              Send invoice
-            </button>
+            <button className="rounded-xl bg-slate-900 text-white px-4 py-2 text-sm font-semibold hover:bg-slate-800">Send invoice</button>
           </div>
         </div>
       </section>
 
-      {/* Product Summary */}
+      {/* Product summary */}
       <section id="product" className="border-y border-slate-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
           <h2 className="text-2xl font-bold">Why contractors pick Barix</h2>
@@ -120,7 +117,34 @@ export default function Page() {
         </div>
       </section>
 
-      {/* Company Description */}
+      {/* Pricing (simple) */}
+      <section id="pricing" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
+            <div className="text-sm font-medium text-slate-600">Starter</div>
+            <div className="mt-2 text-4xl font-bold">$0<span className="text-base font-medium text-slate-500">/mo</span></div>
+            <ul className="mt-4 space-y-2 text-sm text-slate-600">
+              <li>Unlimited invoices</li>
+              <li>Online payments (card/ACH)</li>
+              <li>Basic dashboard</li>
+              <li>Email support</li>
+            </ul>
+          </div>
+          <div className="rounded-2xl border border-slate-900 bg-white p-6 shadow-lg">
+            <div className="text-sm font-medium text-slate-600">Pro</div>
+            <div className="mt-2 text-4xl font-bold">$39<span className="text-base font-medium text-slate-500">/mo</span></div>
+            <ul className="mt-4 space-y-2 text-sm text-slate-600">
+              <li>Everything in Starter</li>
+              <li>Automated reminders</li>
+              <li>QuickBooks sync</li>
+              <li>Advanced reports</li>
+              <li>Priority support</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* Company */}
       <section id="company" className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-16">
         <h3 className="text-xl font-bold">About Barix</h3>
         <p className="mt-4 text-slate-600">
@@ -130,22 +154,16 @@ export default function Page() {
         </p>
       </section>
 
-      {/* Contact / Lead Capture */}
+      {/* Contact / capture */}
       <section id="contact" className="bg-slate-900 text-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-14 grid md:grid-cols-2 gap-8 items-center">
           <div>
             <h3 className="text-2xl font-bold">Be first to onboard</h3>
-            <p className="mt-2 text-slate-300">
-              Drop your email and we’ll send a setup link or book a 10-minute call.
-            </p>
+            <p className="mt-2 text-slate-300">Drop your email and we’ll send a setup link or book a 10-minute call.</p>
           </div>
           <form className="flex gap-3" onSubmit={(e) => e.preventDefault()}>
-            <input
-              type="email"
-              required
-              placeholder="you@company.com"
-              className="w-full rounded-xl bg-white/10 px-4 py-3 text-white placeholder:text-slate-300 outline-none ring-1 ring-white/20 focus:ring-2 focus:ring-white/40"
-            />
+            <input type="email" required placeholder="you@company.com"
+              className="w-full rounded-xl bg-white/10 px-4 py-3 text-white placeholder:text-slate-300 outline-none ring-1 ring-white/20 focus:ring-2 focus:ring-white/40" />
             <button className="rounded-xl bg-white text-slate-900 px-5 py-3 font-semibold hover:bg-slate-100">
               Notify me
             </button>
