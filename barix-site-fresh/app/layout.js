@@ -1,6 +1,24 @@
+// app/layout.js
 export const metadata = {
-  title: "Barix — Get paid faster. Run smarter.",
-  description: "Barix helps contractors send invoices, accept payments, and track cashflow.",
+  title: "Barix Billing — Get paid faster. Run smarter.",
+  description:
+    "Barix helps contractors send invoices in seconds, accept cards & ACH, and track cashflow — without spreadsheet headaches.",
+  openGraph: {
+    title: "Barix Billing — Get paid faster. Run smarter.",
+    description:
+      "Send invoices in seconds. Accept cards & ACH. Simple cashflow tracking.",
+    url: "https://barixbilling.com",
+    siteName: "Barix Billing",
+    images: [{ url: "/og.png", width: 1200, height: 630 }],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Barix Billing — Get paid faster. Run smarter.",
+    description:
+      "Send invoices in seconds. Accept cards & ACH. Simple cashflow tracking.",
+  },
 };
 
 import "./globals.css";
@@ -8,7 +26,7 @@ import "./globals.css";
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-slate-50 text-slate-900">
+      <body className="min-h-screen bg-slate-50 text-slate-900 antialiased">
         {children}
       </body>
     </html>
