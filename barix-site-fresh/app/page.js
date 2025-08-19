@@ -1,6 +1,8 @@
 // app/page.js
 'use client';
 
+import ContactForm from "./components/ContactForm";
+
 export default function Page() {
   return (
     <div className="min-h-screen flex flex-col">
@@ -47,6 +49,7 @@ export default function Page() {
                className="inline-flex items-center rounded-xl px-5 py-3 font-semibold border border-slate-300 hover:bg-slate-100">
               Join the early list
             </a>
+            <ContactForm />
           </div>
           <p className="mt-3 text-sm text-slate-500">No long contracts. Starter plan free.</p>
         </div>
