@@ -1,4 +1,6 @@
 // app/page.js
+'use client';
+
 export default function Page() {
   return (
     <div className="min-h-screen flex flex-col">
@@ -6,11 +8,7 @@ export default function Page() {
       <header className="border-b border-slate-200 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <a href="/" className="flex items-center gap-3">
-            <img
-              src="/Barix%20Full%20Logo.png"
-              alt="Barix"
-              className="h-8 w-auto"
-            />
+            <img src="/Barix%20Full%20Logo.png" alt="Barix" className="h-8 w-auto" />
           </a>
           <nav className="hidden md:flex items-center gap-6 text-sm">
             <a href="#product" className="hover:text-slate-600">Product</a>
@@ -37,27 +35,20 @@ export default function Page() {
             Get paid faster. <span className="text-slate-500">Run smarter.</span>
           </h1>
           <p className="mt-5 text-lg text-slate-600">
-            Create clean invoices in seconds, accept card & ACH online, and see
-            who owes what at a glance. Keep your QuickBooks — Barix just makes
-            it faster.
+            Create clean invoices in seconds, accept card & ACH online, and see who owes what at a glance.
+            Keep your QuickBooks — Barix just makes it faster.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <a
-              href="https://calendly.com/your-handle/10min-demo"
-              className="inline-flex items-center rounded-xl px-5 py-3 font-semibold bg-slate-900 text-white hover:bg-slate-800"
-            >
+            <a href="https://calendly.com/your-handle/10min-demo"
+               className="inline-flex items-center rounded-xl px-5 py-3 font-semibold bg-slate-900 text-white hover:bg-slate-800">
               Book a 10-min demo
             </a>
-            <a
-              href="#contact"
-              className="inline-flex items-center rounded-xl px-5 py-3 font-semibold border border-slate-300 hover:bg-slate-100"
-            >
+            <a href="#contact"
+               className="inline-flex items-center rounded-xl px-5 py-3 font-semibold border border-slate-300 hover:bg-slate-100">
               Join the early list
             </a>
           </div>
-          <p className="mt-3 text-sm text-slate-500">
-            No long contracts. Starter plan free. Standard payment fees apply.
-          </p>
+          <p className="mt-3 text-sm text-slate-500">No long contracts. Starter plan free.</p>
         </div>
 
         {/* Product mock */}
@@ -117,7 +108,7 @@ export default function Page() {
         </div>
       </section>
 
-      {/* Company description */}
+      {/* Company */}
       <section id="company" className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-16">
         <h3 className="text-xl font-bold">About Barix</h3>
         <p className="mt-4 text-slate-600">
@@ -127,14 +118,13 @@ export default function Page() {
         </p>
       </section>
 
-      {/* Contact / capture */}
+      {/* Contact / capture (no onSubmit handler) */}
       <section id="contact" className="bg-slate-900 text-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-14 grid md:grid-cols-2 gap-8 items-center">
           <div>
             <h3 className="text-2xl font-bold">Be first to onboard</h3>
             <p className="mt-2 text-slate-300">Drop your email and we’ll send a setup link or book a 10-minute call.</p>
           </div>
-          {/* Plain HTML form (no client handler) */}
           <form className="flex gap-3" action="#" method="post">
             <input type="email" required placeholder="you@company.com"
               className="w-full rounded-xl bg-white/10 px-4 py-3 text-white placeholder:text-slate-300 outline-none ring-1 ring-white/20 focus:ring-2 focus:ring-white/40" />
