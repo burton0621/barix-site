@@ -1,7 +1,7 @@
 // app/page.js
 'use client';
 
-import ContactForm from "app/components/ContactForm.js";
+import ContactForm from "./components/ContactForm.js";
 
 export default function Page() {
   return (
