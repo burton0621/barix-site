@@ -10,7 +10,7 @@ export default function Page() {
       <header className="border-b border-slate-200 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <a href="/" className="flex items-center gap-3">
-            <img src="/Barix%20Full%20Logo.png" alt="Barix" className="h-8 w-auto" />
+            <img src="/Barix%20Full%20Logo.png" alt="Barix" className="h-12 w-auto" />
           </a>
           <nav className="hidden md:flex items-center gap-6 text-sm">
             <a href="#product" className="hover:text-slate-600">Product</a>
