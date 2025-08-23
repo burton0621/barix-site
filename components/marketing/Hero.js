@@ -15,7 +15,7 @@ export default function Hero({ onOpenContact }) {
             </span>
           </h1>
           <p className="mt-4 text-lg text-gray-600">
-            Billing software for trades & services—create invoices in seconds,
+            Billing software for trades & services - create invoices in seconds,
             collect payments, and automate reminders so your crew can stay on the tools.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
