@@ -23,25 +23,22 @@ export default function HomePage() {
         <LogoCloud />
 
         {/* Demo */}
-        <section id="demo" className="mx-auto max-w-6xl px-4 pb-16">
-          <div className="mb-3 flex items-center justify-between">
+                <section className="mx-auto max-w-6xl px-4 pb-16">
+        <div className="mb-3 flex items-center justify-between">
             <h3 className="text-lg font-semibold tracking-tight">Sample Demo</h3>
-            <a
-              href="/contact"
-              className="text-sm text-brand underline-offset-4 hover:underline"
-            >
-              Need a private walkthrough?
+            <a href="/contact" className="text-sm text-brand underline-offset-4 hover:underline">
+            Need a private walkthrough?
             </a>
-          </div>
+        </div>
 
-          <DemoFrame
-            title="demo.barixbilling.com"
-            ratio="16/10"
-            caption="Sample client dashboard. Mock data."
-          >
+        {/* Invisible anchor: scroll target */}
+        <div id="demo" className="scroll-mt-28" />
+
+        <DemoFrame title="demo.barixbilling.com" ratio="16/10" caption="Sample client dashboard. Mock data.">
             <ClientPanel />
-          </DemoFrame>
+        </DemoFrame>
         </section>
+
       </main>
 
       <Footer onOpenContact={() => setContactOpen(true)} />
