@@ -1,9 +1,15 @@
 "use client";
 
-const STATUS = {
+const STATUS_STYLES = {
   Paid: "text-green-700 bg-green-50 ring-1 ring-green-200",
   Overdue: "text-red-700 bg-red-50 ring-1 ring-red-200",
   BalanceDue: "text-amber-700 bg-amber-50 ring-1 ring-amber-200",
+};
+
+const STATUS_LABELS = {
+  Paid: "Paid",
+  Overdue: "Overdue",
+  BalanceDue: "Balance Due",
 };
 
 const rows = [
@@ -46,13 +52,15 @@ export default function ClientPanel() {
             {rows.map((r) => (
               <tr key={r.id} className="align-middle">
                 <TD>{r.id}</TD>
-                <TD className="min-w-56">{r.job}</TD>
+                <TD className="min-w-[14rem]">{r.job}</TD>
                 <TD>{r.date}</TD>
                 <TD>{r.due}</TD>
-                <TD className="text-right font-medium">${r.amt.toLocaleString()}</TD>
+                <TD className="text-right font-medium">${Number(r.amt).toLocaleString()}</TD>
                 <TD>
-                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${STATUS[r.status]}`}>
-                    {r.status}
+                  <span
+                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${STATUS_STYLES[r.status] || "text-gray-700 bg-gray-50 ring-1 ring-gray-200"}`}
+                  >
+                    {STATUS_LABELS[r.status] || r.status}
                   </span>
                 </TD>
                 <TD className="text-right">

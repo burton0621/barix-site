@@ -28,7 +28,7 @@ export default function Hero({ onOpenContact }) {
             </a>
           </div>
           <p className="mt-3 text-xs text-gray-500">
-            No credit card. Real sample data. 2-minute walkthrough.
+            Become an early adopter and get special pricing.
           </p>
         </div>
 

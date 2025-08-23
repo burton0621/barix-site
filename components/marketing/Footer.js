@@ -56,7 +56,7 @@ export default function Footer({ onOpenContact }) {
                 <Button
                   size="sm"
                   onClick={onOpenContact}
-                  className="bg-white text-[#0B1D33] hover:bg-gray-100"
+                  className="bg-white !text-brand hover:bg-gray-100"
                 >
                   Talk to sales
                 </Button>
