@@ -10,12 +10,12 @@ export default function ProfilePage() {
   const [editingSection, setEditingSection] = useState(null);
 
   // MAIN PROFILE FIELDS
+  const [companyName, setCompanyName] = useState("");
   const [contractingTrade, setContractingTrade] = useState("");
   const [businessPhone, setBusinessPhone] = useState("");
   const [businessEmail, setBusinessEmail] = useState("");
   const [businessWebsite, setBusinessWebsite] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
-  const [jobCategories, setJobCategories] = useState([]);
 
   // RELATIONAL TABLE STATES
   const [addresses, setAddresses] = useState([]);
@@ -33,8 +33,6 @@ export default function ProfilePage() {
     "General Contracting",
   ];
 
-  const CATEGORY_OPTIONS = BUSINESS_TYPES;
-
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
@@ -51,12 +49,12 @@ export default function ProfilePage() {
         .single();
 
       if (profile) {
+        setCompanyName(profile.company_name || "");
         setContractingTrade(profile.contracting_trade || "");
         setBusinessPhone(profile.business_phone || "");
         setBusinessEmail(profile.business_email || "");
         setBusinessWebsite(profile.business_website || "");
         setLogoUrl(profile.logo_url || "");
-        setJobCategories(profile.job_categories || []);
       }
 
       // Load ADDRESSES
@@ -66,6 +64,10 @@ export default function ProfilePage() {
         .eq("contractor_id", user.id);
 
       setAddresses(addressRows || []);
+
+      if (!addressRows || addressRows.length === 0) {
+        setAddresses([{ street: "", unit: "", city: "", state: "", zip: "" }]);
+      }
 
       // Load SERVICE REGIONS
       const { data: regions } = await supabase
@@ -83,32 +85,17 @@ export default function ProfilePage() {
 
       setLicenses(
         licenseRows?.map(l => ({
-          number: l.license_number,
-          state: l.license_state,
-          expiration: l.license_expiration,
+          number: l.license_number || "",
+          state: l.license_state || "",
+          expiration: l.license_expiration || "",
         })) || []
       );
-
-      // If no address exists, initialize an empty one (for UI)
-      if (!addressRows || addressRows.length === 0) {
-        setAddresses([
-          { street: "", unit: "", city: "", state: "", zip: "" }
-        ]);
-      }
 
       setLoading(false);
     }
 
     load();
   }, []);
-
-  function toggleCategory(cat) {
-    if (jobCategories.includes(cat)) {
-      setJobCategories(jobCategories.filter(c => c !== cat));
-    } else {
-      setJobCategories([...jobCategories, cat]);
-    }
-  }
 
   async function saveProfile() {
     const confirmSave = window.confirm("Save your profile changes?");
@@ -122,12 +109,12 @@ export default function ProfilePage() {
     await supabase
       .from("contractor_profiles")
       .update({
+        company_name: companyName,
         contracting_trade: contractingTrade,
         business_phone: businessPhone,
         business_email: businessEmail,
         business_website: businessWebsite,
         logo_url: logoUrl,
-        job_categories: jobCategories,
       })
       .eq("id", user.id);
 
@@ -140,14 +127,14 @@ export default function ProfilePage() {
       .eq("contractor_id", user.id);
 
     if (addresses.length > 0) {
-      const addr = addresses[0];
+      const a = addresses[0];
       await supabase.from("contractor_addresses").insert({
         contractor_id: user.id,
-        street: addr.street,
-        unit: addr.unit,
-        city: addr.city,
-        state: addr.state,
-        zip: addr.zip,
+        street: a.street,
+        unit: a.unit,
+        city: a.city,
+        state: a.state,
+        zip: a.zip,
         country: "USA"
       });
     }
@@ -190,37 +177,171 @@ export default function ProfilePage() {
     setEditingSection(null);
   }
 
+  //Logo upload handler
+  async function handleLogoUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const fileExt = file.name.split(".").pop();
+  const newFileName = `logo.${fileExt}`;
+  const filePath = `${user.id}/${newFileName}`;
+
+  // Upload file
+  const { error: uploadError } = await supabase.storage
+    .from("contractor-logos")
+    .upload(filePath, file, { upsert: true });
+
+  if (uploadError) {
+    alert("Failed to upload logo");
+    console.error(uploadError);
+    return;
+  }
+
+  // Create signed URL (valid 1 year)
+  const { data: signedUrlData } = await supabase.storage
+    .from("contractor-logos")
+    .createSignedUrl(filePath, 60 * 60 * 24 * 365);
+
+  const signedURL = signedUrlData.signedUrl;
+
+  // Save URL to profile table
+  await supabase
+    .from("contractor_profiles")
+    .update({ logo_url: signedURL })
+    .eq("id", user.id);
+
+  // Update UI
+  setLogoUrl(signedURL);
+}
+
+//logo delete handler   
+async function handleLogoDelete() {
+  const confirmDelete = window.confirm("Delete your company logo?");
+  if (!confirmDelete) return;
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  // All logos follow the pattern: contractor-logos/{user_id}/logo.png
+  const folderPrefix = `${user.id}/`;
+
+  // List files in the user's folder
+  const { data: files, error: listError } = await supabase.storage
+    .from("contractor-logos")
+    .list(user.id);
+
+  if (listError) {
+    console.error("Error listing files:", listError);
+    return;
+  }
+
+  if (files.length === 0) {
+    console.warn("No logo found to delete.");
+    return;
+  }
+
+  // Delete all files in the user's folder (usually only 1)
+  const filePaths = files.map((f) => `${user.id}/${f.name}`);
+
+  const { error: deleteError } = await supabase.storage
+    .from("contractor-logos")
+    .remove(filePaths);
+
+  if (deleteError) {
+    console.error("Error deleting logo:", deleteError);
+    return;
+  }
+
+  // Clear the DB reference
+  await supabase
+    .from("contractor_profiles")
+    .update({ logo_url: null })
+    .eq("id", user.id);
+
+  setLogoUrl(null);
+}
+
+
+
+
+
   if (loading) return <p style={{ padding: 20 }}>Loading...</p>;
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.title}>Contractor Profile</h1>
+        <div className={styles.headerRow}>
+            {logoUrl && (
+                <img src={logoUrl} alt="Logo" className={styles.headerLogo} />
+            )}
+
+            <h1 className={styles.title}>
+                {companyName ? `${companyName} Profile` : "Contractor Profile"}
+            </h1>
+        </div>
 
       {/* ---------------- BUSINESS INFORMATION ---------------- */}
-      <div className={styles.card}>
+        <div className={styles.card}>
         <div className={styles.row}>
-          <h2>Business Information</h2>
-          <FaPencilAlt className={styles.icon} onClick={() => setEditingSection("business")} />
+            <h2>Business Information</h2>
+            <FaPencilAlt className={styles.icon} onClick={() => setEditingSection("business")} />
         </div>
 
         {editingSection === "business" ? (
-          <>
+            <>
+            <label className={styles.label}>Company Name</label>
+            <input
+                className={styles.input}
+                placeholder="Your Company Name"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+            />
+
             <label className={styles.label}>Contracting Trade</label>
             <select
-              className={styles.select}
-              value={contractingTrade}
-              onChange={(e) => setContractingTrade(e.target.value)}
+                className={styles.select}
+                value={contractingTrade}
+                onChange={(e) => setContractingTrade(e.target.value)}
             >
-              <option value="">Select trade</option>
-              {BUSINESS_TYPES.map(t => (
+                <option value="">Select trade</option>
+                {BUSINESS_TYPES.map(t => (
                 <option key={t} value={t}>{t}</option>
-              ))}
+                ))}
             </select>
-          </>
+            </>
         ) : (
-          <p><strong>Trade:</strong> {contractingTrade || "Not set"}</p>
+            <>
+            <p><strong>Company Name:</strong> {companyName || "Not set"}</p>
+            <p><strong>Trade:</strong> {contractingTrade || "Not set"}</p>
+            </>
         )}
-      </div>
+        </div>
+
+
+        {/* ---------------- COMPANY LOGO ---------------- */}
+        <div className={styles.logoSection}>
+        {logoUrl ? (
+            <img src={logoUrl} alt="Company Logo" className={styles.logoPreview} />
+        ) : (
+            <div className={styles.logoPlaceholder}>No logo uploaded</div>
+        )}
+
+        <input
+            type="file"
+            accept="image/*"
+            onChange={handleLogoUpload}
+            className={styles.fileInput}
+        />
+
+        {logoUrl && (
+            <button className={styles.deleteLogoBtn} onClick={handleLogoDelete}>
+            Delete Logo
+            </button>
+        )}
+        </div>
+
+
 
       {/* ---------------- BUSINESS ADDRESS ---------------- */}
       <div className={styles.card}>
@@ -450,31 +571,6 @@ export default function ProfilePage() {
               <p>No licenses added</p>
             )}
           </>
-        )}
-      </div>
-
-      {/* ---------------- JOB CATEGORIES ---------------- */}
-      <div className={styles.card}>
-        <div className={styles.row}>
-          <h2>Job Categories</h2>
-          <FaPencilAlt className={styles.icon} onClick={() => setEditingSection("categories")} />
-        </div>
-
-        {editingSection === "categories" ? (
-          <div className={styles.categoryList}>
-            {CATEGORY_OPTIONS.map(cat => (
-              <div key={cat} className={styles.categoryItem}>
-                <input
-                  type="checkbox"
-                  checked={jobCategories.includes(cat)}
-                  onChange={() => toggleCategory(cat)}
-                />
-                <label>{cat}</label>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p>{jobCategories.length ? jobCategories.join(", ") : "None selected"}</p>
         )}
       </div>
 
