@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import Navbar from "@/components/marketing/Navbar";
+import Navbar from "@/components/Navbar/Navbar";
 import Footer from "@/components/marketing/Footer";
 import ContactModal from "@/components/contact/ContactModal";
 

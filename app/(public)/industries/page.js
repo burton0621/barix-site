@@ -1,6 +1,6 @@
 "use client";
 
-import Navbar from "@/components/marketing/Navbar";
+import Navbar from "@/components/Navbar/Navbar";
 import Footer from "@/components/marketing/Footer";
 import React from "react";
 import ContactModal from "@/components/contact/ContactModal";
