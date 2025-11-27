@@ -10,28 +10,35 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null);
 
   useEffect(() => {
-    async function load() {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      if (data.session?.user?.id) loadProfile(data.session.user.id);
+    });
 
-      if (session?.user?.id) {
-        const { data } = await supabase
-          .from("contractor_profiles")
-          .select("company_name, logo_url")
-          .eq("id", session.user.id)
-          .single();
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, newSession) => {
+        setSession(newSession);
 
-        setProfile(data || null);
-      } else {
-        setProfile(null);
+        if (newSession?.user?.id) {
+          loadProfile(newSession.user.id);
+        } else {
+          setProfile(null);
+        }
       }
-    }
+    );
 
-    load();
-
-    const { data: listener } = supabase.auth.onAuthStateChange(() => load());
     return () => listener.subscription.unsubscribe();
   }, []);
+
+  async function loadProfile(userId) {
+    const { data } = await supabase
+      .from("contractor_profiles")
+      .select("company_name, logo_url")
+      .eq("id", userId)
+      .single();
+
+    setProfile(data || null);
+  }
 
   return (
     <AuthContext.Provider value={{ session, profile }}>
