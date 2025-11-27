@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import styles from "./profile.module.css";
 import { FaPencilAlt, FaPlus, FaTrash } from "react-icons/fa";
+import Navbar from "@/components/Navbar/Navbar";
+import { useRouter } from "next/router";
 
 export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
@@ -270,7 +272,9 @@ async function handleLogoDelete() {
   if (loading) return <p style={{ padding: 20 }}>Loading...</p>;
 
   return (
-    <div className={styles.container}>
+    <div>
+      <Navbar />
+      <div className={styles.container}>
         <div className={styles.headerRow}>
             {logoUrl && (
                 <img src={logoUrl} alt="Logo" className={styles.headerLogo} />
@@ -580,6 +584,7 @@ async function handleLogoDelete() {
           Save Changes
         </button>
       )}
+    </div>
     </div>
   );
 }
