@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import Navbar from "@/components/marketing/Navbar";
+import Navbar from "@/components/Navbar/Navbar";
 import Hero from "@/components/marketing/Hero";
 import ValueProps from "@/components/marketing/ValueProps";
 import LogoCloud from "@/components/marketing/LogoCloud";

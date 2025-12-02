@@ -1,0 +1,159 @@
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.label {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.value {
+  font-size: 1rem;
+  margin-top: 10px;
+  color: #555;
+}
+
+.input,
+.textarea,
+.select {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  font-size: 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+}
+
+.icon {
+  cursor: pointer;
+  color: #666;
+  transition: 0.2s;
+}
+
+.icon:hover {
+  color: black;
+}
+
+.saveBtn {
+  margin-top: 20px;
+  width: 100%;
+  padding: 12px;
+  background: black;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.regionRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.addBtn {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  background: #f9fafb;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.categoryList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.categoryItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.headerLogo {
+  width: 45px;
+  height: 45px;
+  object-fit: contain;
+  border-radius: 6px;
+  background: #f3f3f3;
+  padding: 4px;
+}
+
+.logoSection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.logoPreview {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  border-radius: 10px;
+  background: #f3f4f6;
+  padding: 8px;
+}
+
+.logoPlaceholder {
+  width: 120px;
+  height: 120px;
+  border-radius: 10px;
+  background: #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+}
+
+.fileInput {
+  margin-top: 8px;
+}
+
+.deleteLogoBtn {
+  background-color: #dc2626;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  width: fit-content;
+}
+
+.deleteLogoBtn:hover {
+  background-color: #b91c1c;
+}

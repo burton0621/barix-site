@@ -1,6 +1,6 @@
 "use client";
 
-import Navbar from "@/components/marketing/Navbar";
+import Navbar from "@/components/Navbar/Navbar";
 import Footer from "@/components/marketing/Footer";
 
 function Tier({ name, price, blurb, features = [], cta = "Start free", highlight = false }) {
