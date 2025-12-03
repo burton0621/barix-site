@@ -1,83 +1,312 @@
-a.header {
+/*
+  Navbar Styles
+  -------------
+  Modern glass-style navigation bar with a clean, professional look.
+  Uses the brand navy color (#0a2540) as the primary accent.
+  
+  The design focuses on:
+  - Subtle glass morphism (frosted background)
+  - Smooth hover transitions
+  - Clear visual hierarchy between nav links and CTAs
+  - Responsive behavior for mobile devices
+*/
+
+
+/* ----------------------------------------
+   HEADER
+   The sticky container that holds everything.
+   Uses backdrop-filter for the frosted glass effect.
+   ---------------------------------------- */
+
+.header {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: white;
-  border-bottom: 1px solid #e5e7eb;
-  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px); /* Safari support */
+  border-bottom: 1px solid rgba(10, 37, 64, 0.08);
+  transition: all 0.3s ease;
 }
+
+.header:hover {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+
+/* ----------------------------------------
+   NAV CONTAINER
+   Centers the content and sets max width.
+   Flexbox handles the logo-left, links-right layout.
+   ---------------------------------------- */
 
 .navContainer {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 8px 16px;
+  padding: 14px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
+
+/* ----------------------------------------
+   BRAND / LOGO
+   Slight scale animation on hover for polish.
+   ---------------------------------------- */
+
 .brand {
   display: flex;
   align-items: center;
+  transition: transform 0.2s ease;
 }
+
+.brand:hover {
+  transform: scale(1.02);
+}
+
+
+/* ----------------------------------------
+   NAV LINKS
+   The main navigation items (Product, Pricing, etc).
+   Each link has an animated underline on hover.
+   ---------------------------------------- */
 
 .navRight {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 8px;
 }
 
 .navLink {
+  position: relative;
   font-size: 14px;
-  color: #374151;
+  font-weight: 500;
+  color: #475569;
+  padding: 8px 16px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  letter-spacing: -0.01em;
 }
 
 .navLink:hover {
-  color: #1e40af;
+  color: #0a2540;
+  background: rgba(10, 37, 64, 0.05);
 }
+
+/* 
+  Animated underline effect
+  Starts at 0 width and expands to 24px on hover.
+  Positioned at the bottom center of each link.
+*/
+.navLink::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #31679b, #0a2540);
+  border-radius: 2px;
+  transition: width 0.2s ease;
+}
+
+.navLink:hover::after {
+  width: 24px;
+}
+
+
+/* ----------------------------------------
+   USER SECTION (Logged In State)
+   Shows company logo, name, and sign out button.
+   Separated from nav links with a subtle border.
+   ---------------------------------------- */
 
 .userSection {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  margin-left: 8px;
+  padding-left: 16px;
+  border-left: 1px solid rgba(10, 37, 64, 0.1);
 }
 
 .userLogo {
-  width: 35px;
-  height: 35px;
+  width: 36px;
+  height: 36px;
   object-fit: contain;
-  border-radius: 6px;
-  background: #f3f4f6;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #f8fafc, #e2e8f0);
   padding: 4px;
+  border: 1px solid rgba(10, 37, 64, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.userLogo:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(10, 37, 64, 0.15);
 }
 
 .companyName {
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
+  color: #0a2540;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
+/* 
+  Sign out button
+  Starts subtle, turns red on hover to indicate destructive action
+*/
 .logoutBtn {
-  padding: 6px 10px;
-  background: #dc2626;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 12px;
+  padding: 8px 14px;
+  background: transparent;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .logoutBtn:hover {
-  background: #b91c1c;
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
 }
 
-.loginBtn {
-  padding: 6px 14px;
-  background: #2563eb;
-  color: white;
-  border-radius: 6px;
+
+/* ----------------------------------------
+   AUTH BUTTONS (Logged Out State)
+   Two buttons: subtle "Sign in" and prominent "Get Started"
+   This creates clear hierarchy - new users see the CTA first.
+   ---------------------------------------- */
+
+.authButtons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+  padding-left: 16px;
+  border-left: 1px solid rgba(10, 37, 64, 0.1);
+}
+
+/* Sign in - for returning users, kept subtle */
+.signInBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 18px;
+  background: transparent;
+  color: #475569;
+  border-radius: 10px;
   font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.signInBtn:hover {
+  color: #0a2540;
+  background: rgba(10, 37, 64, 0.05);
+}
+
+/* 
+  Get Started - primary CTA button
+  Uses brand navy gradient with a lift effect on hover.
+  The shadow adds depth and draws attention.
+*/
+.loginBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #0a2540, #133a5d);
+  color: white;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(10, 37, 64, 0.25);
 }
 
 .loginBtn:hover {
-  background: #1d4ed8;
+  background: linear-gradient(135deg, #133a5d, #194d7a);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(10, 37, 64, 0.35);
+}
+
+.loginBtn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(10, 37, 64, 0.25);
+}
+
+
+/* ----------------------------------------
+   RESPONSIVE STYLES
+   Adjusts spacing and hides less important elements
+   on smaller screens to keep things usable.
+   ---------------------------------------- */
+
+@media (max-width: 768px) {
+  .navContainer {
+    padding: 12px 16px;
+  }
+
+  .navRight {
+    gap: 4px;
+  }
+
+  .navLink {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  /* Hide the animated underline on mobile - too small to see */
+  .navLink::after {
+    display: none;
+  }
+
+  /* Hide company name on tablet - just show logo */
+  .companyName {
+    display: none;
+  }
+
+  .authButtons {
+    gap: 4px;
+    padding-left: 12px;
+  }
+
+  .signInBtn {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .loginBtn {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+}
+
+/* Extra small screens - phones */
+@media (max-width: 480px) {
+  .navLink {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+
+  /* Hide sign in on very small screens - just show Get Started */
+  .signInBtn {
+    display: none;
+  }
+
+  .authButtons {
+    border-left: none;
+    padding-left: 8px;
+  }
 }
