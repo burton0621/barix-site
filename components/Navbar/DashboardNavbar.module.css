@@ -1,0 +1,283 @@
+/*
+  Dashboard Navbar Styles
+  -----------------------
+  A clean, professional navigation bar for the logged-in experience.
+  Slightly different from the marketing navbar - more functional, less salesy.
+  
+  Key differences from marketing navbar:
+  - Centered navigation links (Dashboard, Invoices, Clients)
+  - Profile section with company logo and quick access
+  - Active state highlighting for current page
+*/
+
+
+/* ----------------------------------------
+   HEADER
+   Sticky top bar with a clean white background.
+   Subtle shadow instead of border for depth.
+   ---------------------------------------- */
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: white;
+  box-shadow: 0 1px 3px rgba(10, 37, 64, 0.08);
+}
+
+
+/* ----------------------------------------
+   NAV CONTAINER
+   Three-column layout: logo | nav links | user section
+   ---------------------------------------- */
+
+.navContainer {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 12px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+
+/* ----------------------------------------
+   BRAND / LOGO
+   Left side - clicking goes to dashboard home
+   ---------------------------------------- */
+
+.brand {
+  display: flex;
+  align-items: center;
+  transition: opacity 0.2s ease;
+}
+
+.brand:hover {
+  opacity: 0.8;
+}
+
+
+/* ----------------------------------------
+   NAV CENTER
+   Main navigation links in the middle.
+   Uses pill-style buttons with active state.
+   ---------------------------------------- */
+
+.navCenter {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #f8fafc;
+  padding: 4px;
+  border-radius: 12px;
+}
+
+.navLink {
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  padding: 10px 20px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.navLink:hover {
+  color: #0a2540;
+  background: white;
+}
+
+/* 
+  Active state for current page
+  White background with shadow to make it "pop" from the pill container
+*/
+.navLink.active {
+  color: #0a2540;
+  background: white;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(10, 37, 64, 0.1);
+}
+
+
+/* ----------------------------------------
+   NAV RIGHT
+   User profile section and sign out button
+   ---------------------------------------- */
+
+.navRight {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+
+/* ----------------------------------------
+   PROFILE LINK
+   Clickable area showing company logo/initial and name.
+   Takes user to their profile settings.
+   ---------------------------------------- */
+
+.profileLink {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px 6px 6px;
+  border-radius: 10px;
+  transition: background 0.2s ease;
+}
+
+.profileLink:hover {
+  background: #f8fafc;
+}
+
+/* Company logo thumbnail */
+.userLogo {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #f1f5f9;
+  padding: 3px;
+  border: 1px solid #e2e8f0;
+}
+
+/* 
+  Fallback initial when no logo is uploaded
+  Shows first letter of company name in a colored circle
+*/
+.userInitial {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #0a2540, #194d7a);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* Text next to the logo/initial */
+.userInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.companyName {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0a2540;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profileLabel {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+
+/* ----------------------------------------
+   SETTINGS BUTTON
+   Gear icon that links to account settings.
+   Subtle by default, highlights on hover or when active.
+   ---------------------------------------- */
+
+.settingsBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  color: #64748b;
+  transition: all 0.2s ease;
+}
+
+.settingsBtn:hover {
+  background: #f1f5f9;
+  color: #0a2540;
+}
+
+/* When user is on the settings page, keep it highlighted */
+.settingsBtn.settingsActive {
+  background: #f1f5f9;
+  color: #0a2540;
+}
+
+
+/* ----------------------------------------
+   SIGN OUT BUTTON
+   Subtle by default, turns red on hover
+   ---------------------------------------- */
+
+.logoutBtn {
+  padding: 8px 14px;
+  background: transparent;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.logoutBtn:hover {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+
+/* ----------------------------------------
+   RESPONSIVE STYLES
+   Adjust layout for smaller screens
+   ---------------------------------------- */
+
+@media (max-width: 900px) {
+  .navContainer {
+    padding: 12px 16px;
+  }
+
+  .navCenter {
+    padding: 3px;
+  }
+
+  .navLink {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+
+  .userInfo {
+    display: none;
+  }
+
+  .profileLink {
+    padding: 6px;
+  }
+}
+
+@media (max-width: 600px) {
+  /* Stack navigation below on very small screens */
+  .navContainer {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .navCenter {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .navLink {
+    padding: 8px 16px;
+    flex: 1;
+    text-align: center;
+  }
+}
+
