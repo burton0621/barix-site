@@ -1,0 +1,170 @@
+/* Page layout */
+
+.page {
+  min-height: 100vh;
+  background-color: #f9fafb; /* gray-50-ish */
+}
+
+/* Main content container */
+
+.main {
+  max-width: 72rem; /* ~6xl */
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem; /* 40px top/bottom, 24px sides */
+}
+
+/* Loading state */
+
+.loadingWrapper {
+  min-height: 100vh;
+  background-color: #f9fafb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loadingText {
+  color: #6b7280; /* gray-500 */
+  font-size: 0.95rem;
+}
+
+/* Header */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  gap: 1rem;
+}
+
+.headerLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.title {
+  font-size: 1.875rem; /* text-3xl */
+  font-weight: 700;
+  color: #111827; /* gray-900 */
+  margin: 0;
+}
+
+.subtitle {
+  margin: 0;
+  color: #4b5563; /* gray-600 */
+  font-size: 0.95rem;
+}
+
+/* Header actions (buttons on the right) */
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Buttons */
+
+.primaryButton {
+  padding: 0.625rem 1.25rem; /* 10px 20px */
+  border-radius: 0.5rem;
+  border: none;
+  background-color: #2563eb; /* brand */
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+}
+
+.primaryButton:hover {
+  background-color: #1d4ed8; /* darker brand */
+}
+
+.primaryButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.secondaryButton {
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.5rem;
+  border: 1px solid #d1d5db; /* gray-300 */
+  background-color: #ffffff;
+  color: #374151; /* gray-700 */
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.secondaryButton:hover {
+  background-color: #f9fafb;
+  border-color: #9ca3af; /* gray-400 */
+}
+
+/* Empty state card */
+
+.emptyCard {
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  padding: 3rem;          /* similar to p-12 */
+  text-align: center;
+  width: 100%;            /* fill the main container */
+  margin: 0;              /* no centering/max-width constraint */
+  box-sizing: border-box; /* make padding behave nicely */
+}
+
+.emptyIcon {
+  width: 4rem;
+  height: 4rem;
+  border-radius: 9999px;
+  background-color: #f3f4f6; /* gray-100 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem auto;
+}
+
+.emptyIconSvg {
+  width: 2rem;
+  height: 2rem;
+  color: #9ca3af; /* gray-400 */
+}
+
+.emptyTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
+}
+
+.emptyText {
+  margin: 0 auto 1.5rem auto;
+  max-width: 24rem;
+  color: #4b5563;
+  font-size: 0.95rem;
+}
+
+/* Responsive tweaks */
+
+@media (max-width: 640px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .headerActions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .emptyCard {
+    padding: 2rem 1.5rem;
+  }
+}
+
