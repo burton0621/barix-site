@@ -108,36 +108,44 @@ export default function AddClientForm({ ownerId, onCreated, onCancel }) {
     }
   }
 
-  return (
+    return (
     <form className={styles.form} onSubmit={handleSubmit}>
       <h2 className={styles.formTitle}>Add Client</h2>
 
       {errorMsg && <div className={styles.errorBox}>{errorMsg}</div>}
 
-      {/* Basic Info */}
-      <label className={styles.label}>Name</label>
-      <input
-        className={styles.input}
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        required
-      />
+      {/* ---- BASIC INFO ROW ---- */}
+      <div className={styles.row}>
+        <div className={styles.colWide}>
+          <label className={styles.label}>Name</label>
+          <input
+            className={styles.input}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+        </div>
 
-      <label className={styles.label}>Email</label>
-      <input
-        className={styles.input}
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
+        <div className={styles.colWide}>
+          <label className={styles.label}>Email</label>
+          <input
+            className={styles.input}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
 
-      <label className={styles.label}>Phone</label>
-      <input
-        className={styles.input}
-        value={phone}
-        onChange={(e) => setPhone(e.target.value)}
-      />
+        <div className={styles.colSlim}>
+          <label className={styles.label}>Phone</label>
+          <input
+            className={styles.input}
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+          />
+        </div>
+      </div>
 
-      {/* Service Address */}
+      {/* ---- SERVICE ADDRESS ---- */}
       <h3 className={styles.sectionTitle}>Service Address</h3>
 
       <label className={styles.label}>Address Line 1</label>
@@ -154,6 +162,7 @@ export default function AddClientForm({ ownerId, onCreated, onCancel }) {
         onChange={(e) => setServiceLine2(e.target.value)}
       />
 
+      {/* City / State / ZIP Row */}
       <div className={styles.row}>
         <div className={styles.colCity}>
           <label className={styles.label}>City</label>
@@ -163,6 +172,7 @@ export default function AddClientForm({ ownerId, onCreated, onCancel }) {
             onChange={(e) => setServiceCity(e.target.value)}
           />
         </div>
+
         <div className={styles.colState}>
           <label className={styles.label}>State</label>
           <input
@@ -171,6 +181,7 @@ export default function AddClientForm({ ownerId, onCreated, onCancel }) {
             onChange={(e) => setServiceState(e.target.value)}
           />
         </div>
+
         <div className={styles.colZip}>
           <label className={styles.label}>ZIP</label>
           <input
@@ -181,7 +192,7 @@ export default function AddClientForm({ ownerId, onCreated, onCancel }) {
         </div>
       </div>
 
-      {/* Billing Address */}
+      {/* ---- BILLING ADDRESS ---- */}
       <h3 className={styles.sectionTitle}>Billing Address</h3>
 
       <div className={styles.checkboxRow}>
@@ -218,6 +229,7 @@ export default function AddClientForm({ ownerId, onCreated, onCancel }) {
                 onChange={(e) => setBillingCity(e.target.value)}
               />
             </div>
+
             <div className={styles.colState}>
               <label className={styles.label}>State</label>
               <input
@@ -226,6 +238,7 @@ export default function AddClientForm({ ownerId, onCreated, onCancel }) {
                 onChange={(e) => setBillingState(e.target.value)}
               />
             </div>
+
             <div className={styles.colZip}>
               <label className={styles.label}>ZIP</label>
               <input
@@ -238,6 +251,7 @@ export default function AddClientForm({ ownerId, onCreated, onCancel }) {
         </>
       )}
 
+      {/* ---- BUTTONS ---- */}
       <div className={styles.buttonRow}>
         <button
           type="button"
@@ -247,6 +261,7 @@ export default function AddClientForm({ ownerId, onCreated, onCancel }) {
         >
           Cancel
         </button>
+
         <button
           type="submit"
           className={styles.saveButton}

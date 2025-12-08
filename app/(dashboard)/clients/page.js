@@ -1,105 +1,129 @@
 "use client";
 
-/*
-  Clients Page
-  ------------
-  This page will list all clients/customers and allow users to add new ones.
-  Clients are the people or businesses that contractors send invoices to.
-  
-  For now, it's a placeholder showing an empty state.
-  
-  Future features:
-  - Client list with search
-  - Client details (contact info, address, payment history)
-  - Quick actions (send invoice, view history)
-  - Import from contacts or CSV
-*/
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import DashboardNavbar from "@/components/Navbar/DashboardNavbar";
 
+import AddClientForm from "@/components/clients/AddClientForm";
+import styles from "./ClientsPage.module.css";
+
 export default function ClientsPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState(null);
+  const [clients, setClients] = useState([]);
+  const [showForm, setShowForm] = useState(false);
 
-  /*
-    Protect this route - only logged in users can access
-  */
   useEffect(() => {
     async function checkAuth() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user) {
         router.push("/login");
         return;
       }
+      setUserId(data.user.id);
       setLoading(false);
     }
     checkAuth();
   }, [router]);
 
+  useEffect(() => {
+    if (!userId) return;
+
+    async function fetchClients() {
+      const { data } = await supabase
+        .from("clients")
+        .select("*")
+        .eq("owner_id", userId)
+        .order("created_at", { ascending: false });
+
+      setClients(data || []);
+    }
+
+    fetchClients();
+  }, [userId]);
+
+  function handleClientCreated(newClient) {
+    setClients((prev) => [newClient, ...prev]);
+    setShowForm(false);
+  }
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-500">Loading...</p>
+      <div className={styles.loadingWrapper}>
+        <p className={styles.loadingText}>Loading...</p>
       </div>
     );
   }
 
+  const hasClients = clients.length > 0;
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={styles.pageWrapper}>
       <DashboardNavbar />
-      
-      <main className="max-w-6xl mx-auto px-6 py-10">
-        {/* Page Header */}
-        <div className="flex items-center justify-between mb-8">
+
+      <main className={styles.main}>
+        <div className={styles.headerRow}>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
-            <p className="mt-1 text-gray-600">
-              Manage your customers and their information
-            </p>
+            <h1 className={styles.title}>Clients</h1>
+            <p className={styles.subtitle}>Manage your customers</p>
           </div>
-          <button 
-            className="px-5 py-2.5 bg-brand text-white font-semibold rounded-lg hover:bg-brand-700 transition-colors"
-            onClick={() => alert("Add client coming soon!")}
-          >
-            Add Client
-          </button>
+
+          {hasClients && (
+            <button className={styles.addButton} onClick={() => setShowForm(true)}>
+              Add Client
+            </button>
+          )}
         </div>
 
-        {/* Empty State */}
-        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-          <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-            <svg 
-              className="w-8 h-8 text-gray-400" 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={1.5} 
-                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" 
-              />
-            </svg>
+        {showForm && (
+          <div className={styles.formWrapper}>
+            <AddClientForm
+              ownerId={userId}
+              onCreated={handleClientCreated}
+              onCancel={() => setShowForm(false)}
+            />
           </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            No clients yet
-          </h2>
-          <p className="text-gray-600 mb-6 max-w-md mx-auto">
-            Add your first client to start sending invoices. You can add them manually or import from a file.
-          </p>
-          <button 
-            className="px-6 py-3 bg-brand text-white font-semibold rounded-lg hover:bg-brand-700 transition-colors"
-            onClick={() => alert("Add client coming soon!")}
-          >
-            Add Your First Client
-          </button>
-        </div>
+        )}
+
+        {!hasClients ? (
+          <div className={styles.emptyState}>
+            <h2 className={styles.emptyTitle}>No Clients Yet</h2>
+            <p className={styles.emptyMessage}>
+              Add your first client to start sending invoices.
+            </p>
+            <button className={styles.addFirstButton} onClick={() => setShowForm(true)}>
+              Add Your First Client
+            </button>
+          </div>
+        ) : (
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Contact</th>
+                <th>Service City</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              {clients.map((client) => (
+                <tr key={client.id}>
+                  <td>{client.name}</td>
+                  <td>
+                    {client.email}
+                    <br />
+                    <span className={styles.phone}>{client.phone}</span>
+                  </td>
+                  <td>{client.service_city || "-"}</td>
+                  <td>{new Date(client.created_at).toLocaleDateString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </main>
     </div>
   );
 }
-
