@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import styles from "./CreateInvoiceModal.module.css";
+import SearchableSelect from "@/components/common/SearchableSelect/SearchableSelect";
 
 const TAX_RATE = 0.06;
+const NEW_SERVICE_OPTION = "__new_service__";
 
 function generateInvoiceNumber() {
   const now = new Date();
@@ -32,7 +34,7 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }) {
   const [notes, setNotes] = useState("");
 
   const [lineItems, setLineItems] = useState([
-    { serviceId: "", name: "", quantity: "1", rate: "" },
+    { serviceId: "", name: "", description: "", quantity: "1", rate: "" },
   ]);
 
   // When modal opens, load user/clients/services + reset form
@@ -69,10 +71,10 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }) {
         setClients(clientsData || []);
       }
 
-      // Fetch services (owner-scoped via RLS)
+      // Fetch services (owner-scoped via RLS) INCLUDING description
       const { data: servicesData, error: servicesError } = await supabase
         .from("services")
-        .select("id, name, default_rate")
+        .select("id, name, default_rate, description")
         .order("name", { ascending: true });
 
       if (servicesError) {
@@ -82,20 +84,21 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }) {
       }
 
       // Default dates: today + 30 days
-    const today = new Date();
-    const in30 = new Date();
-    in30.setDate(today.getDate() + 30);
+      const today = new Date();
+      const in30 = new Date();
+      in30.setDate(today.getDate() + 30);
 
-    const formatDate = (d) => d.toISOString().slice(0, 10);
-    setIssueDate(formatDate(today));
-    setDueDate(formatDate(in30));
+      const formatDate = (d) => d.toISOString().slice(0, 10);
+      setIssueDate(formatDate(today));
+      setDueDate(formatDate(in30));
 
-    // Reset basic fields
-    setInvoiceNumber(generateInvoiceNumber());
-    setStatus("draft");
-    setNotes("");
-    setLineItems([{ serviceId: "", name: "", quantity: "1", rate: "" }]);
-
+      // Reset basic fields
+      setInvoiceNumber(generateInvoiceNumber());
+      setStatus("draft");
+      setNotes("");
+      setLineItems([
+        { serviceId: "", name: "", description: "", quantity: "1", rate: "" },
+      ]);
 
       setLoadingData(false);
     }
@@ -108,7 +111,7 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }) {
   const handleAddLineItem = () => {
     setLineItems((prev) => [
       ...prev,
-      { serviceId: "", name: "", quantity: "1", rate: "" },
+      { serviceId: "", name: "", description: "", quantity: "1", rate: "" },
     ]);
   };
 
@@ -124,8 +127,44 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }) {
     );
   };
 
-  const handleServiceSelect = (index, serviceId) => {
-    const selectedService = services.find((s) => s.id === serviceId) || null;
+  const handleServiceSelect = (index, selectedValue) => {
+    // 1) New custom service
+    if (selectedValue === NEW_SERVICE_OPTION) {
+      setLineItems((prev) =>
+        prev.map((item, i) =>
+          i === index
+            ? {
+                ...item,
+                serviceId: NEW_SERVICE_OPTION,
+                // keep existing name/description/rate as-is
+              }
+            : item
+        )
+      );
+      return;
+    }
+
+    // 2) Clear selection
+    if (!selectedValue) {
+      setLineItems((prev) =>
+        prev.map((item, i) =>
+          i === index
+            ? {
+                ...item,
+                serviceId: "",
+                name: "",
+                description: "",
+                rate: "",
+              }
+            : item
+        )
+      );
+      return;
+    }
+
+    // 3) Existing service selected
+    const selectedService =
+      services.find((s) => s.id === selectedValue) || null;
 
     setLineItems((prev) =>
       prev.map((item, i) => {
@@ -133,8 +172,10 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }) {
 
         return {
           ...item,
-          serviceId,
+          serviceId: selectedValue,
+          // Keep name in state for DB, but we display description in the UI
           name: selectedService ? selectedService.name : "",
+          description: selectedService?.description || "",
           rate:
             selectedService && selectedService.default_rate != null
               ? String(selectedService.default_rate)
@@ -182,9 +223,12 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }) {
       return;
     }
 
-    const validLineItems = lineItems.filter(
-      (item) => item.name.trim() !== "" && parseFloat(item.quantity || "0") > 0
-    );
+    const validLineItems = lineItems.filter((item) => {
+      const hasDesc = item.description && item.description.trim() !== "";
+      const hasName = item.name && item.name.trim() !== "";
+      const qtyOk = parseFloat(item.quantity || "0") > 0;
+      return (hasDesc || hasName) && qtyOk;
+    });
 
     if (validLineItems.length === 0) {
       alert("Please add at least one valid line item.");
@@ -220,16 +264,24 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }) {
         return;
       }
 
-      // 2) Insert line items
+      // 2) Insert line items (with description)
       const lineItemsPayload = validLineItems.map((item, index) => {
         const qty = parseFloat(item.quantity || "0");
         const rate = parseFloat(item.rate || "0");
         const lineTotal =
           !isNaN(qty) && !isNaN(rate) ? qty * rate : 0;
 
+        const rawName = (item.name || "").trim();
+        const rawDesc = (item.description || "").trim();
+
+        // If name is empty, fall back to description (or a generic label)
+        const finalName =
+          rawName || (rawDesc ? rawDesc.slice(0, 80) : "Line item");
+
         return {
           invoice_id: invoice.id,
-          name: item.name.trim(),
+          name: finalName,
+          description: rawDesc || null,
           quantity: qty,
           rate,
           line_total: lineTotal,
@@ -287,28 +339,24 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }) {
               {/* Top meta section */}
               <div className={styles.gridTwoCols}>
                 <div className={styles.field}>
-                    <label className={styles.label}>Invoice Number</label>
-                    <div className={styles.readonlyValue}>
-                        {invoiceNumber || "Generating..."}
-                    </div>
+                  <label className={styles.label}>Invoice Number</label>
+                  <div className={styles.readonlyValue}>
+                    {invoiceNumber || "Generating..."}
+                  </div>
                 </div>
 
                 <div className={styles.field}>
                   <label className={styles.label}>Client</label>
-                  <select
-                    className={styles.select}
+                  <SearchableSelect
                     value={clientId}
-                    onChange={(e) => setClientId(e.target.value)}
+                    onChange={(val) => setClientId(val)}
+                    options={clients.map((client) => ({
+                      value: client.id,
+                      label: client.name,
+                    }))}
+                    placeholder="Select a client"
                     disabled={saving}
-                    required
-                  >
-                    <option value="">Select a client</option>
-                    {clients.map((client) => (
-                      <option key={client.id} value={client.id}>
-                        {client.name}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
 
                 <div className={styles.field}>
@@ -368,46 +416,44 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }) {
                 <div className={styles.lineItemsTable}>
                   <div className={styles.lineItemsHeaderRow}>
                     <div className={styles.colService}>Service</div>
-                    <div className={styles.colName}>Name</div>
+                    <div className={styles.colName}>Description</div>
                     <div className={styles.colQty}>Qty</div>
                     <div className={styles.colRate}>Rate</div>
                     <div className={styles.colRemove}></div>
                   </div>
 
                   {lineItems.map((item, index) => (
-                    <div
-                      key={index}
-                      className={styles.lineItemRow}
-                    >
+                    <div key={index} className={styles.lineItemRow}>
                       {/* Service select */}
                       <div className={styles.colService}>
-                        <select
-                          className={styles.select}
-                          value={item.serviceId}
-                          onChange={(e) =>
-                            handleServiceSelect(index, e.target.value)
-                          }
+                        <SearchableSelect
+                          value={item.serviceId || ""}
+                          onChange={(val) => handleServiceSelect(index, val)}
+                          options={[
+                            {
+                              value: NEW_SERVICE_OPTION,
+                              label: "Custom Service",
+                            },
+                            ...services.map((s) => ({
+                              value: s.id,
+                              label: s.name,
+                            })),
+                          ]}
+                          placeholder="Select service"
                           disabled={saving}
-                        >
-                          <option value="">Select service</option>
-                          {services.map((s) => (
-                            <option key={s.id} value={s.id}>
-                              {s.name}
-                            </option>
-                          ))}
-                        </select>
+                        />
                       </div>
 
-                      {/* Name (editable, in case they want to tweak wording) */}
+                      {/* Description (shown on invoice) */}
                       <div className={styles.colName}>
                         <input
                           className={styles.input}
                           type="text"
-                          value={item.name}
+                          value={item.description}
                           onChange={(e) =>
                             handleLineItemFieldChange(
                               index,
-                              "name",
+                              "description",
                               e.target.value
                             )
                           }

@@ -168,3 +168,186 @@
   }
 }
 
+/* Card around the table */
+.tableCard {
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  padding: 1rem 1.25rem;
+  box-sizing: border-box;
+}
+
+/* Loading text inside table area */
+.tableLoading {
+  padding: 1.5rem 0;
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+/* Table base */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+/* Head row */
+.tableHeadRow {
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+}
+
+.th {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.thRight {
+  text-align: right;
+  padding: 0.5rem 0.75rem;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+/* Body rows */
+.tableRow {
+  border-bottom: 1px solid #f3f4f6;
+  cursor: pointer;
+}
+
+.tableRow:hover {
+  background-color: #f9fafb;
+}
+
+.td {
+  padding: 0.55rem 0.75rem;
+  color: #111827;
+}
+
+.tdAmount {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Status badge */
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.45rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  background-color: #ecfdf3; /* light greenish */
+  color: #166534; /* dark green */
+}
+
+/* Toolbar: search row (similar to clients page) */
+.toolbarRow {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.searchInput {
+  width: 100%;
+  max-width: 320px;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid #d1d5db;
+  font-size: 0.9rem;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px #2563eb33;
+}
+
+/* Table base (similar look to Clients table) */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+
+.th {
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  font-weight: 600;
+  color: #4b5563;
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.thRight {
+  text-align: right;
+  padding: 0.6rem 0.75rem;
+  font-weight: 600;
+  color: #4b5563;
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.tableRow {
+  border-bottom: 1px solid #f3f4f6;
+  cursor: pointer;
+}
+
+.tableRow:last-child {
+  border-bottom: none;
+}
+
+.tableRow:hover {
+  background-color: #f9fafb;
+}
+
+.td {
+  padding: 0.55rem 0.75rem;
+  color: #111827;
+}
+
+.tdAmount {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Loading + no results states under table area */
+.tableLoading {
+  padding: 1.5rem 0;
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.noResultsBox {
+  margin-top: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-radius: 0.75rem;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+}
+
+.noResultsText {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+/* Status pill */
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.45rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  background-color: #ecfdf3;
+  color: #166534;
+}

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import styles from "./AddClientForm.module.css";
-import ConfirmDialog from "../common/ConfirmDialog";
+import ConfirmDialog from "../common/ConfirmDialog/ConfirmDialog";
 
 export default function AddClientForm({
   ownerId,
