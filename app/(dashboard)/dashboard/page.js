@@ -1,9 +1,5 @@
 "use client";
 
-/*
-  Dashboard Home Page
-*/
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -11,7 +7,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/providers/AuthProvider";
 import DashboardNavbar from "@/components/Navbar/DashboardNavbar";
 
-import styles from "./dashboard.module.css";
+import styles from "./DashboardPage.module.css";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -19,23 +15,62 @@ export default function DashboardPage() {
 
   const [loading, setLoading] = useState(true);
 
+  // Metrics
   const [metricsLoading, setMetricsLoading] = useState(false);
   const [totalInvoicesCount, setTotalInvoicesCount] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
   const [pendingAmount, setPendingAmount] = useState(0);
   const [revenueAmount, setRevenueAmount] = useState(0);
+  const [paidCount, setPaidCount] = useState(0);
   const [overdueCount, setOverdueCount] = useState(0);
   const [overdueAmount, setOverdueAmount] = useState(0);
-  const [paidCount, setPaidCount] = useState(0);
 
+  // For "Get Started"
+  const [clientsCount, setClientsCount] = useState(0);
 
-  // Simple currency helper
+  // Recent activity
+  const [recentInvoices, setRecentInvoices] = useState([]);
+  const [recentLoading, setRecentLoading] = useState(false);
+
+  // Currency helper
   const formatCurrency = (value) => {
     const num = Number(value || 0);
     return `$${num.toFixed(2)}`;
   };
 
-  async function fetchMetrics(userId) {
+  // Date helper (handles YYYY-MM-DD from Supabase)
+  const formatDate = (value) => {
+    if (!value) return "—";
+
+    if (value instanceof Date) {
+      return value.toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    }
+
+    if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      const [year, month, day] = value.split("-").map((v) => parseInt(v, 10));
+      const d = new Date(year, month - 1, day);
+      return d.toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    }
+
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return value;
+
+    return d.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  async function fetchInvoiceMetrics(userId) {
     setMetricsLoading(true);
 
     const { data, error } = await supabase
@@ -52,13 +87,10 @@ export default function DashboardPage() {
     const invoices = data || [];
 
     let totalInvoices = 0;
-
     let pendingCountTmp = 0;
     let pendingAmountTmp = 0;
-
     let revenueAmountTmp = 0;
     let paidCountTmp = 0;
-
     let overdueCountTmp = 0;
     let overdueAmountTmp = 0;
 
@@ -91,14 +123,59 @@ export default function DashboardPage() {
     setPendingCount(pendingCountTmp);
     setPendingAmount(pendingAmountTmp);
     setRevenueAmount(revenueAmountTmp);
+    setPaidCount(paidCountTmp);
     setOverdueCount(overdueCountTmp);
     setOverdueAmount(overdueAmountTmp);
-    setPaidCount(paidCountTmp);
 
     setMetricsLoading(false);
   }
 
-  // Auth check + load metrics
+  async function fetchClientsCount(userId) {
+    const { count, error } = await supabase
+      .from("clients")
+      .select("id", { count: "exact", head: true })
+      .eq("owner_id", userId);
+
+    if (error) {
+      console.error("Error loading clients count:", error);
+      return;
+    }
+
+    setClientsCount(count || 0);
+  }
+
+  async function fetchRecentInvoices(userId) {
+    setRecentLoading(true);
+
+    const { data, error } = await supabase
+      .from("invoices")
+      .select(
+        `
+        id,
+        invoice_number,
+        issue_date,
+        status,
+        total,
+        clients:client_id ( name )
+      `
+      )
+      .eq("owner_id", userId)
+      .neq("status", "draft")
+      .order("issue_date", { ascending: false })
+      .limit(5);
+
+    if (error) {
+      console.error("Error loading recent invoices:", error);
+      setRecentInvoices([]);
+      setRecentLoading(false);
+      return;
+    }
+
+    setRecentInvoices(data || []);
+    setRecentLoading(false);
+  }
+
+  // Auth check + load metrics + client count + recent activity
   useEffect(() => {
     async function init() {
       const {
@@ -110,7 +187,12 @@ export default function DashboardPage() {
         return;
       }
 
-      await fetchMetrics(user.id);
+      await Promise.all([
+        fetchInvoiceMetrics(user.id),
+        fetchClientsCount(user.id),
+        fetchRecentInvoices(user.id),
+      ]);
+
       setLoading(false);
     }
 
@@ -126,6 +208,11 @@ export default function DashboardPage() {
   }
 
   const metricsLabelSuffix = metricsLoading ? "…" : "";
+
+  // Step completion logic
+  const profileDone = !!profile?.company_name;
+  const clientsDone = clientsCount > 0;
+  const invoicesDone = totalInvoicesCount > 0;
 
   return (
     <div className={styles.page}>
@@ -202,51 +289,122 @@ export default function DashboardPage() {
           <div className={styles.stepsGrid}>
             {/* Step 1: Profile */}
             <div className={styles.stepCard}>
-              <div className={styles.stepNumberActive}>1</div>
+              <div
+                className={
+                  profileDone
+                    ? styles.stepNumberCompleted
+                    : styles.stepNumberActive
+                }
+              >
+                1
+              </div>
               <h3 className={styles.stepTitle}>Set Up Your Profile</h3>
               <p className={styles.stepText}>
                 Add your business info, logo, and service regions.
               </p>
-              <Link href="/profile" className={styles.primaryLink}>
-                Complete profile
-              </Link>
+              {profileDone ? (
+                <span className={styles.stepCompletedLabel}>Completed</span>
+              ) : (
+                <Link href="/profile" className={styles.primaryLink}>
+                  Complete profile
+                </Link>
+              )}
             </div>
 
             {/* Step 2: Clients */}
             <div className={styles.stepCard}>
-              <div className={styles.stepNumberInactive}>2</div>
+              <div
+                className={
+                  clientsDone
+                    ? styles.stepNumberCompleted
+                    : styles.stepNumberInactive
+                }
+              >
+                2
+              </div>
               <h3 className={styles.stepTitle}>Add Your Clients</h3>
               <p className={styles.stepText}>
                 Import or add the customers you'll be invoicing.
               </p>
-              <Link href="/clients" className={styles.secondaryLink}>
-                Add clients
-              </Link>
+              {clientsDone ? (
+                <span className={styles.stepCompletedLabel}>Completed</span>
+              ) : (
+                <Link href="/clients" className={styles.secondaryLink}>
+                  Add clients
+                </Link>
+              )}
             </div>
 
             {/* Step 3: Invoice */}
             <div className={styles.stepCard}>
-              <div className={styles.stepNumberInactive}>3</div>
+              <div
+                className={
+                  invoicesDone
+                    ? styles.stepNumberCompleted
+                    : styles.stepNumberInactive
+                }
+              >
+                3
+              </div>
               <h3 className={styles.stepTitle}>Create Your First Invoice</h3>
               <p className={styles.stepText}>
                 Send a professional invoice and get paid faster.
               </p>
-              <Link href="/invoices" className={styles.secondaryLink}>
-                Create invoice
-              </Link>
+              {invoicesDone ? (
+                <span className={styles.stepCompletedLabel}>Completed</span>
+              ) : (
+                <Link href="/invoices" className={styles.secondaryLink}>
+                  Create invoice
+                </Link>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Recent Activity - still placeholder for now */}
+        {/* Recent Activity */}
         <div className={styles.recentCard}>
           <h2 className={styles.sectionTitle}>Recent Activity</h2>
-          <div className={styles.recentEmpty}>
-            <p className={styles.recentEmptyText}>No recent activity yet.</p>
-            <p className={styles.recentEmptySubText}>
-              Your invoices and payments will show up here.
-            </p>
-          </div>
+
+          {recentLoading ? (
+            <div className={styles.recentEmpty}>
+              <p className={styles.recentEmptyText}>Loading recent invoices…</p>
+            </div>
+          ) : recentInvoices.length === 0 ? (
+            <div className={styles.recentEmpty}>
+              <p className={styles.recentEmptyText}>
+                No recent activity yet.
+              </p>
+              <p className={styles.recentEmptySubText}>
+                Your invoices and payments will show up here.
+              </p>
+            </div>
+          ) : (
+            <div className={styles.recentList}>
+              {recentInvoices.map((inv) => (
+                <div key={inv.id} className={styles.recentRow}>
+                  <div className={styles.recentMain}>
+                    <div className={styles.recentTitle}>
+                      {inv.invoice_number || "Untitled invoice"}
+                    </div>
+                    <div className={styles.recentClient}>
+                      {inv.clients?.name || "Unknown client"}
+                    </div>
+                  </div>
+                  <div className={styles.recentMeta}>
+                    <span className={styles.recentStatusBadge}>
+                      {inv.status || "draft"}
+                    </span>
+                    <span className={styles.recentDate}>
+                      {formatDate(inv.issue_date)}
+                    </span>
+                    <span className={styles.recentAmount}>
+                      {formatCurrency(inv.total)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
     </div>
