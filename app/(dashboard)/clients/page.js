@@ -72,7 +72,7 @@ export default function ClientsPage() {
             <p className={styles.subtitle}>Manage your customers</p>
           </div>
 
-          {hasClients && (
+          {hasClients && !showForm && (
             <button 
               className={styles.addButton}
               onClick={() => {
