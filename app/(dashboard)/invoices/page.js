@@ -6,7 +6,6 @@
   This page will list all invoices and allow users to create new ones.
   For now, it's a placeholder showing an empty state with a CTA
   to create the first invoice.
-
 */
 
 import { useEffect, useState } from "react";
@@ -15,6 +14,7 @@ import { supabase } from "@/lib/supabaseClient";
 
 import DashboardNavbar from "@/components/Navbar/DashboardNavbar";
 import AddServiceModal from "@/components/Services/AddServiceModal";
+import CreateInvoiceModal from "@/components/Invoices/CreateInvoiceModal";
 
 import styles from "./invoicesPage.module.css";
 
@@ -22,6 +22,7 @@ export default function InvoicesPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [isAddServiceOpen, setIsAddServiceOpen] = useState(false);
+  const [isCreateInvoiceOpen, setIsCreateInvoiceOpen] = useState(false);
 
   // Protect this route - only logged in users can access
   useEffect(() => {
@@ -64,7 +65,7 @@ export default function InvoicesPage() {
           <div className={styles.headerActions}>
             <button
               className={styles.primaryButton}
-              onClick={() => alert("Invoice creation coming soon!")}
+              onClick={() => setIsCreateInvoiceOpen(true)}
             >
               Create Invoice
             </button>
@@ -88,7 +89,7 @@ export default function InvoicesPage() {
 
           <button
             className={styles.primaryButton}
-            onClick={() => alert("Invoice creation coming soon!")}
+            onClick={() => setIsCreateInvoiceOpen(true)}
           >
             Create Your First Invoice
           </button>
@@ -99,6 +100,13 @@ export default function InvoicesPage() {
       <AddServiceModal
         open={isAddServiceOpen}
         onClose={() => setIsAddServiceOpen(false)}
+      />
+
+      {/* Create Invoice modal */}
+      <CreateInvoiceModal
+        open={isCreateInvoiceOpen}
+        onClose={() => setIsCreateInvoiceOpen(false)}
+        // onCreated={(invoice) => { /* later: refresh invoices list here */ }}
       />
     </div>
   );
