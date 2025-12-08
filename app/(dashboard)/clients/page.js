@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import DashboardNavbar from "@/components/Navbar/DashboardNavbar";
-import { FiEdit } from "react-icons/fi";
-
 import AddClientForm from "@/components/clients/AddClientForm";
+import { FiEdit2 } from "react-icons/fi";
 import styles from "./ClientsPage.module.css";
 
 export default function ClientsPage() {
@@ -17,6 +16,13 @@ export default function ClientsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
 
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortField, setSortField] = useState("created_at"); // "name" | "contact" | "service_city" | "created_at"
+  const [sortDirection, setSortDirection] = useState("desc"); // "asc" | "desc"
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+
+  // Auth check
   useEffect(() => {
     async function checkAuth() {
       const { data } = await supabase.auth.getUser();
@@ -30,26 +36,152 @@ export default function ClientsPage() {
     checkAuth();
   }, [router]);
 
+  // Fetch clients
   useEffect(() => {
     if (!userId) return;
 
     async function fetchClients() {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("clients")
         .select("*")
         .eq("owner_id", userId)
         .order("created_at", { ascending: false });
 
-      setClients(data || []);
+      if (!error && data) {
+        setClients(data);
+      } else {
+        console.error("Error loading clients:", error);
+      }
     }
 
     fetchClients();
   }, [userId]);
 
+  // Reset page when search or sort changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, sortField, sortDirection]);
+
   function handleClientCreated(newClient) {
     setClients((prev) => [newClient, ...prev]);
     setShowForm(false);
+    setEditingClient(null);
+    setCurrentPage(1);
   }
+
+  function handleClientUpdated(updatedClient) {
+    setClients((prev) =>
+      prev.map((c) => (c.id === updatedClient.id ? updatedClient : c))
+    );
+    setShowForm(false);
+    setEditingClient(null);
+  }
+
+  function handleClientDeleted(deletedId) {
+    setClients((prev) => prev.filter((c) => c.id !== deletedId));
+    setShowForm(false);
+    setEditingClient(null);
+  }
+
+  function handleSort(field) {
+    if (sortField === field) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      // default directions
+      setSortDirection(field === "created_at" ? "desc" : "asc");
+    }
+  }
+
+  function renderSortIcon(field) {
+    if (sortField !== field) {
+      return <span className={styles.sortIcon}>↕</span>;
+    }
+    return (
+      <span className={`${styles.sortIcon} ${styles.sortIconActive}`}>
+        {sortDirection === "asc" ? "▲" : "▼"}
+      </span>
+    );
+  }
+
+  const processed = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+
+    // 1) Filter
+    let filtered = clients;
+    if (term) {
+      filtered = clients.filter((c) => {
+        const values = [
+          c.name,
+          c.email,
+          c.phone,
+          c.service_address_line1,
+          c.service_address_line2,
+          c.service_city,
+          c.service_state,
+          c.service_postal_code,
+          c.billing_address_line1,
+          c.billing_address_line2,
+          c.billing_city,
+          c.billing_state,
+          c.billing_postal_code,
+        ];
+        return values.some(
+          (v) => v && String(v).toLowerCase().includes(term)
+        );
+      });
+    }
+
+    // 2) Sort
+    const sorted = [...filtered].sort((a, b) => {
+      const dir = sortDirection === "asc" ? 1 : -1;
+
+      const stringCompare = (x, y) =>
+        String(x || "").localeCompare(String(y || ""), undefined, {
+          sensitivity: "base",
+        }) * dir;
+
+      if (sortField === "name") {
+        return stringCompare(a.name, b.name);
+      }
+
+      if (sortField === "contact") {
+        const aContact = a.email || a.phone || "";
+        const bContact = b.email || b.phone || "";
+        return stringCompare(aContact, bContact);
+      }
+
+      if (sortField === "service_city") {
+        return stringCompare(a.service_city, b.service_city);
+      }
+
+      if (sortField === "created_at") {
+        const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return (aTime - bTime) * dir;
+      }
+
+      return 0;
+    });
+
+    // 3) Pagination
+    const totalItems = sorted.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+    const page = Math.min(currentPage, totalPages);
+    const startIndex = (page - 1) * pageSize;
+    const pageItems = sorted.slice(startIndex, startIndex + pageSize);
+
+    return {
+      filteredCount: filtered.length,
+      totalItems,
+      totalPages,
+      page,
+      startIndex,
+      pageItems,
+    };
+  }, [clients, searchTerm, sortField, sortDirection, currentPage]);
+
+  const hasClients = clients.length > 0;
 
   if (loading) {
     return (
@@ -59,13 +191,12 @@ export default function ClientsPage() {
     );
   }
 
-  const hasClients = clients.length > 0;
-
   return (
     <div className={styles.pageWrapper}>
       <DashboardNavbar />
 
       <main className={styles.main}>
+        {/* Header */}
         <div className={styles.headerRow}>
           <div>
             <h1 className={styles.title}>Clients</h1>
@@ -73,17 +204,19 @@ export default function ClientsPage() {
           </div>
 
           {hasClients && !showForm && (
-            <button 
+            <button
               className={styles.addButton}
               onClick={() => {
                 setEditingClient(null);
                 setShowForm(true);
-              }}>
-                Add Client
+              }}
+            >
+              Add Client
             </button>
           )}
         </div>
 
+        {/* Form (create or edit) */}
         {showForm && (
           <div className={styles.formWrapper}>
             <AddClientForm
@@ -91,18 +224,8 @@ export default function ClientsPage() {
               mode={editingClient ? "edit" : "create"}
               client={editingClient}
               onCreated={handleClientCreated}
-              onUpdated={(updatedClient) => {
-                setClients((prev) =>
-                  prev.map((c) => (c.id === updatedClient.id ? updatedClient : c))
-                );
-                setShowForm(false);
-                setEditingClient(null);
-              }}
-              onDeleted={(deletedId) => {
-                setClients((prev) => prev.filter((c) => c.id !== deletedId));
-                setShowForm(false);
-                setEditingClient(null);
-              }}
+              onUpdated={handleClientUpdated}
+              onDeleted={handleClientDeleted}
               onCancel={() => {
                 setShowForm(false);
                 setEditingClient(null);
@@ -111,60 +234,181 @@ export default function ClientsPage() {
           </div>
         )}
 
+        {/* Content */}
         {!hasClients ? (
+          // Empty state
           <div className={styles.emptyState}>
-            <h2 className={styles.emptyTitle}>No Clients Yet</h2>
+            <div className={styles.emptyTitle}>No Clients Yet</div>
             <p className={styles.emptyMessage}>
               Add your first client to start sending invoices.
             </p>
-            <button 
-              className={styles.addFirstButton} 
-              onClick={() => {
-                setEditingClient(null);
-                setShowForm(true);
-              }}> 
-              Add Your First Client
-            </button>
+            {!showForm && (
+              <button
+                className={styles.addFirstButton}
+                onClick={() => {
+                  setEditingClient(null);
+                  setShowForm(true);
+                }}
+              >
+                Add Your First Client
+              </button>
+            )}
           </div>
         ) : (
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Contact</th>
-                <th>Service City</th>
-                <th>Created</th>
-                <th className={styles.actionsHeader}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {clients.map((client) => (
-                <tr key={client.id}>
-                  <td>{client.name}</td>
-                  <td>
-                    {client.email}
-                    <br />
-                    <span className={styles.phone}>{client.phone}</span>
-                  </td>
-                  <td>{client.service_city || "-"}</td>
-                  <td>{new Date(client.created_at).toLocaleDateString()}</td>
-                  <td className={styles.actionsCell}>
+          <>
+            {/* Toolbar: search */}
+            <div className={styles.toolbarRow}>
+              <input
+                type="text"
+                className={styles.searchInput}
+                placeholder="Search clients (name, email, address...)"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+
+            {processed.totalItems === 0 ? (
+              <div className={styles.noResultsBox}>
+                <p className={styles.noResultsText}>
+                  No clients match your search.
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Table */}
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th
+                        className={styles.sortableHeader}
+                        onClick={() => handleSort("name")}
+                      >
+                        <div className={styles.headerInner}>
+                          <span>Name</span>
+                          {renderSortIcon("name")}
+                        </div>
+                      </th>
+                      <th
+                        className={styles.sortableHeader}
+                        onClick={() => handleSort("contact")}
+                      >
+                        <div className={styles.headerInner}>
+                          <span>Contact</span>
+                          {renderSortIcon("contact")}
+                        </div>
+                      </th>
+                      <th
+                        className={styles.sortableHeader}
+                        onClick={() => handleSort("service_city")}
+                      >
+                        <div className={styles.headerInner}>
+                          <span>Service City</span>
+                          {renderSortIcon("service_city")}
+                        </div>
+                      </th>
+                      <th
+                        className={styles.sortableHeader}
+                        onClick={() => handleSort("created_at")}
+                      >
+                        <div className={styles.headerInner}>
+                          <span>Created</span>
+                          {renderSortIcon("created_at")}
+                        </div>
+                      </th>
+                      <th className={styles.actionsHeader}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {processed.pageItems.map((client) => (
+                      <tr key={client.id}>
+                        <td>{client.name}</td>
+                        <td>
+                          {client.email}
+                          <br />
+                          <span className={styles.phone}>{client.phone}</span>
+                        </td>
+                        <td>{client.service_city || "-"}</td>
+                        <td>
+                          {client.created_at
+                            ? new Date(
+                                client.created_at
+                              ).toLocaleDateString()
+                            : "-"}
+                        </td>
+                        <td className={styles.actionsCell}>
+                          <button
+                            className={styles.iconButton}
+                            onClick={() => {
+                              setEditingClient(client);
+                              setShowForm(true);
+                            }}
+                            aria-label={`Edit ${client.name}`}
+                          >
+                            <FiEdit2 className={styles.icon} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                {/* Pagination */}
+                <div className={styles.paginationRow}>
+                  <div className={styles.pageInfo}>
+                    {processed.totalItems > 0 && (
+                      <>
+                        Showing{" "}
+                        {processed.startIndex + 1}–
+                        {Math.min(
+                          processed.startIndex + pageSize,
+                          processed.totalItems
+                        )}{" "}
+                        of {processed.totalItems} clients
+                      </>
+                    )}
+                  </div>
+                  <div className={styles.pageControls}>
                     <button
-                      className={styles.iconButton}
-                      onClick={() => {
-                        setEditingClient(client);
-                        setShowForm(true);
-                      }}
-                      aria-label={`Edit ${client.name}`}
+                      className={styles.pageButton}
+                      disabled={processed.page === 1}
+                      onClick={() =>
+                        setCurrentPage((p) => Math.max(1, p - 1))
+                      }
                     >
-                      {/* Pencil icon SVG */}
-                      <FiEdit className={styles.icon}/> 
+                      Previous
                     </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    {Array.from(
+                      { length: processed.totalPages },
+                      (_, idx) => idx + 1
+                    ).map((page) => (
+                      <button
+                        key={page}
+                        className={
+                          page === processed.page
+                            ? styles.pageButtonActive
+                            : styles.pageButton
+                        }
+                        onClick={() => setCurrentPage(page)}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                    <button
+                      className={styles.pageButton}
+                      disabled={processed.page === processed.totalPages}
+                      onClick={() =>
+                        setCurrentPage((p) =>
+                          Math.min(processed.totalPages, p + 1)
+                        )
+                      }
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </>
         )}
       </main>
     </div>
