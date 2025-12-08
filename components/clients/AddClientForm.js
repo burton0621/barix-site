@@ -4,30 +4,136 @@ import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import styles from "./AddClientForm.module.css";
 
-export default function AddClientForm({ ownerId, onCreated, onCancel }) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+function ConfirmDialog({
+  title,
+  message,
+  confirmLabel,
+  confirmType = "primary",
+  onConfirm,
+  onCancel,
+}) {
+  return (
+    <div className={styles.confirmOverlay}>
+      <div className={styles.confirmBox}>
+        <h4 className={styles.confirmTitle}>{title}</h4>
+        <p className={styles.confirmMessage}>{message}</p>
+        <div className={styles.confirmButtons}>
+          <button
+            type="button"
+            className={styles.cancelButton}
+            onClick={onCancel}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className={
+              confirmType === "danger" ? styles.dangerButton : styles.saveButton
+            }
+            onClick={onConfirm}
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
-  /* --- Service Address --- */
-  const [serviceLine1, setServiceLine1] = useState("");
-  const [serviceLine2, setServiceLine2] = useState("");
-  const [serviceCity, setServiceCity] = useState("");
-  const [serviceState, setServiceState] = useState("");
-  const [serviceZip, setServiceZip] = useState("");
+export default function AddClientForm({
+  ownerId,
+  mode = "create",
+  client = null,
+  onCreated,
+  onUpdated,
+  onDeleted,
+  onCancel,
+}) {
+  const isEdit = mode === "edit";
+  const initial = client || {};
 
-  /* --- Billing Address --- */
-  const [sameAsService, setSameAsService] = useState(true);
-  const [billingLine1, setBillingLine1] = useState("");
-  const [billingLine2, setBillingLine2] = useState("");
-  const [billingCity, setBillingCity] = useState("");
-  const [billingState, setBillingState] = useState("");
-  const [billingZip, setBillingZip] = useState("");
+  // Basic info
+  const [name, setName] = useState(initial.name || "");
+  const [email, setEmail] = useState(initial.email || "");
+  const [phone, setPhone] = useState(initial.phone || "");
+
+  // Service address
+  const [serviceLine1, setServiceLine1] = useState(
+    initial.service_address_line1 || ""
+  );
+  const [serviceLine2, setServiceLine2] = useState(
+    initial.service_address_line2 || ""
+  );
+  const [serviceCity, setServiceCity] = useState(initial.service_city || "");
+  const [serviceState, setServiceState] = useState(initial.service_state || "");
+  const [serviceZip, setServiceZip] = useState(
+    initial.service_postal_code || ""
+  );
+
+  // Billing address
+  const [sameAsService, setSameAsService] = useState(
+    initial.billing_same_as_service ?? true
+  );
+  const [billingLine1, setBillingLine1] = useState(
+    initial.billing_address_line1 || ""
+  );
+  const [billingLine2, setBillingLine2] = useState(
+    initial.billing_address_line2 || ""
+  );
+  const [billingCity, setBillingCity] = useState(initial.billing_city || "");
+  const [billingState, setBillingState] = useState(
+    initial.billing_state || ""
+  );
+  const [billingZip, setBillingZip] = useState(
+    initial.billing_postal_code || ""
+  );
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [confirmAction, setConfirmAction] = useState(null); // 'update' | 'delete' | null
 
-  async function handleSubmit(e) {
+  // For dirty check (only matters in edit mode)
+  const originalPayload = isEdit
+    ? {
+        name: initial.name || "",
+        email: initial.email || "",
+        phone: initial.phone || "",
+        serviceLine1: initial.service_address_line1 || "",
+        serviceLine2: initial.service_address_line2 || "",
+        serviceCity: initial.service_city || "",
+        serviceState: initial.service_state || "",
+        serviceZip: initial.service_postal_code || "",
+        sameAsService: initial.billing_same_as_service ?? true,
+        billingLine1: initial.billing_address_line1 || "",
+        billingLine2: initial.billing_address_line2 || "",
+        billingCity: initial.billing_city || "",
+        billingState: initial.billing_state || "",
+        billingZip: initial.billing_postal_code || "",
+      }
+    : null;
+
+  const currentPayload = {
+    name,
+    email,
+    phone,
+    serviceLine1,
+    serviceLine2,
+    serviceCity,
+    serviceState,
+    serviceZip,
+    sameAsService,
+    billingLine1,
+    billingLine2,
+    billingCity,
+    billingState,
+    billingZip,
+  };
+
+  const isDirty =
+    !isEdit ||
+    JSON.stringify(originalPayload) !== JSON.stringify(currentPayload);
+
+  async function handleCreate(e) {
     e.preventDefault();
     setErrorMsg("");
 
@@ -46,34 +152,40 @@ export default function AddClientForm({ ownerId, onCreated, onCancel }) {
       name: name.trim() || null,
       email: email.trim() || null,
       phone: phone.trim() || null,
-
-      // SERVICE ADDRESS
+      // Service
       service_address_line1: serviceLine1.trim() || null,
       service_address_line2: serviceLine2.trim() || null,
       service_city: serviceCity.trim() || null,
       service_state: serviceState.trim() || null,
       service_postal_code: serviceZip.trim() || null,
-      service_country: "US", // defaulted
-
-      // BILLING ADDRESS
+      service_country: "US",
+      // Billing
       billing_same_as_service: sameAsService,
-      billing_address_line1: (sameAsService ? serviceLine1 : billingLine1).trim() || null,
-      billing_address_line2: (sameAsService ? serviceLine2 : billingLine2).trim() || null,
-      billing_city: (sameAsService ? serviceCity : billingCity).trim() || null,
-      billing_state: (sameAsService ? serviceState : billingState).trim() || null,
-      billing_postal_code: (sameAsService ? serviceZip : billingZip).trim() || null,
-      billing_country: "US", // defaulted
+      billing_address_line1: (sameAsService ? serviceLine1 : billingLine1)
+        .trim()
+        .slice(0) || null,
+      billing_address_line2: (sameAsService ? serviceLine2 : billingLine2)
+        .trim()
+        .slice(0) || null,
+      billing_city: (sameAsService ? serviceCity : billingCity)
+        .trim()
+        .slice(0) || null,
+      billing_state: (sameAsService ? serviceState : billingState)
+        .trim()
+        .slice(0) || null,
+      billing_postal_code: (sameAsService ? serviceZip : billingZip)
+        .trim()
+        .slice(0) || null,
+      billing_country: "US",
     };
 
     try {
       setSubmitting(true);
-
       const { data, error } = await supabase
         .from("clients")
         .insert(payload)
         .select()
         .single();
-
       setSubmitting(false);
 
       if (error) {
@@ -85,22 +197,6 @@ export default function AddClientForm({ ownerId, onCreated, onCancel }) {
       if (onCreated && data) {
         onCreated(data);
       }
-
-      // reset form but keep modal open (you can change this if you want)
-      setName("");
-      setEmail("");
-      setPhone("");
-      setServiceLine1("");
-      setServiceLine2("");
-      setServiceCity("");
-      setServiceState("");
-      setServiceZip("");
-      setBillingLine1("");
-      setBillingLine2("");
-      setBillingCity("");
-      setBillingState("");
-      setBillingZip("");
-      setSameAsService(true);
     } catch (err) {
       console.error("Unexpected error:", err);
       setSubmitting(false);
@@ -108,13 +204,111 @@ export default function AddClientForm({ ownerId, onCreated, onCancel }) {
     }
   }
 
-    return (
-    <form className={styles.form} onSubmit={handleSubmit}>
-      <h2 className={styles.formTitle}>Add Client</h2>
+  async function handleUpdateConfirm() {
+    if (!client || !isEdit) return;
+    setErrorMsg("");
+
+    const payload = {
+      name: name.trim() || null,
+      email: email.trim() || null,
+      phone: phone.trim() || null,
+      // Service
+      service_address_line1: serviceLine1.trim() || null,
+      service_address_line2: serviceLine2.trim() || null,
+      service_city: serviceCity.trim() || null,
+      service_state: serviceState.trim() || null,
+      service_postal_code: serviceZip.trim() || null,
+      service_country: "US",
+      // Billing
+      billing_same_as_service: sameAsService,
+      billing_address_line1: (sameAsService ? serviceLine1 : billingLine1)
+        .trim()
+        .slice(0) || null,
+      billing_address_line2: (sameAsService ? serviceLine2 : billingLine2)
+        .trim()
+        .slice(0) || null,
+      billing_city: (sameAsService ? serviceCity : billingCity)
+        .trim()
+        .slice(0) || null,
+      billing_state: (sameAsService ? serviceState : billingState)
+        .trim()
+        .slice(0) || null,
+      billing_postal_code: (sameAsService ? serviceZip : billingZip)
+        .trim()
+        .slice(0) || null,
+      billing_country: "US",
+    };
+
+    try {
+      setSubmitting(true);
+      const { data, error } = await supabase
+        .from("clients")
+        .update(payload)
+        .eq("id", client.id)
+        .select()
+        .single();
+      setSubmitting(false);
+
+      if (error) {
+        console.error("Update error:", error);
+        setErrorMsg(
+          error.message || "Something went wrong updating the client."
+        );
+        return;
+      }
+
+      if (onUpdated && data) {
+        onUpdated(data);
+      }
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      setSubmitting(false);
+      setErrorMsg("Unexpected error while updating client.");
+    }
+  }
+
+  async function handleDeleteConfirm() {
+    if (!client || !isEdit) return;
+    setErrorMsg("");
+
+    try {
+      setSubmitting(true);
+      const { error } = await supabase
+        .from("clients")
+        .delete()
+        .eq("id", client.id);
+      setSubmitting(false);
+
+      if (error) {
+        console.error("Delete error:", error);
+        setErrorMsg(
+          error.message || "Something went wrong deleting the client."
+        );
+        return;
+      }
+
+      if (onDeleted) {
+        onDeleted(client.id);
+      }
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      setSubmitting(false);
+      setErrorMsg("Unexpected error while deleting client.");
+    }
+  }
+
+  return (
+    <form
+      className={styles.form}
+      onSubmit={isEdit ? (e) => e.preventDefault() : handleCreate}
+    >
+      <h2 className={styles.formTitle}>
+        {isEdit ? "Edit Client" : "Add Client"}
+      </h2>
 
       {errorMsg && <div className={styles.errorBox}>{errorMsg}</div>}
 
-      {/* ---- BASIC INFO ROW ---- */}
+      {/* Basic info row: Name / Email / Phone */}
       <div className={styles.row}>
         <div className={styles.colWide}>
           <label className={styles.label}>Name</label>
@@ -145,7 +339,7 @@ export default function AddClientForm({ ownerId, onCreated, onCancel }) {
         </div>
       </div>
 
-      {/* ---- SERVICE ADDRESS ---- */}
+      {/* Service Address */}
       <h3 className={styles.sectionTitle}>Service Address</h3>
 
       <label className={styles.label}>Address Line 1</label>
@@ -162,7 +356,6 @@ export default function AddClientForm({ ownerId, onCreated, onCancel }) {
         onChange={(e) => setServiceLine2(e.target.value)}
       />
 
-      {/* City / State / ZIP Row */}
       <div className={styles.row}>
         <div className={styles.colCity}>
           <label className={styles.label}>City</label>
@@ -172,7 +365,6 @@ export default function AddClientForm({ ownerId, onCreated, onCancel }) {
             onChange={(e) => setServiceCity(e.target.value)}
           />
         </div>
-
         <div className={styles.colState}>
           <label className={styles.label}>State</label>
           <input
@@ -181,7 +373,6 @@ export default function AddClientForm({ ownerId, onCreated, onCancel }) {
             onChange={(e) => setServiceState(e.target.value)}
           />
         </div>
-
         <div className={styles.colZip}>
           <label className={styles.label}>ZIP</label>
           <input
@@ -192,7 +383,7 @@ export default function AddClientForm({ ownerId, onCreated, onCancel }) {
         </div>
       </div>
 
-      {/* ---- BILLING ADDRESS ---- */}
+      {/* Billing Address */}
       <h3 className={styles.sectionTitle}>Billing Address</h3>
 
       <div className={styles.checkboxRow}>
@@ -229,7 +420,6 @@ export default function AddClientForm({ ownerId, onCreated, onCancel }) {
                 onChange={(e) => setBillingCity(e.target.value)}
               />
             </div>
-
             <div className={styles.colState}>
               <label className={styles.label}>State</label>
               <input
@@ -238,7 +428,6 @@ export default function AddClientForm({ ownerId, onCreated, onCancel }) {
                 onChange={(e) => setBillingState(e.target.value)}
               />
             </div>
-
             <div className={styles.colZip}>
               <label className={styles.label}>ZIP</label>
               <input
@@ -251,7 +440,7 @@ export default function AddClientForm({ ownerId, onCreated, onCancel }) {
         </>
       )}
 
-      {/* ---- BUTTONS ---- */}
+      {/* Buttons */}
       <div className={styles.buttonRow}>
         <button
           type="button"
@@ -262,14 +451,65 @@ export default function AddClientForm({ ownerId, onCreated, onCancel }) {
           Cancel
         </button>
 
-        <button
-          type="submit"
-          className={styles.saveButton}
-          disabled={submitting}
-        >
-          {submitting ? "Saving..." : "Save Client"}
-        </button>
+        {isEdit && (
+          <button
+            type="button"
+            className={styles.dangerButton}
+            onClick={() => setConfirmAction("delete")}
+            disabled={submitting}
+          >
+            Delete Client
+          </button>
+        )}
+
+        {isEdit ? (
+          <button
+            type="button"
+            className={styles.saveButton}
+            onClick={() => setConfirmAction("update")}
+            disabled={submitting || !isDirty}
+          >
+            {submitting ? "Saving..." : "Update"}
+          </button>
+        ) : (
+          <button
+            type="submit"
+            className={styles.saveButton}
+            disabled={submitting}
+          >
+            {submitting ? "Saving..." : "Save Client"}
+          </button>
+        )}
       </div>
+
+      {/* Confirm dialogs */}
+      {confirmAction === "update" && (
+        <ConfirmDialog
+          title="Confirm Update"
+          message="Are you sure you want to update this client's information?"
+          confirmLabel="Yes, Update"
+          confirmType="primary"
+          onConfirm={() => {
+            setConfirmAction(null);
+            handleUpdateConfirm();
+          }}
+          onCancel={() => setConfirmAction(null)}
+        />
+      )}
+
+      {confirmAction === "delete" && (
+        <ConfirmDialog
+          title="Delete Client"
+          message="Are you sure you want to delete this client? This action cannot be undone."
+          confirmLabel="Yes, Delete"
+          confirmType="danger"
+          onConfirm={() => {
+            setConfirmAction(null);
+            handleDeleteConfirm();
+          }}
+          onCancel={() => setConfirmAction(null)}
+        />
+      )}
     </form>
   );
 }

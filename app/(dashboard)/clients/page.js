@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import DashboardNavbar from "@/components/Navbar/DashboardNavbar";
+import { FiEdit } from "react-icons/fi";
 
 import AddClientForm from "@/components/clients/AddClientForm";
 import styles from "./ClientsPage.module.css";
@@ -14,6 +15,7 @@ export default function ClientsPage() {
   const [userId, setUserId] = useState(null);
   const [clients, setClients] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [editingClient, setEditingClient] = useState(null);
 
   useEffect(() => {
     async function checkAuth() {
@@ -71,8 +73,13 @@ export default function ClientsPage() {
           </div>
 
           {hasClients && (
-            <button className={styles.addButton} onClick={() => setShowForm(true)}>
-              Add Client
+            <button 
+              className={styles.addButton}
+              onClick={() => {
+                setEditingClient(null);
+                setShowForm(true);
+              }}>
+                Add Client
             </button>
           )}
         </div>
@@ -81,8 +88,25 @@ export default function ClientsPage() {
           <div className={styles.formWrapper}>
             <AddClientForm
               ownerId={userId}
+              mode={editingClient ? "edit" : "create"}
+              client={editingClient}
               onCreated={handleClientCreated}
-              onCancel={() => setShowForm(false)}
+              onUpdated={(updatedClient) => {
+                setClients((prev) =>
+                  prev.map((c) => (c.id === updatedClient.id ? updatedClient : c))
+                );
+                setShowForm(false);
+                setEditingClient(null);
+              }}
+              onDeleted={(deletedId) => {
+                setClients((prev) => prev.filter((c) => c.id !== deletedId));
+                setShowForm(false);
+                setEditingClient(null);
+              }}
+              onCancel={() => {
+                setShowForm(false);
+                setEditingClient(null);
+              }}
             />
           </div>
         )}
@@ -93,7 +117,12 @@ export default function ClientsPage() {
             <p className={styles.emptyMessage}>
               Add your first client to start sending invoices.
             </p>
-            <button className={styles.addFirstButton} onClick={() => setShowForm(true)}>
+            <button 
+              className={styles.addFirstButton} 
+              onClick={() => {
+                setEditingClient(null);
+                setShowForm(true);
+              }}> 
               Add Your First Client
             </button>
           </div>
@@ -105,6 +134,7 @@ export default function ClientsPage() {
                 <th>Contact</th>
                 <th>Service City</th>
                 <th>Created</th>
+                <th className={styles.actionsHeader}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -118,6 +148,19 @@ export default function ClientsPage() {
                   </td>
                   <td>{client.service_city || "-"}</td>
                   <td>{new Date(client.created_at).toLocaleDateString()}</td>
+                  <td className={styles.actionsCell}>
+                    <button
+                      className={styles.iconButton}
+                      onClick={() => {
+                        setEditingClient(client);
+                        setShowForm(true);
+                      }}
+                      aria-label={`Edit ${client.name}`}
+                    >
+                      {/* Pencil icon SVG */}
+                      <FiEdit className={styles.icon}/> 
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

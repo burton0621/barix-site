@@ -139,3 +139,55 @@
   gap: 12px;
   width: 100%;
 }
+
+.dangerButton {
+  padding: 8px 16px;
+  background: #dc2626;
+  color: white;
+  font-weight: 600;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.dangerButton:hover {
+  background: #b91c1c;
+}
+
+/* Confirm Dialog Overlay */
+.confirmOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.confirmBox {
+  background: white;
+  border-radius: 12px;
+  padding: 20px 22px;
+  width: 320px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.2);
+}
+
+.confirmTitle {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.confirmMessage {
+  font-size: 14px;
+  color: #4b5563;
+  margin-bottom: 16px;
+}
+
+.confirmButtons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}

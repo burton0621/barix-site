@@ -123,3 +123,29 @@
   color: #6b7280;
   margin-top: 2px;
 }
+
+.actionsHeader {
+  width: 60px;
+  text-align: center;
+}
+
+.actionsCell {
+  text-align: center;
+}
+
+.iconButton {
+  background: transparent;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: #6b7280;
+}
+
+.iconButton:hover {
+  color: #111827;
+}
+
+.icon {
+  width: 18px;
+  height: 18px;
+}
