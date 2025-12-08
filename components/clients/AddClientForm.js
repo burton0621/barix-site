@@ -3,42 +3,7 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import styles from "./AddClientForm.module.css";
-
-function ConfirmDialog({
-  title,
-  message,
-  confirmLabel,
-  confirmType = "primary",
-  onConfirm,
-  onCancel,
-}) {
-  return (
-    <div className={styles.confirmOverlay}>
-      <div className={styles.confirmBox}>
-        <h4 className={styles.confirmTitle}>{title}</h4>
-        <p className={styles.confirmMessage}>{message}</p>
-        <div className={styles.confirmButtons}>
-          <button
-            type="button"
-            className={styles.cancelButton}
-            onClick={onCancel}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            className={
-              confirmType === "danger" ? styles.dangerButton : styles.saveButton
-            }
-            onClick={onConfirm}
-          >
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+import ConfirmDialog from "../common/ConfirmDialog";
 
 export default function AddClientForm({
   ownerId,
@@ -485,6 +450,7 @@ export default function AddClientForm({
       {/* Confirm dialogs */}
       {confirmAction === "update" && (
         <ConfirmDialog
+          open={true}
           title="Confirm Update"
           message="Are you sure you want to update this client's information?"
           confirmLabel="Yes, Update"
@@ -499,6 +465,7 @@ export default function AddClientForm({
 
       {confirmAction === "delete" && (
         <ConfirmDialog
+          open={true}
           title="Delete Client"
           message="Are you sure you want to delete this client? This action cannot be undone."
           confirmLabel="Yes, Delete"
