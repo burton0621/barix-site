@@ -215,7 +215,7 @@ export default function DashboardPage() {
               Total Invoices{metricsLabelSuffix}
             </p>
             <p className={styles.statValue}>{totalInvoicesCount}</p>
-            <p className={styles.statSubLabel}>All non-draft invoices</p>
+            <p className={styles.statSubLabel}>Non-draft invoices</p>
           </div>
 
           {/* Pending payments (sent) */}
