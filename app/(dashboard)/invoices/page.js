@@ -112,7 +112,7 @@ export default function InvoicesPage() {
   useEffect(() => {
   const updatePageSize = () => {
     if (window.innerWidth < 640) {
-      setPageSize(5);   // mobile
+      setPageSize(7);   // mobile
     } else {
       setPageSize(15);  // tablet/desktop
     }
