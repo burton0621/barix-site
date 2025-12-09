@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/providers/AuthProvider";
 import DashboardNavbar from "@/components/Navbar/DashboardNavbar";
+import GetStartedCard from "@/components/dashboard/getStartedCard/getStartedCard";
 
 import styles from "./DashboardPage.module.css";
 
@@ -24,9 +24,6 @@ export default function DashboardPage() {
   const [paidCount, setPaidCount] = useState(0);
   const [overdueCount, setOverdueCount] = useState(0);
   const [overdueAmount, setOverdueAmount] = useState(0);
-
-  // For "Get Started"
-  const [clientsCount, setClientsCount] = useState(0);
 
   // Recent activity
   const [recentInvoices, setRecentInvoices] = useState([]);
@@ -130,20 +127,6 @@ export default function DashboardPage() {
     setMetricsLoading(false);
   }
 
-  async function fetchClientsCount(userId) {
-    const { count, error } = await supabase
-      .from("clients")
-      .select("id", { count: "exact", head: true })
-      .eq("owner_id", userId);
-
-    if (error) {
-      console.error("Error loading clients count:", error);
-      return;
-    }
-
-    setClientsCount(count || 0);
-  }
-
   async function fetchRecentInvoices(userId) {
     setRecentLoading(true);
 
@@ -175,7 +158,7 @@ export default function DashboardPage() {
     setRecentLoading(false);
   }
 
-  // Auth check + load metrics + client count + recent activity
+  // Auth check + load metrics + recent activity
   useEffect(() => {
     async function init() {
       const {
@@ -189,7 +172,6 @@ export default function DashboardPage() {
 
       await Promise.all([
         fetchInvoiceMetrics(user.id),
-        fetchClientsCount(user.id),
         fetchRecentInvoices(user.id),
       ]);
 
@@ -208,11 +190,6 @@ export default function DashboardPage() {
   }
 
   const metricsLabelSuffix = metricsLoading ? "…" : "";
-
-  // Step completion logic
-  const profileDone = !!profile?.company_name;
-  const clientsDone = clientsCount > 0;
-  const invoicesDone = totalInvoicesCount > 0;
 
   return (
     <div className={styles.page}>
@@ -282,84 +259,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Get Started Section */}
-        <div className={styles.getStartedCard}>
-          <h2 className={styles.sectionTitle}>Get Started</h2>
-
-          <div className={styles.stepsGrid}>
-            {/* Step 1: Profile */}
-            <div className={styles.stepCard}>
-              <div
-                className={
-                  profileDone
-                    ? styles.stepNumberCompleted
-                    : styles.stepNumberActive
-                }
-              >
-                1
-              </div>
-              <h3 className={styles.stepTitle}>Set Up Your Profile</h3>
-              <p className={styles.stepText}>
-                Add your business info, logo, and service regions.
-              </p>
-              {profileDone ? (
-                <span className={styles.stepCompletedLabel}>Completed</span>
-              ) : (
-                <Link href="/profile" className={styles.primaryLink}>
-                  Complete profile
-                </Link>
-              )}
-            </div>
-
-            {/* Step 2: Clients */}
-            <div className={styles.stepCard}>
-              <div
-                className={
-                  clientsDone
-                    ? styles.stepNumberCompleted
-                    : styles.stepNumberInactive
-                }
-              >
-                2
-              </div>
-              <h3 className={styles.stepTitle}>Add Your Clients</h3>
-              <p className={styles.stepText}>
-                Import or add the customers you'll be invoicing.
-              </p>
-              {clientsDone ? (
-                <span className={styles.stepCompletedLabel}>Completed</span>
-              ) : (
-                <Link href="/clients" className={styles.secondaryLink}>
-                  Add clients
-                </Link>
-              )}
-            </div>
-
-            {/* Step 3: Invoice */}
-            <div className={styles.stepCard}>
-              <div
-                className={
-                  invoicesDone
-                    ? styles.stepNumberCompleted
-                    : styles.stepNumberInactive
-                }
-              >
-                3
-              </div>
-              <h3 className={styles.stepTitle}>Create Your First Invoice</h3>
-              <p className={styles.stepText}>
-                Send a professional invoice and get paid faster.
-              </p>
-              {invoicesDone ? (
-                <span className={styles.stepCompletedLabel}>Completed</span>
-              ) : (
-                <Link href="/invoices" className={styles.secondaryLink}>
-                  Create invoice
-                </Link>
-              )}
-            </div>
-          </div>
-        </div>
+        {/* Get Started Section (all logic inside the component) */}
+        <GetStartedCard />
 
         {/* Recent Activity */}
         <div className={styles.recentCard}>
@@ -367,13 +268,13 @@ export default function DashboardPage() {
 
           {recentLoading ? (
             <div className={styles.recentEmpty}>
-              <p className={styles.recentEmptyText}>Loading recent invoices…</p>
+              <p className={styles.recentEmptyText}>
+                Loading recent invoices…
+              </p>
             </div>
           ) : recentInvoices.length === 0 ? (
             <div className={styles.recentEmpty}>
-              <p className={styles.recentEmptyText}>
-                No recent activity yet.
-              </p>
+              <p className={styles.recentEmptyText}>No recent activity yet.</p>
               <p className={styles.recentEmptySubText}>
                 Your invoices and payments will show up here.
               </p>
