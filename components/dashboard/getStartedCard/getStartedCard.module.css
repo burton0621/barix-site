@@ -1,0 +1,122 @@
+/* components/dashboard/getstartedCard/getstartedCard.module.css */
+
+.getStartedCard {
+  margin-top: 2rem;
+  padding: 1.75rem;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+  border: 1px solid #e5e7eb;
+}
+
+.sectionTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 1rem;
+}
+
+.stepsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.stepCard {
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Step numbers */
+
+.stepNumberCompleted,
+.stepNumberActive,
+.stepNumberInactive {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.stepNumberCompleted {
+  background-color: #22c55e;
+  color: #ffffff;
+}
+
+.stepNumberActive {
+  background-color: #2563eb;
+  color: #ffffff;
+}
+
+.stepNumberInactive {
+  background-color: #e5e7eb;
+  color: #6b7280;
+}
+
+.stepTitle {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.stepText {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.stepCompletedLabel {
+  margin-top: 0.5rem;
+  align-self: flex-start;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background-color: #ecfdf3;
+  color: #15803d;
+}
+
+/* Links */
+
+.primaryLink,
+.secondaryLink {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.primaryLink {
+  color: #2563eb;
+}
+
+.primaryLink:hover {
+  text-decoration: underline;
+}
+
+.secondaryLink {
+  color: #4b5563;
+}
+
+.secondaryLink:hover {
+  text-decoration: underline;
+}
+
+/* Mobile */
+
+@media (max-width: 768px) {
+  .stepsGrid {
+    grid-template-columns: 1fr;
+  }
+}

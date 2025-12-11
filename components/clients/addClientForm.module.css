@@ -1,0 +1,156 @@
+.form {
+  background: white;
+  padding: 28px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.formTitle {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.sectionTitle {
+  margin-top: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+}
+
+/* Labels + Inputs */
+.label {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  color: #374151;
+}
+
+.input {
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  width: 100%;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+}
+
+/* City / State / ZIP row */
+.row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.colCity {
+  flex: 2 1 0;
+}
+
+.colState {
+  flex: 0 0 90px;
+}
+
+.colZip {
+  flex: 0 0 90px;
+}
+
+/* Checkbox Row */
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  color: #374151;
+  font-size: 14px;
+}
+
+/* Error box */
+.errorBox {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+/* Buttons */
+.buttonRow {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.cancelButton {
+  padding: 8px 16px;
+  background: #e5e7eb;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.cancelButton:hover {
+  background: #d1d5db;
+}
+
+.saveButton {
+  padding: 8px 16px;
+  background: #2563eb;
+  color: white;
+  font-weight: 600;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.saveButton:hover {
+  background: #1d4ed8;
+}
+
+.saveButton:disabled,
+.cancelButton:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Name / Email / Phone row */
+.colWide {
+  flex: 2;
+}
+
+.colSlim {
+  flex: 1;
+}
+
+/* Use existing row flexbox */
+.row {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.dangerButton {
+  padding: 8px 16px;
+  background: #dc2626;
+  color: white;
+  font-weight: 600;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.dangerButton:hover {
+  background: #b91c1c;
+}

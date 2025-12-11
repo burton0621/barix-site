@@ -1,0 +1,333 @@
+/* Page + loading */
+
+.page {
+  min-height: 100vh;
+  background-color: #f9fafb; /* gray-50 */
+}
+
+.loadingWrapper {
+  min-height: 100vh;
+  background-color: #f9fafb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loadingText {
+  color: #6b7280; /* gray-500 */
+  font-size: 0.95rem;
+}
+
+/* Main layout */
+
+.main {
+  max-width: 72rem; /* ~ max-w-6xl */
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 3rem 1.5rem; /* px-6 py-10 */
+  box-sizing: border-box;
+}
+
+/* Header */
+
+.headerBlock {
+  margin-bottom: 2.5rem; /* mb-10 */
+}
+
+.title {
+  margin: 0;
+  font-size: 1.875rem; /* text-3xl */
+  font-weight: 700;
+  color: #111827; /* gray-900 */
+}
+
+.subtitle {
+  margin-top: 0.5rem;
+  color: #4b5563; /* gray-600 */
+  font-size: 0.95rem;
+}
+
+/* Stats */
+
+.statsGrid {
+  display: grid;
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+
+  /* Mobile default: 2 columns */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* Tablet: still 2 columns (you can change if desired) */
+@media (min-width: 768px) {
+  .statsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Desktop: 4 columns */
+@media (min-width: 1024px) {
+  .statsGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+
+.statCard {
+  background: white;
+  padding: 1.25rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  width: 100%;       /* Important for grid responsiveness */
+}
+
+.statLabel {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #6b7280; /* gray-500 */
+}
+
+.statValue {
+  margin-top: 0.5rem;
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.statValuePending {
+  margin-top: 0.5rem;
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #d97706; /* amber-600-ish */
+}
+
+.statValueRevenue {
+  margin-top: 0.5rem;
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #16a34a; /* green-600-ish */
+}
+
+.statSubLabel {
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  color: #9ca3af; /* gray-400 */
+}
+
+/* Get Started section */
+
+.getStartedCard {
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  padding: 2rem; /* p-8 */
+  box-sizing: border-box;
+}
+
+.sectionTitle {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.stepsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .stepsGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.stepCard {
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  padding: 1.25rem; /* p-5 */
+  box-sizing: border-box;
+}
+
+.stepNumberActive,
+.stepNumberInactive {
+  width: 2.5rem;  /* w-10 */
+  height: 2.5rem; /* h-10 */
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+/* Active step number: brand-ish colors */
+.stepNumberActive {
+  background-color: #e0ecff; /* brand-100 type */
+  color: #2563eb;           /* brand-600 type */
+}
+
+/* Inactive step numbers: gray */
+.stepNumberInactive {
+  background-color: #f3f4f6; /* gray-100 */
+  color: #9ca3af;            /* gray-400 */
+}
+
+.stepTitle {
+  margin: 0 0 0.4rem 0;
+  font-weight: 600;
+  color: #111827;
+  font-size: 0.95rem;
+}
+
+.stepText {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.85rem;
+  color: #4b5563;
+}
+
+/* Links */
+
+.primaryLink {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.primaryLink:hover {
+  text-decoration: underline;
+}
+
+.secondaryLink {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #9ca3af;
+  text-decoration: none;
+}
+
+.secondaryLink:hover {
+  color: #2563eb;
+}
+
+/* Recent Activity */
+
+.recentCard {
+  margin-top: 2rem;
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  padding: 2rem; /* p-8 */
+  box-sizing: border-box;
+}
+
+.recentEmpty {
+  text-align: center;
+  padding: 2.5rem 0; /* py-10 */
+}
+
+.recentEmptyText {
+  margin: 0;
+  color: #6b7280; /* gray-500 */
+  font-size: 0.95rem;
+}
+
+.recentEmptySubText {
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  color: #9ca3af; /* gray-400 */
+}
+
+.statValueOverdue {
+  margin-top: 0.5rem;
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #dc2626; /* red-600-ish */
+}
+
+/* Completed step badge */
+
+.stepNumberCompleted {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  background-color: #22c55e; /* green-500 */
+  color: #ffffff;
+}
+
+.stepCompletedLabel {
+  display: inline-block;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #16a34a; /* green-600 */
+}
+
+.recentList {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.recentRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.recentRow:last-child {
+  border-bottom: none;
+}
+
+.recentMain {
+  display: flex;
+  flex-direction: column;
+}
+
+.recentTitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.recentClient {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.recentMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.8rem;
+}
+
+.recentStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.45rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background-color: #eff6ff; /* light blue */
+  color: #1d4ed8; /* blue-700 */
+  text-transform: capitalize;
+}
+
+.recentDate {
+  color: #6b7280;
+}
+
+.recentAmount {
+  font-weight: 600;
+  color: #111827;
+  font-variant-numeric: tabular-nums;
+}

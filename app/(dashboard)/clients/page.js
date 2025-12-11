@@ -1,105 +1,416 @@
 "use client";
 
-/*
-  Clients Page
-  ------------
-  This page will list all clients/customers and allow users to add new ones.
-  Clients are the people or businesses that contractors send invoices to.
-  
-  For now, it's a placeholder showing an empty state.
-  
-  Future features:
-  - Client list with search
-  - Client details (contact info, address, payment history)
-  - Quick actions (send invoice, view history)
-  - Import from contacts or CSV
-*/
-
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import DashboardNavbar from "@/components/Navbar/DashboardNavbar";
+import AddClientForm from "@/components/clients/AddClientForm";
+import { FiEdit2 } from "react-icons/fi";
+import styles from "./ClientsPage.module.css";
 
 export default function ClientsPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState(null);
+  const [clients, setClients] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+  const [editingClient, setEditingClient] = useState(null);
 
-  /*
-    Protect this route - only logged in users can access
-  */
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortField, setSortField] = useState("created_at"); // "name" | "contact" | "service_city" | "created_at"
+  const [sortDirection, setSortDirection] = useState("desc"); // "asc" | "desc"
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+
+  // Auth check
   useEffect(() => {
     async function checkAuth() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user) {
         router.push("/login");
         return;
       }
+      setUserId(data.user.id);
       setLoading(false);
     }
     checkAuth();
   }, [router]);
 
+  // Fetch clients
+  useEffect(() => {
+    if (!userId) return;
+
+    async function fetchClients() {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("*")
+        .eq("owner_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (!error && data) {
+        setClients(data);
+      } else {
+        console.error("Error loading clients:", error);
+      }
+    }
+
+    fetchClients();
+  }, [userId]);
+
+  // Reset page when search or sort changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, sortField, sortDirection]);
+
+  function handleClientCreated(newClient) {
+    setClients((prev) => [newClient, ...prev]);
+    setShowForm(false);
+    setEditingClient(null);
+    setCurrentPage(1);
+  }
+
+  function handleClientUpdated(updatedClient) {
+    setClients((prev) =>
+      prev.map((c) => (c.id === updatedClient.id ? updatedClient : c))
+    );
+    setShowForm(false);
+    setEditingClient(null);
+  }
+
+  function handleClientDeleted(deletedId) {
+    setClients((prev) => prev.filter((c) => c.id !== deletedId));
+    setShowForm(false);
+    setEditingClient(null);
+  }
+
+  function handleSort(field) {
+    if (sortField === field) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      // default directions
+      setSortDirection(field === "created_at" ? "desc" : "asc");
+    }
+  }
+
+  function renderSortIcon(field) {
+    if (sortField !== field) {
+      return <span className={styles.sortIcon}>↕</span>;
+    }
+    return (
+      <span className={`${styles.sortIcon} ${styles.sortIconActive}`}>
+        {sortDirection === "asc" ? "▲" : "▼"}
+      </span>
+    );
+  }
+
+  const processed = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+
+    // 1) Filter
+    let filtered = clients;
+    if (term) {
+      filtered = clients.filter((c) => {
+        const values = [
+          c.name,
+          c.email,
+          c.phone,
+          c.service_address_line1,
+          c.service_address_line2,
+          c.service_city,
+          c.service_state,
+          c.service_postal_code,
+          c.billing_address_line1,
+          c.billing_address_line2,
+          c.billing_city,
+          c.billing_state,
+          c.billing_postal_code,
+        ];
+        return values.some(
+          (v) => v && String(v).toLowerCase().includes(term)
+        );
+      });
+    }
+
+    // 2) Sort
+    const sorted = [...filtered].sort((a, b) => {
+      const dir = sortDirection === "asc" ? 1 : -1;
+
+      const stringCompare = (x, y) =>
+        String(x || "").localeCompare(String(y || ""), undefined, {
+          sensitivity: "base",
+        }) * dir;
+
+      if (sortField === "name") {
+        return stringCompare(a.name, b.name);
+      }
+
+      if (sortField === "contact") {
+        const aContact = a.email || a.phone || "";
+        const bContact = b.email || b.phone || "";
+        return stringCompare(aContact, bContact);
+      }
+
+      if (sortField === "service_city") {
+        return stringCompare(a.service_city, b.service_city);
+      }
+
+      if (sortField === "created_at") {
+        const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return (aTime - bTime) * dir;
+      }
+
+      return 0;
+    });
+
+    // 3) Pagination
+    const totalItems = sorted.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+    const page = Math.min(currentPage, totalPages);
+    const startIndex = (page - 1) * pageSize;
+    const pageItems = sorted.slice(startIndex, startIndex + pageSize);
+
+    return {
+      filteredCount: filtered.length,
+      totalItems,
+      totalPages,
+      page,
+      startIndex,
+      pageItems,
+    };
+  }, [clients, searchTerm, sortField, sortDirection, currentPage]);
+
+  const hasClients = clients.length > 0;
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-500">Loading...</p>
+      <div className={styles.loadingWrapper}>
+        <p className={styles.loadingText}>Loading...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={styles.pageWrapper}>
       <DashboardNavbar />
-      
-      <main className="max-w-6xl mx-auto px-6 py-10">
-        {/* Page Header */}
-        <div className="flex items-center justify-between mb-8">
+
+      <main className={styles.main}>
+        {/* Header */}
+        <div className={styles.headerRow}>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
-            <p className="mt-1 text-gray-600">
-              Manage your customers and their information
-            </p>
+            <h1 className={styles.title}>Clients</h1>
+            <p className={styles.subtitle}>Manage your customers</p>
           </div>
-          <button 
-            className="px-5 py-2.5 bg-brand text-white font-semibold rounded-lg hover:bg-brand-700 transition-colors"
-            onClick={() => alert("Add client coming soon!")}
-          >
-            Add Client
-          </button>
+
+          {hasClients && !showForm && (
+            <button
+              className={styles.addButton}
+              onClick={() => {
+                setEditingClient(null);
+                setShowForm(true);
+              }}
+            >
+              Add Client
+            </button>
+          )}
         </div>
 
-        {/* Empty State */}
-        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-          <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-            <svg 
-              className="w-8 h-8 text-gray-400" 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={1.5} 
-                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" 
-              />
-            </svg>
+        {/* Form (create or edit) */}
+        {showForm && (
+          <div className={styles.formWrapper}>
+            <AddClientForm
+              ownerId={userId}
+              mode={editingClient ? "edit" : "create"}
+              client={editingClient}
+              onCreated={handleClientCreated}
+              onUpdated={handleClientUpdated}
+              onDeleted={handleClientDeleted}
+              onCancel={() => {
+                setShowForm(false);
+                setEditingClient(null);
+              }}
+            />
           </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            No clients yet
-          </h2>
-          <p className="text-gray-600 mb-6 max-w-md mx-auto">
-            Add your first client to start sending invoices. You can add them manually or import from a file.
-          </p>
-          <button 
-            className="px-6 py-3 bg-brand text-white font-semibold rounded-lg hover:bg-brand-700 transition-colors"
-            onClick={() => alert("Add client coming soon!")}
-          >
-            Add Your First Client
-          </button>
-        </div>
+        )}
+
+        {/* Content */}
+        {!hasClients ? (
+          // Empty state
+          <div className={styles.emptyState}>
+            <div className={styles.emptyTitle}>No Clients Yet</div>
+            <p className={styles.emptyMessage}>
+              Add your first client to start sending invoices.
+            </p>
+            {!showForm && (
+              <button
+                className={styles.addFirstButton}
+                onClick={() => {
+                  setEditingClient(null);
+                  setShowForm(true);
+                }}
+              >
+                Add Your First Client
+              </button>
+            )}
+          </div>
+        ) : (
+          <>
+            {/* Toolbar: search */}
+            <div className={styles.toolbarRow}>
+              <input
+                type="text"
+                className={styles.searchInput}
+                placeholder="Search clients (name, email, address...)"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+
+            {processed.totalItems === 0 ? (
+              <div className={styles.noResultsBox}>
+                <p className={styles.noResultsText}>
+                  No clients match your search.
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Table */}
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th
+                        className={styles.sortableHeader}
+                        onClick={() => handleSort("name")}
+                      >
+                        <div className={styles.headerInner}>
+                          <span>Name</span>
+                          {renderSortIcon("name")}
+                        </div>
+                      </th>
+                      <th
+                        className={styles.sortableHeader}
+                        onClick={() => handleSort("contact")}
+                      >
+                        <div className={styles.headerInner}>
+                          <span>Contact</span>
+                          {renderSortIcon("contact")}
+                        </div>
+                      </th>
+                      <th
+                        className={styles.sortableHeader}
+                        onClick={() => handleSort("service_city")}
+                      >
+                        <div className={styles.headerInner}>
+                          <span>Service City</span>
+                          {renderSortIcon("service_city")}
+                        </div>
+                      </th>
+                      <th
+                        className={styles.sortableHeader}
+                        onClick={() => handleSort("created_at")}
+                      >
+                        <div className={styles.headerInner}>
+                          <span>Created</span>
+                          {renderSortIcon("created_at")}
+                        </div>
+                      </th>
+                      <th className={styles.actionsHeader}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {processed.pageItems.map((client) => (
+                      <tr key={client.id}>
+                        <td>{client.name}</td>
+                        <td>
+                          {client.email}
+                          <br />
+                          <span className={styles.phone}>{client.phone}</span>
+                        </td>
+                        <td>{client.service_city || "-"}</td>
+                        <td>
+                          {client.created_at
+                            ? new Date(
+                                client.created_at
+                              ).toLocaleDateString()
+                            : "-"}
+                        </td>
+                        <td className={styles.actionsCell}>
+                          <button
+                            className={styles.iconButton}
+                            onClick={() => {
+                              setEditingClient(client);
+                              setShowForm(true);
+                            }}
+                            aria-label={`Edit ${client.name}`}
+                          >
+                            <FiEdit2 className={styles.icon} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                {/* Pagination */}
+                <div className={styles.paginationRow}>
+                  <div className={styles.pageInfo}>
+                    {processed.totalItems > 0 && (
+                      <>
+                        Showing{" "}
+                        {processed.startIndex + 1}–
+                        {Math.min(
+                          processed.startIndex + pageSize,
+                          processed.totalItems
+                        )}{" "}
+                        of {processed.totalItems} clients
+                      </>
+                    )}
+                  </div>
+                  <div className={styles.pageControls}>
+                    <button
+                      className={styles.pageButton}
+                      disabled={processed.page === 1}
+                      onClick={() =>
+                        setCurrentPage((p) => Math.max(1, p - 1))
+                      }
+                    >
+                      Previous
+                    </button>
+                    {Array.from(
+                      { length: processed.totalPages },
+                      (_, idx) => idx + 1
+                    ).map((page) => (
+                      <button
+                        key={page}
+                        className={
+                          page === processed.page
+                            ? styles.pageButtonActive
+                            : styles.pageButton
+                        }
+                        onClick={() => setCurrentPage(page)}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                    <button
+                      className={styles.pageButton}
+                      disabled={processed.page === processed.totalPages}
+                      onClick={() =>
+                        setCurrentPage((p) =>
+                          Math.min(processed.totalPages, p + 1)
+                        )
+                      }
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </>
+        )}
       </main>
     </div>
   );
 }
-
