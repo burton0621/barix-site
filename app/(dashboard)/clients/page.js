@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabaseClient";
 import DashboardNavbar from "@/components/Navbar/DashboardNavbar";
 import AddClientForm from "@/components/clients/AddClientForm";
 import { FiEdit2 } from "react-icons/fi";
-import styles from "./ClientsPage.module.css";
+import styles from "./clientsPage.module.css";
 
 export default function ClientsPage() {
   const router = useRouter();
