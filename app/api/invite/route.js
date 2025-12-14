@@ -152,7 +152,7 @@ export async function POST(request) {
     }
 
     // Build the login URL
-    const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/login`;
+    const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://www.barixbilling.com/"}/login`;
 
     // Send the invitation email via Resend
     const { data: emailData, error: emailError } = await resend.emails.send({
