@@ -3,7 +3,7 @@
 import Navbar from "@/components/Navbar/Navbar";
 import Footer from "@/components/marketing/Footer";
 
-function Tier({ name, price, blurb, features = [], cta = "Start free", highlight = false }) {
+function Tier({ name, price, blurb, features = [], cta = "Join Free Demo", highlight = false }) {
   return (
     <div className={`rounded-2xl border p-6 shadow-sm ${highlight ? "border-brand bg-white" : "border-gray-200 bg-white"}`}>
       <h3 className="text-xl font-semibold">{name}</h3>
@@ -41,7 +41,7 @@ export default function PricingPage() {
         <section className="text-center">
           <h1 className="text-4xl font-bold tracking-tight md:text-5xl">Pricing that scales with you</h1>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-gray-600">
-            Transparent monthly plans. Processing fees separate. Volume discounts available.
+            Transparent monthly plans. Processing fees separate.
           </p>
         </section>
 
@@ -49,10 +49,12 @@ export default function PricingPage() {
         <section className="mt-10 grid gap-6 md:grid-cols-3">
           <Tier
             name="Starter"
-            price={29}
+            price={
+              <span className="line-through">9.99</span>
+            }
             blurb="For solo operators and new crews"
             features={[
-              "100 invoices per month",
+              "Unlimited Invoices",
               "Card and ACH",
               "Basic reminders",
               "Email support",
@@ -60,20 +62,20 @@ export default function PricingPage() {
           />
           <Tier
             name="Growth"
-            price={79}
+            price={49.99}
             blurb="For busy shops that want automation"
             features={[
-              "Unlimited invoices",
-              "Advanced reminders",
-              "Client portal",
-              "Priority support",
+              "Everything in Starter",
+              "Advanced Reminders",
+              "Client Portal",
+              "Priority Support",
             ]}
             highlight
-            cta="Start trial"
+            cta="Coming Soon"
           />
           <Tier
             name="Pro"
-            price={179}
+            price={129.99}
             blurb="For teams with reporting needs"
             features={[
               "Team permissions",
@@ -81,6 +83,8 @@ export default function PricingPage() {
               "Custom fields",
               "Phone support",
             ]}
+            highlight
+            cta="Coming Soon"
           />
         </section>
 
@@ -104,8 +108,8 @@ export default function PricingPage() {
               <p className="mt-1 text-gray-600">No. Month to month with the option to lock annual for a discount.</p>
             </div>
             <div className="rounded-xl border border-gray-200 bg-white p-4">
-              <p className="font-medium">What happens if I exceed plan limits?</p>
-              <p className="mt-1 text-gray-600">We will notify you and you can upgrade at any time. No surprise overage fees.</p>
+              <p className="font-medium">What are the processing fees?</p>
+              <p className="mt-1 text-gray-600">Processing fees are set by payments facilitator Stripe Connect. Industry standard rates ranging from 3-4%.</p>
             </div>
           </div>
         </section>
