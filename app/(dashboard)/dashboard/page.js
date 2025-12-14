@@ -1,162 +1,313 @@
 "use client";
 
-/*
-  Dashboard Home Page
-  -------------------
-  This is the main landing page after a user logs in.
-  It will eventually show:
-  - Overview stats (total invoices, pending payments, revenue)
-  - Recent invoices
-  - Quick actions (create invoice, add client)
-  
-  For now, it's a placeholder that welcomes the user and
-  guides them to set up their profile or start invoicing.
-*/
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/providers/AuthProvider";
 import DashboardNavbar from "@/components/Navbar/DashboardNavbar";
+import GetStartedCard from "@/components/dashboard/getStartedCard/getStartedCard";
+
+import styles from "./DashboardPage.module.css";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { session, profile } = useAuth();
+  const { profile } = useAuth();
+
   const [loading, setLoading] = useState(true);
 
-  /*
-    Check if user is authenticated
-    If not, redirect them to login
-  */
+  // Metrics
+  const [metricsLoading, setMetricsLoading] = useState(false);
+  const [totalInvoicesCount, setTotalInvoicesCount] = useState(0);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [pendingAmount, setPendingAmount] = useState(0);
+  const [revenueAmount, setRevenueAmount] = useState(0);
+  const [paidCount, setPaidCount] = useState(0);
+  const [overdueCount, setOverdueCount] = useState(0);
+  const [overdueAmount, setOverdueAmount] = useState(0);
+
+  // Recent activity
+  const [recentInvoices, setRecentInvoices] = useState([]);
+  const [recentLoading, setRecentLoading] = useState(false);
+
+  // Currency helper
+  const formatCurrency = (value) => {
+    const num = Number(value || 0);
+    return `$${num.toFixed(2)}`;
+  };
+
+  // Date helper (handles YYYY-MM-DD from Supabase)
+  const formatDate = (value) => {
+    if (!value) return "—";
+
+    if (value instanceof Date) {
+      return value.toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    }
+
+    if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      const [year, month, day] = value.split("-").map((v) => parseInt(v, 10));
+      const d = new Date(year, month - 1, day);
+      return d.toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    }
+
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return value;
+
+    return d.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  async function fetchInvoiceMetrics(userId) {
+    setMetricsLoading(true);
+
+    const { data, error } = await supabase
+      .from("invoices")
+      .select("id, status, total")
+      .eq("owner_id", userId);
+
+    if (error) {
+      console.error("Error loading invoice metrics:", error);
+      setMetricsLoading(false);
+      return;
+    }
+
+    const invoices = data || [];
+
+    let totalInvoices = 0;
+    let pendingCountTmp = 0;
+    let pendingAmountTmp = 0;
+    let revenueAmountTmp = 0;
+    let paidCountTmp = 0;
+    let overdueCountTmp = 0;
+    let overdueAmountTmp = 0;
+
+    invoices.forEach((inv) => {
+      const status = inv.status || "";
+      const total = Number(inv.total || 0);
+
+      // total invoices = everything that is not draft
+      if (status !== "draft") {
+        totalInvoices += 1;
+      }
+
+      if (status === "sent") {
+        pendingCountTmp += 1;
+        pendingAmountTmp += total;
+      }
+
+      if (status === "paid") {
+        paidCountTmp += 1;
+        revenueAmountTmp += total;
+      }
+
+      if (status === "overdue") {
+        overdueCountTmp += 1;
+        overdueAmountTmp += total;
+      }
+    });
+
+    setTotalInvoicesCount(totalInvoices);
+    setPendingCount(pendingCountTmp);
+    setPendingAmount(pendingAmountTmp);
+    setRevenueAmount(revenueAmountTmp);
+    setPaidCount(paidCountTmp);
+    setOverdueCount(overdueCountTmp);
+    setOverdueAmount(overdueAmountTmp);
+
+    setMetricsLoading(false);
+  }
+
+  async function fetchRecentInvoices(userId) {
+    setRecentLoading(true);
+
+    const { data, error } = await supabase
+      .from("invoices")
+      .select(
+        `
+        id,
+        invoice_number,
+        issue_date,
+        status,
+        total,
+        clients:client_id ( name )
+      `
+      )
+      .eq("owner_id", userId)
+      .neq("status", "draft")
+      .order("issue_date", { ascending: false })
+      .limit(5);
+
+    if (error) {
+      console.error("Error loading recent invoices:", error);
+      setRecentInvoices([]);
+      setRecentLoading(false);
+      return;
+    }
+
+    setRecentInvoices(data || []);
+    setRecentLoading(false);
+  }
+
+  // Auth check + load metrics + recent activity
   useEffect(() => {
-    async function checkAuth() {
-      const { data: { user } } = await supabase.auth.getUser();
+    async function init() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (!user) {
         router.push("/login");
         return;
       }
+
+      await Promise.all([
+        fetchInvoiceMetrics(user.id),
+        fetchRecentInvoices(user.id),
+      ]);
+
       setLoading(false);
     }
-    checkAuth();
+
+    init();
   }, [router]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-500">Loading...</p>
+      <div className={styles.loadingWrapper}>
+        <p className={styles.loadingText}>Loading...</p>
       </div>
     );
   }
 
+  const metricsLabelSuffix = metricsLoading ? "…" : "";
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={styles.page}>
       <DashboardNavbar />
-      
-      <main className="max-w-6xl mx-auto px-6 py-10">
+
+      <main className={styles.main}>
         {/* Welcome Header */}
-        <div className="mb-10">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Welcome back{profile?.company_name ? `, ${profile.company_name}` : ""}
+        <div className={styles.headerBlock}>
+          <h1 className={styles.title}>
+            Welcome back
+            {profile?.company_name ? `, ${profile.company_name}` : ""}
           </h1>
-          <p className="mt-2 text-gray-600">
+          <p className={styles.subtitle}>
             Here's what's happening with your invoicing today.
           </p>
         </div>
 
-        {/* Quick Stats - placeholder for now */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <p className="text-sm font-medium text-gray-500">Total Invoices</p>
-            <p className="mt-2 text-3xl font-bold text-gray-900">0</p>
-            <p className="mt-1 text-sm text-gray-400">All time</p>
+        {/* Quick Stats */}
+        <div className={styles.statsGrid}>
+          {/* Total invoices (non-draft) */}
+          <div className={styles.statCard}>
+            <p className={styles.statLabel}>
+              Total Invoices{metricsLabelSuffix}
+            </p>
+            <p className={styles.statValue}>{totalInvoicesCount}</p>
+            <p className={styles.statSubLabel}>Non-draft invoices</p>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <p className="text-sm font-medium text-gray-500">Pending Payments</p>
-            <p className="mt-2 text-3xl font-bold text-amber-600">$0.00</p>
-            <p className="mt-1 text-sm text-gray-400">Awaiting payment</p>
-          </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <p className="text-sm font-medium text-gray-500">Total Revenue</p>
-            <p className="mt-2 text-3xl font-bold text-green-600">$0.00</p>
-            <p className="mt-1 text-sm text-gray-400">This month</p>
-          </div>
-        </div>
 
-        {/* Getting Started Section */}
-        <div className="bg-white rounded-xl border border-gray-200 p-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">
-            Get Started
-          </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Step 1: Profile */}
-            <div className="border border-gray-200 rounded-lg p-5">
-              <div className="w-10 h-10 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center font-semibold mb-4">
-                1
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Set Up Your Profile</h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Add your business info, logo, and service regions.
-              </p>
-              <Link 
-                href="/profile" 
-                className="text-sm font-medium text-brand hover:underline"
-              >
-                Complete profile
-              </Link>
-            </div>
-
-            {/* Step 2: Clients */}
-            <div className="border border-gray-200 rounded-lg p-5">
-              <div className="w-10 h-10 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center font-semibold mb-4">
-                2
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Add Your Clients</h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Import or add the customers you'll be invoicing.
-              </p>
-              <Link 
-                href="/clients" 
-                className="text-sm font-medium text-gray-400 hover:text-brand"
-              >
-                Add clients
-              </Link>
-            </div>
-
-            {/* Step 3: Invoice */}
-            <div className="border border-gray-200 rounded-lg p-5">
-              <div className="w-10 h-10 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center font-semibold mb-4">
-                3
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Create Your First Invoice</h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Send a professional invoice and get paid faster.
-              </p>
-              <Link 
-                href="/invoices" 
-                className="text-sm font-medium text-gray-400 hover:text-brand"
-              >
-                Create invoice
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        {/* Recent Activity - empty state for now */}
-        <div className="mt-8 bg-white rounded-xl border border-gray-200 p-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Recent Activity
-          </h2>
-          <div className="text-center py-10">
-            <p className="text-gray-500">No recent activity yet.</p>
-            <p className="text-sm text-gray-400 mt-1">
-              Your invoices and payments will show up here.
+          {/* Pending payments (sent) */}
+          <div className={styles.statCard}>
+            <p className={styles.statLabel}>
+              Pending Payments{metricsLabelSuffix}
+            </p>
+            <p className={styles.statValuePending}>
+              {formatCurrency(pendingAmount)}
+            </p>
+            <p className={styles.statSubLabel}>
+              {pendingCount} sent invoice{pendingCount === 1 ? "" : "s"}
             </p>
           </div>
+
+          {/* Revenue (paid) */}
+          <div className={styles.statCard}>
+            <p className={styles.statLabel}>
+              Total Revenue{metricsLabelSuffix}
+            </p>
+            <p className={styles.statValueRevenue}>
+              {formatCurrency(revenueAmount)}
+            </p>
+            <p className={styles.statSubLabel}>
+              {paidCount} paid invoice{paidCount === 1 ? "" : "s"}
+            </p>
+          </div>
+
+          {/* Overdue (count + amount) */}
+          <div className={styles.statCard}>
+            <p className={styles.statLabel}>
+              Overdue Invoices{metricsLabelSuffix}
+            </p>
+            <p className={styles.statValueOverdue}>
+              {formatCurrency(overdueAmount)}
+            </p>
+            <p className={styles.statSubLabel}>
+              {overdueCount} overdue invoice
+              {overdueCount === 1 ? "" : "s"}
+            </p>
+          </div>
+        </div>
+
+        {/* Get Started Section (all logic inside the component) */}
+        <GetStartedCard />
+
+        {/* Recent Activity */}
+        <div className={styles.recentCard}>
+          <h2 className={styles.sectionTitle}>Recent Activity</h2>
+
+          {recentLoading ? (
+            <div className={styles.recentEmpty}>
+              <p className={styles.recentEmptyText}>
+                Loading recent invoices…
+              </p>
+            </div>
+          ) : recentInvoices.length === 0 ? (
+            <div className={styles.recentEmpty}>
+              <p className={styles.recentEmptyText}>No recent activity yet.</p>
+              <p className={styles.recentEmptySubText}>
+                Your invoices and payments will show up here.
+              </p>
+            </div>
+          ) : (
+            <div className={styles.recentList}>
+              {recentInvoices.map((inv) => (
+                <div key={inv.id} className={styles.recentRow}>
+                  <div className={styles.recentMain}>
+                    <div className={styles.recentTitle}>
+                      {inv.invoice_number || "Untitled invoice"}
+                    </div>
+                    <div className={styles.recentClient}>
+                      {inv.clients?.name || "Unknown client"}
+                    </div>
+                  </div>
+                  <div className={styles.recentMeta}>
+                    <span className={styles.recentStatusBadge}>
+                      {inv.status || "draft"}
+                    </span>
+                    <span className={styles.recentDate}>
+                      {formatDate(inv.issue_date)}
+                    </span>
+                    <span className={styles.recentAmount}>
+                      {formatCurrency(inv.total)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
     </div>
   );
 }
-

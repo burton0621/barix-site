@@ -1,0 +1,277 @@
+/* --- Page Layout --- */
+.pageWrapper {
+  min-height: 100vh;
+  background: #f9fafb;
+}
+
+.main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 40px 24px;
+}
+
+/* --- Header Row --- */
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.subtitle {
+  color: #6b7280;
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+/* --- Buttons --- */
+.addButton {
+  background: #2563eb;
+  color: white;
+  padding: 10px 18px;
+  border: none;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease-in-out;
+  font-size: 14px;
+}
+
+.addButton:hover {
+  background: #1e4ec9;
+}
+
+.addFirstButton {
+  background: #2563eb;
+  color: white;
+  padding: 12px 20px;
+  border: none;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease-in-out;
+  font-size: 14px;
+}
+
+.addFirstButton:hover {
+  background: #1e4ec9;
+}
+
+/* --- Loading --- */
+.loadingWrapper {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.loadingText {
+  color: #6b7280;
+  font-size: 16px;
+}
+
+/* --- Form Wrapper --- */
+.formWrapper {
+  margin-bottom: 24px;
+}
+
+/* --- Empty State --- */
+.emptyState {
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  text-align: center;
+}
+
+.emptyTitle {
+  font-size: 22px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.emptyMessage {
+  color: #6b7280;
+  margin-top: 6px;
+  margin-bottom: 20px;
+  max-width: 360px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* --- Toolbar (search) --- */
+.toolbarRow {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.searchInput {
+  width: 260px;
+  max-width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #ffffff;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18);
+}
+
+/* --- Table Styles --- */
+.table {
+  width: 100%;
+  background: white;
+  border-radius: 12px;
+  border-collapse: collapse;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+
+.table th {
+  background: #f3f4f6;
+  padding: 14px;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 600;
+  color: #4b5563;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.table td {
+  padding: 14px;
+  font-size: 14px;
+  color: #111827;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.phone {
+  display: block;
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+/* --- Sortable table headers --- */
+.sortableHeader {
+  cursor: pointer;
+  user-select: none;
+}
+
+.headerInner {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sortIcon {
+  font-size: 10px;
+  color: #9ca3af;
+}
+
+.sortIconActive {
+  color: #4b5563;
+}
+
+/* --- Actions column --- */
+.actionsHeader {
+  width: 70px;
+  text-align: center;
+}
+
+.actionsCell {
+  text-align: center;
+}
+
+.iconButton {
+  background: transparent;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: #6b7280;
+}
+
+.iconButton:hover {
+  color: #111827;
+}
+
+.icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* --- No results (search) --- */
+.noResultsBox {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 24px;
+  text-align: center;
+  margin-top: 8px;
+}
+
+.noResultsText {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* --- Pagination --- */
+.paginationRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pageInfo {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.pageControls {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pageButton {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.pageButton:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+
+.pageButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.pageButtonActive {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #2563eb;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 13px;
+  cursor: default;
+}

@@ -1,0 +1,96 @@
+.container {
+  position: relative;
+  width: 100%;
+}
+
+/* The main field (curved box) */
+.controlWrapper {
+  position: relative;
+  width: 100%;
+}
+
+.controlInput {
+  width: 100%;
+  padding: 9px 32px 9px 10px; /* space for chevron on right */
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background-color: #ffffff;
+  font-size: 0.9rem;
+  color: #111827;
+  box-sizing: border-box;
+}
+
+.controlInput::placeholder {
+  color: #9ca3af;
+}
+
+.controlInput:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px #2563eb33;
+}
+
+.controlDisabled {
+  background-color: #f9fafb;
+  color: #9ca3af;
+}
+
+/* Chevron button inside the field */
+.chevronButton {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.chevron {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* Dropdown panel */
+.dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background-color: #ffffff;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.18);
+  z-index: 500; 
+  padding: 4px 6px 6px 6px;
+  box-sizing: border-box;
+}
+
+
+.optionsList {
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.option {
+  width: 100%;
+  text-align: left;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: none;
+  background: none;
+  font-size: 0.9rem;
+  color: #111827;
+  cursor: pointer;
+}
+
+.option:hover {
+  background-color: #f3f4f6;
+}
+
+.noOptions {
+  padding: 6px 8px;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
