@@ -95,6 +95,12 @@ export default function DashboardNavbar() {
           >
             Clients
           </Link>
+          <Link 
+            href="/Services" 
+            className={`${styles.navLink} ${isActive("/Services") ? styles.active : ""}`}
+          >
+            Services
+          </Link>
           {/* Team link - only visible to admins */}
           {isAdmin && (
             <Link 

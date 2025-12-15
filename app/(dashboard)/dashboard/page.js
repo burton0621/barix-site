@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/providers/AuthProvider";
 import DashboardNavbar from "@/components/Navbar/DashboardNavbar";
 import GetStartedCard from "@/components/dashboard/getStartedCard/getStartedCard";
+import CreateInvoiceButton from "@/components/Invoices/CreateInvoiceButton/createInvoiceButton";
 
 import styles from "./DashboardPage.module.css";
 
@@ -14,6 +15,9 @@ export default function DashboardPage() {
   const { profile } = useAuth();
 
   const [loading, setLoading] = useState(true);
+
+  // Keep track of userId so we can refresh after creating invoices
+  const [userId, setUserId] = useState(null);
 
   // Metrics
   const [metricsLoading, setMetricsLoading] = useState(false);
@@ -170,6 +174,8 @@ export default function DashboardPage() {
         return;
       }
 
+      setUserId(user.id);
+
       await Promise.all([
         fetchInvoiceMetrics(user.id),
         fetchRecentInvoices(user.id),
@@ -180,6 +186,16 @@ export default function DashboardPage() {
 
     init();
   }, [router]);
+
+  // When a new invoice is created from the dashboard button,
+  // refresh metrics and recent activity
+  const handleInvoiceCreated = async () => {
+    if (!userId) return;
+    await Promise.all([
+      fetchInvoiceMetrics(userId),
+      fetchRecentInvoices(userId),
+    ]);
+  };
 
   if (loading) {
     return (
@@ -259,8 +275,19 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Get Started Section (all logic inside the component) */}
+        {/* Get Started Section */}
         <GetStartedCard />
+
+        {/* Quick create invoice button directly under GetStartedCard */}
+        <div className={styles.recentCard}>
+          <h2 className={styles.sectionTitle}>Create a new invoice</h2>
+          <div className={styles.fullWidthButton}>
+            <CreateInvoiceButton
+              onCreated={handleInvoiceCreated}
+              buttonText="New Invoice"
+            />
+          </div>
+        </div>
 
         {/* Recent Activity */}
         <div className={styles.recentCard}>

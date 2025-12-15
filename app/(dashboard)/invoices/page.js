@@ -12,7 +12,7 @@ import { supabase } from "@/lib/supabaseClient";
 
 import DashboardNavbar from "@/components/Navbar/DashboardNavbar";
 import AddServiceModal from "@/components/Services/AddServiceModal";
-import CreateInvoiceModal from "@/components/Invoices/CreateInvoice/CreateInvoiceModal";
+import CreateInvoiceButton from "@/components/Invoices/CreateInvoiceButton/createInvoiceButton";
 
 import styles from "./invoicesPage.module.css";
 
@@ -25,7 +25,6 @@ export default function InvoicesPage() {
   const [invoicesLoading, setInvoicesLoading] = useState(false);
 
   const [isAddServiceOpen, setIsAddServiceOpen] = useState(false);
-  const [isCreateInvoiceOpen, setIsCreateInvoiceOpen] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -110,20 +109,19 @@ export default function InvoicesPage() {
   };
 
   useEffect(() => {
-  const updatePageSize = () => {
-    if (window.innerWidth < 640) {
-      setPageSize(7);   // mobile
-    } else {
-      setPageSize(15);  // tablet/desktop
-    }
-  };
+    const updatePageSize = () => {
+      if (window.innerWidth < 640) {
+        setPageSize(7); // mobile
+      } else {
+        setPageSize(15); // tablet/desktop
+      }
+    };
 
-  updatePageSize(); // run once on mount
-  window.addEventListener("resize", updatePageSize);
+    updatePageSize(); // run once on mount
+    window.addEventListener("resize", updatePageSize);
 
-  return () => window.removeEventListener("resize", updatePageSize);
-}, []);
-
+    return () => window.removeEventListener("resize", updatePageSize);
+  }, []);
 
   // Auth check + initial load
   useEffect(() => {
@@ -176,9 +174,7 @@ export default function InvoicesPage() {
       return <span className={styles.sortIcon}>↕</span>;
     }
     return (
-      <span
-        className={`${styles.sortIcon} ${styles.sortIconActive}`}
-      >
+      <span className={`${styles.sortIcon} ${styles.sortIconActive}`}>
         {sortDirection === "asc" ? "▲" : "▼"}
       </span>
     );
@@ -279,7 +275,7 @@ export default function InvoicesPage() {
       startIndex,
       pageItems,
     };
-  }, [invoices, searchTerm, sortField, sortDirection, currentPage]);
+  }, [invoices, searchTerm, sortField, sortDirection, currentPage, pageSize]);
 
   if (loading) {
     return (
@@ -302,12 +298,11 @@ export default function InvoicesPage() {
           </div>
 
           <div className={styles.headerActions}>
-            <button
+            <CreateInvoiceButton
+              onCreated={handleInvoiceCreated}
+              buttonText="Create Invoice"
               className={styles.primaryButton}
-              onClick={() => setIsCreateInvoiceOpen(true)}
-            >
-              Create Invoice
-            </button>
+            />
 
             <button
               className={styles.secondaryButton}
@@ -327,12 +322,11 @@ export default function InvoicesPage() {
               minute.
             </p>
 
-            <button
+            <CreateInvoiceButton
+              onCreated={handleInvoiceCreated}
+              buttonText="Create Your First Invoice"
               className={styles.primaryButton}
-              onClick={() => setIsCreateInvoiceOpen(true)}
-            >
-              Create Your First Invoice
-            </button>
+            />
           </div>
         ) : (
           <>
@@ -514,13 +508,6 @@ export default function InvoicesPage() {
       <AddServiceModal
         open={isAddServiceOpen}
         onClose={() => setIsAddServiceOpen(false)}
-      />
-
-      {/* Create Invoice modal */}
-      <CreateInvoiceModal
-        open={isCreateInvoiceOpen}
-        onClose={() => setIsCreateInvoiceOpen(false)}
-        onCreated={handleInvoiceCreated}
       />
     </div>
   );

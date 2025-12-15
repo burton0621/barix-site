@@ -11,29 +11,22 @@ export default function SearchableSelect({
   disabled = false,
 }) {
   const [open, setOpen] = useState(false);
-  const [text, setText] = useState("");
+  const [search, setSearch] = useState("");
   const containerRef = useRef(null);
+  const searchInputRef = useRef(null);
 
-  // Keep input text in sync with outside value
-  useEffect(() => {
-    // Treat empty/undefined as "no selection"
-    if (!value) {
-      setText("");
-      return;
-    }
-
-    const selected = options.find((opt) => opt.value === value) || null;
-    if (selected) {
-      setText(selected.label);
-    } else {
-      setText("");
-    }
-  }, [value, options]);
+  // Derive the label for the current value (for the display-only control)
+  const selectedOption =
+    options.find((opt) => opt.value === value) || null;
+  const displayLabel = selectedOption ? selectedOption.label : "";
 
   // Close on click outside
   useEffect(() => {
     function handleClickOutside(e) {
-      if (containerRef.current && !containerRef.current.contains(e.target)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target)
+      ) {
         setOpen(false);
       }
     }
@@ -46,9 +39,19 @@ export default function SearchableSelect({
     };
   }, [open]);
 
-  const lowerText = text.toLowerCase();
+  // When dropdown opens, reset search + focus search box
+  useEffect(() => {
+    if (open) {
+      setSearch("");
+      if (searchInputRef.current) {
+        searchInputRef.current.focus();
+      }
+    }
+  }, [open]);
+
+  const lowerSearch = search.toLowerCase();
   const filteredOptions = options.filter((opt) =>
-    opt.label.toLowerCase().includes(lowerText)
+    opt.label.toLowerCase().includes(lowerSearch)
   );
 
   const handleSelect = (val) => {
@@ -58,6 +61,7 @@ export default function SearchableSelect({
 
   return (
     <div className={styles.container} ref={containerRef}>
+      {/* Display-only control */}
       <div className={styles.controlWrapper}>
         <input
           type="text"
@@ -65,15 +69,11 @@ export default function SearchableSelect({
             disabled ? styles.controlDisabled : ""
           }`}
           placeholder={placeholder}
-          value={text}
-          onChange={(e) => {
-            setText(e.target.value);
-            if (!open && !disabled) setOpen(true);
+          value={displayLabel}
+          readOnly
+          onClick={() => {
+            if (!disabled) setOpen((prev) => !prev);
           }}
-          onFocus={() => {
-            if (!disabled) setOpen(true);
-          }}
-          disabled={disabled}
         />
         <button
           type="button"
@@ -87,8 +87,20 @@ export default function SearchableSelect({
         </button>
       </div>
 
+      {/* Dropdown with embedded search */}
       {open && !disabled && (
         <div className={styles.dropdown}>
+          <div className={styles.searchWrapper}>
+            <input
+              ref={searchInputRef}
+              type="text"
+              className={styles.searchInput}
+              placeholder="Search…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+
           <div className={styles.optionsList}>
             {filteredOptions.length === 0 ? (
               <div className={styles.noOptions}>No matches</div>
