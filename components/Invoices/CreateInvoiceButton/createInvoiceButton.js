@@ -1,9 +1,14 @@
-//Reusable create invoice button component
+/*
+  Create Invoice/Estimate Button
+  ------------------------------
+  A reusable button component that opens the InvoiceModal for creating new invoices or estimates.
+  Pass documentType="estimate" for estimates, or "invoice" (default) for invoices.
+*/
 
 "use client";
 
 import { useState } from "react";
-import CreateInvoiceModal from "../CreateInvoice/CreateInvoiceModal";
+import InvoiceModal from "../InvoiceModal/InvoiceModal";
 import styles from "./createInvoiceButton.module.css";
 
 export default function CreateInvoiceButton({
@@ -11,6 +16,7 @@ export default function CreateInvoiceButton({
   buttonText = "Create invoice",
   className = "",
   disabled = false,
+  documentType = "invoice", // "invoice" or "estimate"
 }) {
   const [open, setOpen] = useState(false);
 
@@ -22,7 +28,8 @@ export default function CreateInvoiceButton({
     setOpen(false);
   }
 
-  function handleCreated(invoice) {
+  // Called when the invoice/estimate is successfully created
+  function handleSaved(invoice) {
     if (onCreated) onCreated(invoice);
     setOpen(false);
   }
@@ -38,10 +45,15 @@ export default function CreateInvoiceButton({
         {buttonText}
       </button>
 
-      <CreateInvoiceModal
-        open={open}          // change to isOpen if needed
+      {/* 
+        Using the unified InvoiceModal component.
+        Pass documentType to create either an estimate or invoice.
+      */}
+      <InvoiceModal
+        open={open}
         onClose={handleClose}
-        onCreated={handleCreated}
+        onSaved={handleSaved}
+        documentType={documentType}
       />
     </>
   );

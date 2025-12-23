@@ -1,0 +1,360 @@
+/*
+  Payment Page Styles
+  -------------------
+  Clean, trustworthy design for the public invoice payment page.
+  Mobile-first responsive layout.
+*/
+
+.page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  padding: 24px 16px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.container {
+  width: 100%;
+  max-width: 520px;
+  margin-top: 20px;
+}
+
+/* Loading State */
+.loadingBox {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 60px 24px;
+  text-align: center;
+  color: #6b7280;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* Error State */
+.errorBox {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 48px 24px;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.errorTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #dc2626;
+  margin: 0 0 12px 0;
+}
+
+.errorText {
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Success State (Already Paid) */
+.successBox {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 48px 24px;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.successIcon {
+  width: 64px;
+  height: 64px;
+  background: #dcfce7;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+}
+
+.successIcon svg {
+  width: 32px;
+  height: 32px;
+  color: #16a34a;
+}
+
+.successTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #16a34a;
+  margin: 0 0 12px 0;
+}
+
+.successText {
+  color: #6b7280;
+  margin: 0 0 20px 0;
+}
+
+/* Header */
+.header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px 0;
+}
+
+.invoiceNumber {
+  font-size: 1rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* Canceled Banner */
+.canceledBanner {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  color: #92400e;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+/* Main Card */
+.card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  margin-bottom: 24px;
+}
+
+/* Info Grid (From / Bill To) */
+.infoGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 20px;
+}
+
+.infoBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.infoLabel {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #9ca3af;
+  font-weight: 600;
+}
+
+.infoValue {
+  font-size: 1rem;
+  color: #111827;
+  font-weight: 600;
+}
+
+/* Date Grid */
+.dateGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 20px;
+}
+
+.dateBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dateLabel {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #9ca3af;
+  font-weight: 600;
+}
+
+.dateValue {
+  font-size: 0.95rem;
+  color: #374151;
+}
+
+/* Line Items Section */
+.lineItemsSection {
+  margin-bottom: 20px;
+}
+
+.sectionTitle {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+}
+
+.lineItemsTable {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.lineItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+.lineItemInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.lineItemName {
+  font-weight: 600;
+  color: #111827;
+  font-size: 0.95rem;
+}
+
+.lineItemDesc {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.lineItemAmount {
+  font-weight: 600;
+  color: #111827;
+  font-size: 0.95rem;
+  margin-left: 16px;
+  white-space: nowrap;
+}
+
+/* Totals Section */
+.totalsSection {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 16px;
+}
+
+.totalRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+.totalRowFinal {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0 0 0;
+  margin-top: 8px;
+  border-top: 2px solid #e5e7eb;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* Notes Section */
+.notesSection {
+  margin-top: 20px;
+  padding: 16px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+}
+
+.notesLabel {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #92400e;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.notesText {
+  color: #78350f;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* Pay Button */
+.payButton {
+  width: 100%;
+  padding: 16px 24px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+}
+
+.payButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5);
+}
+
+.payButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Security Note */
+.securityNote {
+  text-align: center;
+  color: #9ca3af;
+  font-size: 0.85rem;
+  margin-top: 16px;
+}
+
+/* Mobile adjustments */
+@media (max-width: 480px) {
+  .page {
+    padding: 16px 12px;
+  }
+
+  .container {
+    margin-top: 10px;
+  }
+
+  .card {
+    padding: 20px 16px;
+  }
+
+  .infoGrid,
+  .dateGrid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .totalRowFinal {
+    font-size: 1.1rem;
+  }
+
+  .payButton {
+    font-size: 1rem;
+    padding: 14px 20px;
+  }
+}
+
+
+
+
