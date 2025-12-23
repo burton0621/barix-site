@@ -298,3 +298,18 @@
     text-align: left;
   }
 }
+
+.actionsInline {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.dangerIconButton {
+  border-color: #fee2e2;
+}
+
+.dangerIconButton:hover {
+  background: #fef2f2;
+}

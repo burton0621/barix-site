@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import DashboardNavbar from "@/components/Navbar/DashboardNavbar";
 import AddServiceModal from "@/components/Services/AddServiceModal";
-import { FiEdit2 } from "react-icons/fi";
+import ConfirmDialog from "@/components/common/ConfirmDialog/ConfirmDialog";
+import { FiEdit2, FiTrash2 } from "react-icons/fi";
 import styles from "./servicesPage.module.css";
 
 export default function ServicesPage() {
@@ -15,7 +16,13 @@ export default function ServicesPage() {
   const [userId, setUserId] = useState(null);
 
   const [services, setServices] = useState([]);
+
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingService, setEditingService] = useState(null);
+
+  // Confirm dialog state (matches your AddClientForm pattern)
+  const [confirmAction, setConfirmAction] = useState(null); // null | "delete"
+  const [pendingDeleteService, setPendingDeleteService] = useState(null);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [sortField, setSortField] = useState("created_at"); // "name" | "rate" | "created_at"
@@ -48,11 +55,8 @@ export default function ServicesPage() {
         .eq("owner_id", userId)
         .order("created_at", { ascending: false });
 
-      if (!error && data) {
-        setServices(data);
-      } else {
-        console.error("Error loading services:", error);
-      }
+      if (!error && data) setServices(data);
+      else console.error("Error loading services:", error);
     }
 
     fetchServices();
@@ -63,11 +67,74 @@ export default function ServicesPage() {
     setCurrentPage(1);
   }, [searchTerm, sortField, sortDirection]);
 
+  function openCreateModal() {
+    setEditingService(null);
+    setModalOpen(true);
+  }
+
+  function openEditModal(service) {
+    setEditingService(service);
+    setModalOpen(true);
+  }
+
   function handleServiceCreated(newService) {
     if (!newService) return;
     setServices((prev) => [newService, ...prev]);
     setCurrentPage(1);
-    setModalOpen(false);
+  }
+
+  function handleServiceUpdated(updatedService) {
+    if (!updatedService) return;
+    setServices((prev) =>
+      prev.map((s) => (s.id === updatedService.id ? updatedService : s))
+    );
+  }
+
+  function handleServiceDeleted(deletedId) {
+    setServices((prev) => prev.filter((s) => s.id !== deletedId));
+  }
+
+  // Click trash icon -> open ConfirmDialog (no window.confirm)
+  function requestDelete(service) {
+    setPendingDeleteService(service);
+    setConfirmAction("delete");
+  }
+
+  // ConfirmDialog confirm -> actually delete
+  async function handleDeleteConfirm() {
+    if (!pendingDeleteService) return;
+
+    try {
+      const { data } = await supabase.auth.getUser();
+      const uid = data?.user?.id;
+
+      if (!uid) {
+        router.push("/login");
+        return;
+      }
+
+      const { error } = await supabase
+        .from("services")
+        .delete()
+        .eq("id", pendingDeleteService.id)
+        .eq("owner_id", uid);
+
+      if (error) {
+        console.error("Delete error:", error);
+        alert(`Error deleting service. ${error.message}`);
+        return;
+      }
+
+      handleServiceDeleted(pendingDeleteService.id);
+      setPendingDeleteService(null);
+    } catch (err) {
+      console.error("Unexpected delete error:", err);
+      alert(
+        `Unexpected error deleting service: ${
+          err?.message ? err.message : String(err)
+        }`
+      );
+    }
   }
 
   function handleSort(field) {
@@ -80,9 +147,7 @@ export default function ServicesPage() {
   }
 
   function renderSortIcon(field) {
-    if (sortField !== field) {
-      return <span className={styles.sortIcon}>↕</span>;
-    }
+    if (sortField !== field) return <span className={styles.sortIcon}>↕</span>;
     return (
       <span className={`${styles.sortIcon} ${styles.sortIconActive}`}>
         {sortDirection === "asc" ? "▲" : "▼"}
@@ -113,22 +178,17 @@ export default function ServicesPage() {
           sensitivity: "base",
         }) * dir;
 
-      if (sortField === "name") {
-        return stringCompare(a.name, b.name);
-      }
+      if (sortField === "name") return stringCompare(a.name, b.name);
 
-      // UI label is "Rate" but DB column is default_rate
       if (sortField === "rate") {
         const aRate =
           typeof a.default_rate === "number"
             ? a.default_rate
             : parseFloat(a.default_rate || "0") || 0;
-
         const bRate =
           typeof b.default_rate === "number"
             ? b.default_rate
             : parseFloat(b.default_rate || "0") || 0;
-
         return (aRate - bRate) * dir;
       }
 
@@ -180,32 +240,24 @@ export default function ServicesPage() {
           </div>
 
           {hasServices && (
-            <button
-              className={styles.addButton}
-              onClick={() => setModalOpen(true)}
-            >
+            <button className={styles.addButton} onClick={openCreateModal}>
               Add Service
             </button>
           )}
         </div>
 
-        {/* Content */}
         {!hasServices ? (
           <div className={styles.emptyState}>
             <div className={styles.emptyTitle}>No Services Yet</div>
             <p className={styles.emptyMessage}>
               Add your first service to quickly build invoices.
             </p>
-            <button
-              className={styles.addFirstButton}
-              onClick={() => setModalOpen(true)}
-            >
+            <button className={styles.addFirstButton} onClick={openCreateModal}>
               Add Your First Service
             </button>
           </div>
         ) : (
           <>
-            {/* Toolbar: search */}
             <div className={styles.toolbarRow}>
               <input
                 type="text"
@@ -224,7 +276,6 @@ export default function ServicesPage() {
               </div>
             ) : (
               <>
-                {/* Table */}
                 <table className={styles.table}>
                   <thead>
                     <tr>
@@ -277,23 +328,33 @@ export default function ServicesPage() {
                             ? new Date(service.created_at).toLocaleDateString()
                             : "-"}
                         </td>
+
                         <td className={styles.actionsCell}>
-                          <button
-                            className={styles.iconButton}
-                            onClick={() =>
-                              alert("Edit service coming next ")
-                            }
-                            aria-label={`Edit ${service.name}`}
-                          >
-                            <FiEdit2 className={styles.icon} />
-                          </button>
+                          <div className={styles.actionsInline}>
+                            <button
+                              className={styles.iconButton}
+                              onClick={() => openEditModal(service)}
+                              aria-label={`Edit ${service.name}`}
+                              title="Edit"
+                            >
+                              <FiEdit2 className={styles.icon} />
+                            </button>
+
+                            <button
+                              className={`${styles.iconButton} ${styles.dangerIconButton}`}
+                              onClick={() => requestDelete(service)}
+                              aria-label={`Delete ${service.name}`}
+                              title="Delete"
+                            >
+                              <FiTrash2 className={styles.icon} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
 
-                {/* Pagination */}
                 <div className={styles.paginationRow}>
                   <div className={styles.pageInfo}>
                     {processed.totalItems > 0 && (
@@ -354,12 +415,34 @@ export default function ServicesPage() {
           </>
         )}
 
-        {/* Modal */}
+        {/* Modal (Create/Edit) */}
         <AddServiceModal
           open={modalOpen}
           onClose={() => setModalOpen(false)}
+          service={editingService}
           onCreated={handleServiceCreated}
+          onUpdated={handleServiceUpdated}
+          onDeleted={(id) => handleServiceDeleted(id)}
         />
+
+        {/* Confirm dialogs */}
+        {confirmAction === "delete" && (
+          <ConfirmDialog
+            open={true}
+            title="Delete Service"
+            message="Are you sure you want to delete this service? This action cannot be undone."
+            confirmLabel="Yes, Delete"
+            confirmType="danger"
+            onConfirm={() => {
+              setConfirmAction(null);
+              handleDeleteConfirm();
+            }}
+            onCancel={() => {
+              setConfirmAction(null);
+              setPendingDeleteService(null);
+            }}
+          />
+        )}
       </main>
     </div>
   );
