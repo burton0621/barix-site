@@ -1,117 +1,212 @@
-/* Overlay behind modal */
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(15, 23, 42, 0.55);
   display: flex;
-  justify-content: center;
   align-items: center;
-  z-index: 200;
+  justify-content: center;
+  padding: 18px;
+  z-index: 9999;
 }
 
-/* Modal container */
 .modal {
   width: 100%;
-  max-width: 480px;
+  max-width: 560px;
   background: #ffffff;
+  border: 1px solid #e5e7eb;
   border-radius: 16px;
-  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.15);
-  padding: 0;
+  box-shadow: 0 18px 50px rgba(17, 24, 39, 0.22);
   overflow: hidden;
 }
 
-/* Header */
 .header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 18px 24px;
+  justify-content: space-between;
+  padding: 16px 18px;
   border-bottom: 1px solid #e5e7eb;
+  background: #ffffff;
 }
 
 .title {
   margin: 0;
-  font-size: 1.125rem;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 750;
   color: #111827;
+  letter-spacing: -0.01em;
 }
 
 .closeButton {
-  font-size: 20px;
-  color: #6b7280;
-  background: none;
-  border: none;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  border-radius: 10px;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
+  color: #111827;
+  transition: background 0.15s ease, transform 0.05s ease;
 }
 
 .closeButton:hover {
-  color: #374151;
+  background: #f9fafb;
 }
 
-/* Form */
+.closeButton:active {
+  transform: translateY(1px);
+}
+
 .form {
-  padding: 20px 24px;
+  padding: 18px;
 }
 
 .field {
-  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
 }
 
 .label {
-  display: block;
-  font-size: 0.875rem;
+  font-size: 13px;
+  font-weight: 650;
   color: #374151;
-  margin-bottom: 4px;
 }
 
 .input {
   width: 100%;
-  padding: 10px 12px;
   border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 0.9rem;
+  border-radius: 12px;
+  padding: 11px 12px;
+  font-size: 14px;
+  background: #ffffff;
+  outline: none;
+}
+
+.input:focus {
+  border-color: #9ca3af;
+  box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.08);
 }
 
 .textarea {
   width: 100%;
-  padding: 10px 12px;
-  min-height: 80px;
   border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 0.9rem;
+  border-radius: 12px;
+  padding: 11px 12px;
+  font-size: 14px;
+  background: #ffffff;
+  outline: none;
+  min-height: 96px;
+  resize: vertical;
 }
 
-/* Footer buttons */
+.textarea:focus {
+  border-color: #9ca3af;
+  box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.08);
+}
+
 .actions {
+  margin-top: 18px;
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between; /* left delete, right cancel/save */
   gap: 12px;
-  margin-top: 20px;
+}
+
+.rightActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .cancelButton {
-  padding: 10px 18px;
-  background: #ffffff;
   border: 1px solid #d1d5db;
-  border-radius: 8px;
-  color: #374151;
+  background: #ffffff;
+  color: #111827;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-weight: 650;
+  font-size: 14px;
   cursor: pointer;
+  transition: background 0.15s ease, transform 0.05s ease;
 }
 
 .cancelButton:hover {
-  background: #f3f4f6;
+  background: #f9fafb;
+}
+
+.cancelButton:active {
+  transform: translateY(1px);
 }
 
 .saveButton {
-  padding: 10px 18px;
-  background: #2563eb;
-  border: none;
-  border-radius: 8px;
+  border: 1px solid #111827;
+  background: #111827;
   color: #ffffff;
-  font-weight: 600;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-weight: 750;
+  font-size: 14px;
   cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.05s ease;
 }
 
 .saveButton:hover {
-  background: #1d4ed8;
+  opacity: 0.92;
+}
+
+.saveButton:active {
+  transform: translateY(1px);
+}
+
+.deleteButton {
+  border: 1px solid #fecaca;
+  background: #ffffff;
+  color: #b91c1c;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-weight: 750;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.05s ease;
+}
+
+.deleteButton:hover {
+  background: #fef2f2;
+}
+
+.deleteButton:active {
+  transform: translateY(1px);
+}
+
+.saveButton:disabled,
+.cancelButton:disabled,
+.deleteButton:disabled,
+.closeButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@media (max-width: 520px) {
+  .form {
+    padding: 16px;
+  }
+
+  .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rightActions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .deleteButton {
+    width: 100%;
+  }
 }
