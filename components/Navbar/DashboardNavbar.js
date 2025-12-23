@@ -96,8 +96,8 @@ export default function DashboardNavbar() {
             Clients
           </Link>
           <Link 
-            href="/Services" 
-            className={`${styles.navLink} ${isActive("/Services") ? styles.active : ""}`}
+            href="/services" 
+            className={`${styles.navLink} ${isActive("/services") ? styles.active : ""}`}
           >
             Services
           </Link>

@@ -1,0 +1,300 @@
+.pageWrapper {
+  min-height: 100vh;
+  background: #f7f8fb;
+}
+
+.main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 28px 18px 60px;
+}
+
+.loadingWrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f7f8fb;
+}
+
+.loadingText {
+  font-size: 16px;
+  color: #111827;
+}
+
+.headerRow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  color: #0b1220;
+  margin: 0;
+}
+
+.subtitle {
+  margin: 6px 0 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.addButton {
+  border: none;
+  background: #111827;
+  color: #ffffff;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: transform 0.05s ease, opacity 0.15s ease;
+}
+
+.addButton:hover {
+  opacity: 0.92;
+}
+
+.addButton:active {
+  transform: translateY(1px);
+}
+
+.toolbarRow {
+  margin: 12px 0 12px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.searchInput {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  padding: 11px 12px;
+  font-size: 14px;
+  outline: none;
+  background: #ffffff;
+}
+
+.searchInput:focus {
+  border-color: #9ca3af;
+  box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.08);
+}
+
+.noResultsBox {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.noResultsText {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.table thead th {
+  text-align: left;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #6b7280;
+  background: #f9fafb;
+  padding: 12px 14px;
+  border-bottom: 1px solid #e5e7eb;
+  user-select: none;
+}
+
+.table tbody td {
+  padding: 14px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 14px;
+  color: #111827;
+  vertical-align: top;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.sortableHeader {
+  cursor: pointer;
+}
+
+.headerInner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sortIcon {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.sortIconActive {
+  color: #111827;
+}
+
+.descriptionHeader {
+  width: 44%;
+}
+
+.descriptionCell {
+  color: #374151;
+}
+
+.actionsHeader {
+  text-align: right;
+  width: 80px;
+}
+
+.actionsCell {
+  text-align: right;
+}
+
+.iconButton {
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  border-radius: 10px;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.05s ease;
+}
+
+.iconButton:hover {
+  background: #f9fafb;
+}
+
+.iconButton:active {
+  transform: translateY(1px);
+}
+
+.icon {
+  font-size: 16px;
+  color: #111827;
+}
+
+.paginationRow {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pageInfo {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.pageControls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pageButton {
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #111827;
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.pageButton:hover {
+  background: #f9fafb;
+}
+
+.pageButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pageButtonActive {
+  border: 1px solid #111827;
+  background: #111827;
+  color: #ffffff;
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.emptyState {
+  margin-top: 18px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 26px;
+  text-align: center;
+}
+
+.emptyTitle {
+  font-size: 18px;
+  font-weight: 750;
+  color: #111827;
+  margin-bottom: 8px;
+}
+
+.emptyMessage {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0 0 14px;
+}
+
+.addFirstButton {
+  border: none;
+  background: #111827;
+  color: #ffffff;
+  padding: 11px 14px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.addFirstButton:hover {
+  opacity: 0.92;
+}
+
+@media (max-width: 640px) {
+  .main {
+    padding: 22px 14px 48px;
+  }
+
+  .headerRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .actionsHeader,
+  .actionsCell {
+    text-align: left;
+  }
+}
