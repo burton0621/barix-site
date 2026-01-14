@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "@/lib/supabaseClient";
 import styles from "./CreateInvoiceModal.module.css";
 import SearchableSelect from "@/components/common/SearchableSelect/SearchableSelect";
@@ -13,12 +14,13 @@ function generateInvoiceNumber() {
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, "0");
   const day = String(now.getDate()).padStart(2, "0");
-  const rand = Math.floor(Math.random() * 9000) + 1000; // 4-digit random
-
+  const rand = Math.floor(Math.random() * 9000) + 1000;
   return `INV-${year}${month}${day}-${rand}`;
 }
 
 export default function CreateInvoiceModal({ open, onClose, onCreated }) {
+  const [mounted, setMounted] = useState(false);
+
   const [loadingData, setLoadingData] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -36,6 +38,11 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }) {
   const [lineItems, setLineItems] = useState([
     { serviceId: "", name: "", description: "", quantity: "1", rate: "" },
   ]);
+
+  // Mount guard for portal (prevents hydration mismatch)
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // When modal opens, load user/clients/services + reset form
   useEffect(() => {
@@ -94,6 +101,7 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }) {
 
       // Reset basic fields
       setInvoiceNumber(generateInvoiceNumber());
+      setClientId("");
       setStatus("draft");
       setNotes("");
       setLineItems([
@@ -106,7 +114,8 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }) {
     init();
   }, [open]);
 
-  if (!open) return null;
+  // If closed (or not mounted yet), render nothing
+  if (!open || !mounted) return null;
 
   const handleAddLineItem = () => {
     setLineItems((prev) => [
@@ -121,9 +130,7 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }) {
 
   const handleLineItemFieldChange = (index, field, value) => {
     setLineItems((prev) =>
-      prev.map((item, i) =>
-        i === index ? { ...item, [field]: value } : item
-      )
+      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
     );
   };
 
@@ -163,8 +170,7 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }) {
     }
 
     // 3) Existing service selected
-    const selectedService =
-      services.find((s) => s.id === selectedValue) || null;
+    const selectedService = services.find((s) => s.id === selectedValue) || null;
 
     setLineItems((prev) =>
       prev.map((item, i) => {
@@ -173,7 +179,6 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }) {
         return {
           ...item,
           serviceId: selectedValue,
-          // Keep name in state for DB, but we display description in the UI
           name: selectedService ? selectedService.name : "",
           description: selectedService?.description || "",
           rate:
@@ -268,15 +273,12 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }) {
       const lineItemsPayload = validLineItems.map((item, index) => {
         const qty = parseFloat(item.quantity || "0");
         const rate = parseFloat(item.rate || "0");
-        const lineTotal =
-          !isNaN(qty) && !isNaN(rate) ? qty * rate : 0;
+        const lineTotal = !isNaN(qty) && !isNaN(rate) ? qty * rate : 0;
 
         const rawName = (item.name || "").trim();
         const rawDesc = (item.description || "").trim();
 
-        // If name is empty, fall back to description (or a generic label)
-        const finalName =
-          rawName || (rawDesc ? rawDesc.slice(0, 80) : "Line item");
+        const finalName = rawName || (rawDesc ? rawDesc.slice(0, 80) : "Line item");
 
         return {
           invoice_id: invoice.id,
@@ -315,8 +317,9 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }) {
     }
   };
 
-  return (
-    <div className={styles.overlay}>
+  // Build the modal UI, then portal it to <body>
+  const modalContent = (
+    <div className={styles.overlay} role="dialog" aria-modal="true">
       <div className={styles.modal}>
         {/* Header */}
         <div className={styles.header}>
@@ -325,6 +328,7 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }) {
             className={styles.closeButton}
             onClick={onClose}
             disabled={saving}
+            aria-label="Close"
           >
             ✕
           </button>
@@ -424,38 +428,26 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }) {
 
                   {lineItems.map((item, index) => (
                     <div key={index} className={styles.lineItemRow}>
-                      {/* Service select */}
                       <div className={styles.colService}>
                         <SearchableSelect
                           value={item.serviceId || ""}
                           onChange={(val) => handleServiceSelect(index, val)}
                           options={[
-                            {
-                              value: NEW_SERVICE_OPTION,
-                              label: "Custom Service",
-                            },
-                            ...services.map((s) => ({
-                              value: s.id,
-                              label: s.name,
-                            })),
+                            { value: NEW_SERVICE_OPTION, label: "Custom Service" },
+                            ...services.map((s) => ({ value: s.id, label: s.name })),
                           ]}
                           placeholder="Select service"
                           disabled={saving}
                         />
                       </div>
 
-                      {/* Description (shown on invoice) */}
                       <div className={styles.colName}>
                         <input
                           className={styles.input}
                           type="text"
                           value={item.description}
                           onChange={(e) =>
-                            handleLineItemFieldChange(
-                              index,
-                              "description",
-                              e.target.value
-                            )
+                            handleLineItemFieldChange(index, "description", e.target.value)
                           }
                           placeholder="Description on invoice"
                           disabled={saving}
@@ -463,7 +455,6 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }) {
                         />
                       </div>
 
-                      {/* Quantity */}
                       <div className={styles.colQty}>
                         <input
                           className={styles.input}
@@ -472,18 +463,13 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }) {
                           step="0.01"
                           value={item.quantity}
                           onChange={(e) =>
-                            handleLineItemFieldChange(
-                              index,
-                              "quantity",
-                              e.target.value
-                            )
+                            handleLineItemFieldChange(index, "quantity", e.target.value)
                           }
                           disabled={saving}
                           required
                         />
                       </div>
 
-                      {/* Rate (pre-filled from service, but editable) */}
                       <div className={styles.colRate}>
                         <input
                           className={styles.input}
@@ -492,18 +478,13 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }) {
                           step="0.01"
                           value={item.rate}
                           onChange={(e) =>
-                            handleLineItemFieldChange(
-                              index,
-                              "rate",
-                              e.target.value
-                            )
+                            handleLineItemFieldChange(index, "rate", e.target.value)
                           }
                           disabled={saving}
                           required
                         />
                       </div>
 
-                      {/* Remove */}
                       <div className={styles.colRemove}>
                         {lineItems.length > 1 && (
                           <button
@@ -524,9 +505,7 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }) {
               {/* Notes + Totals */}
               <div className={styles.footerRow}>
                 <div className={styles.notesField}>
-                  <label className={styles.label}>
-                    Notes (shown on invoice)
-                  </label>
+                  <label className={styles.label}>Notes (shown on invoice)</label>
                   <textarea
                     className={styles.textarea}
                     value={notes}
@@ -539,23 +518,17 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }) {
                 <div className={styles.totalsBox}>
                   <div className={styles.totalRow}>
                     <span className={styles.totalLabel}>Subtotal</span>
-                    <span className={styles.totalValue}>
-                      ${subtotal.toFixed(2)}
-                    </span>
+                    <span className={styles.totalValue}>${subtotal.toFixed(2)}</span>
                   </div>
                   <div className={styles.totalRow}>
                     <span className={styles.totalLabel}>
                       Tax ({(TAX_RATE * 100).toFixed(0)}%)
                     </span>
-                    <span className={styles.totalValue}>
-                      ${taxAmount.toFixed(2)}
-                    </span>
+                    <span className={styles.totalValue}>${taxAmount.toFixed(2)}</span>
                   </div>
                   <div className={styles.totalRowFinal}>
                     <span className={styles.totalLabelFinal}>Total</span>
-                    <span className={styles.totalValueFinal}>
-                      ${total.toFixed(2)}
-                    </span>
+                    <span className={styles.totalValueFinal}>${total.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -570,11 +543,7 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }) {
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className={styles.saveButton}
-                  disabled={saving}
-                >
+                <button type="submit" className={styles.saveButton} disabled={saving}>
                   {saving ? "Creating..." : "Create Invoice"}
                 </button>
               </div>
@@ -584,4 +553,6 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }) {
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }

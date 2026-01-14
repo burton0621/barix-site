@@ -130,14 +130,18 @@
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18);
 }
 
+/* --- Table Wrapper (FIXED: correct casing for CSS Modules) --- */
+.tableWrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* --- Table Styles --- */
 .table {
   width: 100%;
-  background: white;
-  border-radius: 12px;
   border-collapse: collapse;
-  overflow: hidden;
-  border: 1px solid #e5e7eb;
+  font-size: 0.9rem;
 }
 
 .table th {
@@ -274,4 +278,26 @@
   color: #ffffff;
   font-size: 13px;
   cursor: default;
+}
+
+/* ------------------------------------------------------------------ */
+/* Responsive column control (requires the JSX to add these classes)   */
+/* ------------------------------------------------------------------ */
+@media (max-width: 640px) {
+  /* Hide Contact (2nd col) and Created (4th col) on mobile */
+  .table th:nth-child(2),
+  .table td:nth-child(2),
+  .table th:nth-child(4),
+  .table td:nth-child(4) {
+    display: none;
+  }
+
+  .table th,
+  .table td {
+    padding: 12px 10px;
+  }
+
+  .actionsHeader {
+    width: 56px;
+  }
 }
