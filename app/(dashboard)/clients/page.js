@@ -7,6 +7,7 @@ import DashboardNavbar from "@/components/Navbar/DashboardNavbar";
 import AddClientForm from "@/components/clients/AddClientForm";
 import { FiEdit2 } from "react-icons/fi";
 import styles from "./clientsPage.module.css";
+import ClientUploadModal from "@/components/clients/clientupload/page";
 
 export default function ClientsPage() {
   const router = useRouter();
@@ -21,6 +22,7 @@ export default function ClientsPage() {
   const [sortDirection, setSortDirection] = useState("desc"); // "asc" | "desc"
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20); // default desktop
+  const [showUpload, setShowUpload] = useState(false);
 
 
   // Auth check
@@ -226,18 +228,26 @@ export default function ClientsPage() {
   }
 
   return (
-    <div className={styles.pageWrapper}>
-      <DashboardNavbar />
+  <div className={styles.pageWrapper}>
+    <DashboardNavbar />
 
-      <main className={styles.main}>
-        {/* Header */}
-        <div className={styles.headerRow}>
-          <div>
-            <h1 className={styles.title}>Clients</h1>
-            <p className={styles.subtitle}>Manage your customers</p>
-          </div>
+    <main className={styles.main}>
+      {/* Header */}
+      <div className={styles.headerRow}>
+        <div>
+          <h1 className={styles.title}>Clients</h1>
+          <p className={styles.subtitle}>Manage your customers</p>
+        </div>
 
-          {hasClients && !showForm && (
+        {hasClients && !showForm && (
+          <div className={styles.headerButtons}>
+            <button
+              className={styles.uaddButton}
+              onClick={() => setShowUpload(true)}
+            >
+              Import Clients
+            </button>
+
             <button
               className={styles.addButton}
               onClick={() => {
@@ -247,35 +257,45 @@ export default function ClientsPage() {
             >
               Add Client
             </button>
-          )}
-        </div>
-
-        {/* Form (create or edit) */}
-        {showForm && (
-          <div className={styles.formWrapper}>
-            <AddClientForm
-              ownerId={userId}
-              mode={editingClient ? "edit" : "create"}
-              client={editingClient}
-              onCreated={handleClientCreated}
-              onUpdated={handleClientUpdated}
-              onDeleted={handleClientDeleted}
-              onCancel={() => {
-                setShowForm(false);
-                setEditingClient(null);
-              }}
-            />
           </div>
         )}
+      </div>
 
-        {/* Content */}
-        {!hasClients ? (
-          // Empty state
-          <div className={styles.emptyState}>
-            <div className={styles.emptyTitle}>No Clients Yet</div>
-            <p className={styles.emptyMessage}>
-              Add your first client to start sending invoices.
-            </p>
+      {/* Form (create or edit) */}
+      {showForm && (
+        <div className={styles.formWrapper}>
+          <AddClientForm
+            ownerId={userId}
+            mode={editingClient ? "edit" : "create"}
+            client={editingClient}
+            onCreated={handleClientCreated}
+            onUpdated={handleClientUpdated}
+            onDeleted={handleClientDeleted}
+            onCancel={() => {
+              setShowForm(false);
+              setEditingClient(null);
+            }}
+          />
+        </div>
+      )}
+
+      {/* Content */}
+      {!hasClients ? (
+        // Empty state
+        <div className={styles.emptyState}>
+          <div className={styles.emptyTitle}>No Clients Yet</div>
+          <p className={styles.emptyMessage}>
+            Add your first client to start sending invoices.
+          </p>
+
+          <div className={styles.headerButtons}>
+            <button
+              className={styles.uaddButton}
+              onClick={() => setShowUpload(true)}
+            >
+              Import Clients
+            </button>
+
             {!showForm && (
               <button
                 className={styles.addFirstButton}
@@ -288,170 +308,194 @@ export default function ClientsPage() {
               </button>
             )}
           </div>
-        ) : (
-          <>
-            {/* Toolbar: search */}
-            <div className={styles.toolbarRow}>
-              <input
-                type="text"
-                className={styles.searchInput}
-                placeholder="Search clients (name, email, address...)"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+        </div>
+      ) : (
+        <>
+          {/* Toolbar: search */}
+          <div className={styles.toolbarRow}>
+            <input
+              type="text"
+              className={styles.searchInput}
+              placeholder="Search clients (name, email, address...)"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          {processed.totalItems === 0 ? (
+            <div className={styles.noResultsBox}>
+              <p className={styles.noResultsText}>
+                No clients match your search.
+              </p>
             </div>
+          ) : (
+            <>
+              {/* Table */}
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th
+                      className={`${styles.sortableHeader} ${styles.colName}`}
+                      onClick={() => handleSort("name")}
+                    >
+                      <div className={styles.headerInner}>
+                        <span>Name</span>
+                        {renderSortIcon("name")}
+                      </div>
+                    </th>
 
-            {processed.totalItems === 0 ? (
-              <div className={styles.noResultsBox}>
-                <p className={styles.noResultsText}>
-                  No clients match your search.
-                </p>
-              </div>
-            ) : (
-              <>
-                {/* Table */}
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th
-                        className={`${styles.sortableHeader} ${styles.colName}`}
-                        onClick={() => handleSort("name")}
+                    <th
+                      className={`${styles.sortableHeader} ${styles.colContact}`}
+                      onClick={() => handleSort("contact")}
+                    >
+                      <div className={styles.headerInner}>
+                        <span>Contact</span>
+                        {renderSortIcon("contact")}
+                      </div>
+                    </th>
+
+                    <th
+                      className={`${styles.sortableHeader} ${styles.colLocation}`}
+                      onClick={() => handleSort("service_city")}
+                    >
+                      <div className={styles.headerInner}>
+                        <span>Location</span>
+                        {renderSortIcon("service_city")}
+                      </div>
+                    </th>
+
+                    <th
+                      className={`${styles.sortableHeader} ${styles.colCreated}`}
+                      onClick={() => handleSort("created_at")}
+                    >
+                      <div className={styles.headerInner}>
+                        <span>Created</span>
+                        {renderSortIcon("created_at")}
+                      </div>
+                    </th>
+
+                    <th
+                      className={`${styles.actionsHeader} ${styles.colActions}`}
+                    >
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {processed.pageItems.map((client) => (
+                    <tr key={client.id}>
+                      <td className={styles.colName}>{client.name}</td>
+
+                      <td className={styles.colContact}>
+                        {client.email}
+                        <br />
+                        <span className={styles.phone}>{client.phone}</span>
+                      </td>
+
+                      <td className={styles.colLocation}>
+                        {client.service_city || "-"}
+                      </td>
+
+                      <td className={styles.colCreated}>
+                        {client.created_at
+                          ? new Date(client.created_at).toLocaleDateString()
+                          : "-"}
+                      </td>
+
+                      <td
+                        className={`${styles.actionsCell} ${styles.colActions}`}
                       >
-                        <div className={styles.headerInner}>
-                          <span>Name</span>
-                          {renderSortIcon("name")}
-                        </div>
-                      </th>
-
-                      <th
-                        className={`${styles.sortableHeader} ${styles.colContact}`}
-                        onClick={() => handleSort("contact")}
-                      >
-                        <div className={styles.headerInner}>
-                          <span>Contact</span>
-                          {renderSortIcon("contact")}
-                        </div>
-                      </th>
-
-                      <th
-                        className={`${styles.sortableHeader} ${styles.colLocation}`}
-                        onClick={() => handleSort("service_city")}
-                      >
-                        <div className={styles.headerInner}>
-                          <span>Location</span>
-                          {renderSortIcon("service_city")}
-                        </div>
-                      </th>
-
-                      <th
-                        className={`${styles.sortableHeader} ${styles.colCreated}`}
-                        onClick={() => handleSort("created_at")}
-                      >
-                        <div className={styles.headerInner}>
-                          <span>Created</span>
-                          {renderSortIcon("created_at")}
-                        </div>
-                      </th>
-
-                      <th className={`${styles.actionsHeader} ${styles.colActions}`}>Actions</th>
+                        <button
+                          className={styles.iconButton}
+                          onClick={() => {
+                            setEditingClient(client);
+                            setShowForm(true);
+                          }}
+                          aria-label={`Edit ${client.name}`}
+                        >
+                          <FiEdit2 className={styles.icon} />
+                        </button>
+                      </td>
                     </tr>
-                  </thead>
+                  ))}
+                </tbody>
+              </table>
 
-                  <tbody>
-                    {processed.pageItems.map((client) => (
-                      <tr key={client.id}>
-                        <td className={styles.colName}>{client.name}</td>
-
-                        <td className={styles.colContact}>
-                          {client.email}
-                          <br />
-                          <span className={styles.phone}>{client.phone}</span>
-                        </td>
-
-                        <td className={styles.colLocation}>{client.service_city || "-"}</td>
-
-                        <td className={styles.colCreated}>
-                          {client.created_at ? new Date(client.created_at).toLocaleDateString() : "-"}
-                        </td>
-
-                        <td className={`${styles.actionsCell} ${styles.colActions}`}>
-                          <button
-                            className={styles.iconButton}
-                            onClick={() => {
-                              setEditingClient(client);
-                              setShowForm(true);
-                            }}
-                            aria-label={`Edit ${client.name}`}
-                          >
-                            <FiEdit2 className={styles.icon} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-
-                  
-                </table>
-
-                {/* Pagination */}
-                <div className={styles.paginationRow}>
-                  <div className={styles.pageInfo}>
-                    {processed.totalItems > 0 && (
-                      <>
-                        Showing{" "}
-                        {processed.startIndex + 1}–
-                        {Math.min(
-                          processed.startIndex + pageSize,
-                          processed.totalItems
-                        )}{" "}
-                        of {processed.totalItems} clients
-                      </>
-                    )}
-                  </div>
-                  <div className={styles.pageControls}>
-                    <button
-                      className={styles.pageButton}
-                      disabled={processed.page === 1}
-                      onClick={() =>
-                        setCurrentPage((p) => Math.max(1, p - 1))
-                      }
-                    >
-                      Previous
-                    </button>
-                    {Array.from(
-                      { length: processed.totalPages },
-                      (_, idx) => idx + 1
-                    ).map((page) => (
-                      <button
-                        key={page}
-                        className={
-                          page === processed.page
-                            ? styles.pageButtonActive
-                            : styles.pageButton
-                        }
-                        onClick={() => setCurrentPage(page)}
-                      >
-                        {page}
-                      </button>
-                    ))}
-                    <button
-                      className={styles.pageButton}
-                      disabled={processed.page === processed.totalPages}
-                      onClick={() =>
-                        setCurrentPage((p) =>
-                          Math.min(processed.totalPages, p + 1)
-                        )
-                      }
-                    >
-                      Next
-                    </button>
-                  </div>
+              {/* Pagination */}
+              <div className={styles.paginationRow}>
+                <div className={styles.pageInfo}>
+                  {processed.totalItems > 0 && (
+                    <>
+                      Showing {processed.startIndex + 1}–
+                      {Math.min(
+                        processed.startIndex + pageSize,
+                        processed.totalItems
+                      )}{" "}
+                      of {processed.totalItems} clients
+                    </>
+                  )}
                 </div>
-              </>
-            )}
-          </>
-        )}
-      </main>
-    </div>
-  );
+
+                <div className={styles.pageControls}>
+                  <button
+                    className={styles.pageButton}
+                    disabled={processed.page === 1}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  >
+                    Previous
+                  </button>
+
+                  {Array.from(
+                    { length: processed.totalPages },
+                    (_, idx) => idx + 1
+                  ).map((page) => (
+                    <button
+                      key={page}
+                      className={
+                        page === processed.page
+                          ? styles.pageButtonActive
+                          : styles.pageButton
+                      }
+                      onClick={() => setCurrentPage(page)}
+                    >
+                      {page}
+                    </button>
+                  ))}
+
+                  <button
+                    className={styles.pageButton}
+                    disabled={processed.page === processed.totalPages}
+                    onClick={() =>
+                      setCurrentPage((p) =>
+                        Math.min(processed.totalPages, p + 1)
+                      )
+                    }
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </>
+      )}
+    </main>
+
+    {/*Render the modal once, at the page root level */}
+    <ClientUploadModal
+      open={showUpload}
+      onClose={() => setShowUpload(false)}
+      ownerId={userId}
+      existingClients={clients}
+      onImported={(inserted) => {
+        if (inserted?.length) {
+          setClients((prev) => [...inserted, ...prev]);
+          setCurrentPage(1);
+        }
+        setShowUpload(false);
+      }}
+    />
+  </div>
+);
 }
