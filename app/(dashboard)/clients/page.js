@@ -20,7 +20,8 @@ export default function ClientsPage() {
   const [sortField, setSortField] = useState("created_at"); // "name" | "contact" | "service_city" | "created_at"
   const [sortDirection, setSortDirection] = useState("desc"); // "asc" | "desc"
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 10;
+  const [pageSize, setPageSize] = useState(20); // default desktop
+
 
   // Auth check
   useEffect(() => {
@@ -35,6 +36,39 @@ export default function ClientsPage() {
     }
     checkAuth();
   }, [router]);
+
+  useEffect(() => {
+    function updatePageSize() {
+      // match your CSS breakpoint (640px)
+      const isMobile = window.matchMedia("(max-width: 640px)").matches;
+      setPageSize(isMobile ? 8 : 10);
+    }
+
+    updatePageSize(); // run on mount
+
+    const mq = window.matchMedia("(max-width: 640px)");
+
+    // Listen for changes (orientation change / resize)
+    if (mq.addEventListener) {
+      mq.addEventListener("change", updatePageSize);
+    } else {
+      // Safari fallback
+      mq.addListener(updatePageSize);
+    }
+
+    return () => {
+      if (mq.removeEventListener) {
+        mq.removeEventListener("change", updatePageSize);
+      } else {
+        mq.removeListener(updatePageSize);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+  setCurrentPage(1);
+}, [pageSize]);
+
 
   // Fetch clients
   useEffect(() => {
@@ -179,7 +213,7 @@ export default function ClientsPage() {
       startIndex,
       pageItems,
     };
-  }, [clients, searchTerm, sortField, sortDirection, currentPage]);
+  }, [clients, searchTerm, sortField, sortDirection, currentPage, pageSize]);
 
   const hasClients = clients.length > 0;
 
@@ -280,7 +314,7 @@ export default function ClientsPage() {
                   <thead>
                     <tr>
                       <th
-                        className={styles.sortableHeader}
+                        className={`${styles.sortableHeader} ${styles.colName}`}
                         onClick={() => handleSort("name")}
                       >
                         <div className={styles.headerInner}>
@@ -288,8 +322,9 @@ export default function ClientsPage() {
                           {renderSortIcon("name")}
                         </div>
                       </th>
+
                       <th
-                        className={styles.sortableHeader}
+                        className={`${styles.sortableHeader} ${styles.colContact}`}
                         onClick={() => handleSort("contact")}
                       >
                         <div className={styles.headerInner}>
@@ -297,17 +332,19 @@ export default function ClientsPage() {
                           {renderSortIcon("contact")}
                         </div>
                       </th>
+
                       <th
-                        className={styles.sortableHeader}
+                        className={`${styles.sortableHeader} ${styles.colLocation}`}
                         onClick={() => handleSort("service_city")}
                       >
                         <div className={styles.headerInner}>
-                          <span>Service City</span>
+                          <span>Location</span>
                           {renderSortIcon("service_city")}
                         </div>
                       </th>
+
                       <th
-                        className={styles.sortableHeader}
+                        className={`${styles.sortableHeader} ${styles.colCreated}`}
                         onClick={() => handleSort("created_at")}
                       >
                         <div className={styles.headerInner}>
@@ -315,27 +352,29 @@ export default function ClientsPage() {
                           {renderSortIcon("created_at")}
                         </div>
                       </th>
-                      <th className={styles.actionsHeader}>Actions</th>
+
+                      <th className={`${styles.actionsHeader} ${styles.colActions}`}>Actions</th>
                     </tr>
                   </thead>
+
                   <tbody>
                     {processed.pageItems.map((client) => (
                       <tr key={client.id}>
-                        <td>{client.name}</td>
-                        <td>
+                        <td className={styles.colName}>{client.name}</td>
+
+                        <td className={styles.colContact}>
                           {client.email}
                           <br />
                           <span className={styles.phone}>{client.phone}</span>
                         </td>
-                        <td>{client.service_city || "-"}</td>
-                        <td>
-                          {client.created_at
-                            ? new Date(
-                                client.created_at
-                              ).toLocaleDateString()
-                            : "-"}
+
+                        <td className={styles.colLocation}>{client.service_city || "-"}</td>
+
+                        <td className={styles.colCreated}>
+                          {client.created_at ? new Date(client.created_at).toLocaleDateString() : "-"}
                         </td>
-                        <td className={styles.actionsCell}>
+
+                        <td className={`${styles.actionsCell} ${styles.colActions}`}>
                           <button
                             className={styles.iconButton}
                             onClick={() => {
@@ -350,6 +389,8 @@ export default function ClientsPage() {
                       </tr>
                     ))}
                   </tbody>
+
+                  
                 </table>
 
                 {/* Pagination */}

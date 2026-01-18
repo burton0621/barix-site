@@ -334,3 +334,14 @@
   color: #111827;
   box-sizing: border-box;
 }
+
+.overlay {
+  z-index: 9999;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.modal {
+  max-height: calc(100vh - 32px);
+}
+
