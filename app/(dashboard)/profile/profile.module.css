@@ -542,3 +542,310 @@
 .modalConfirmDanger:hover {
   background: #b91c1c;
 }
+/* Payout Settings Section - for Stripe Connect status and onboarding */
+.payoutCard {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 1px solid #86efac;
+  padding: 24px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.payoutCard.pending {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border-color: #fcd34d;
+}
+
+.payoutCard.notConnected {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-color: #cbd5e1;
+}
+
+.payoutHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.payoutTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.payoutStatus {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.statusDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.statusDot.enabled {
+  background-color: #22c55e;
+}
+
+.statusDot.pending {
+  background-color: #f59e0b;
+}
+
+.statusDot.notConnected {
+  background-color: #94a3b8;
+}
+
+.payoutDescription {
+  color: #475569;
+  font-size: 0.95rem;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.payoutBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: #0f172a;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.payoutBtn:hover {
+  background: #1e293b;
+}
+
+.payoutBtn:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+.payoutBtn.secondary {
+  background: transparent;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+}
+
+.payoutBtn.secondary:hover {
+  background: #f1f5f9;
+}
+
+.payoutInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(0,0,0,0.1);
+}
+
+.payoutInfoRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+}
+
+.payoutInfoLabel {
+  color: #64748b;
+}
+
+.payoutInfoValue {
+  color: #1e293b;
+  font-weight: 500;
+}
+
+/* Balance Section - shows available and pending funds */
+.balanceSection {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.balanceGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 500px) {
+  .balanceGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.balanceCard {
+  background: white;
+  border-radius: 10px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.balanceLabel {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.balanceAmount {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #16a34a;
+}
+
+.balanceAmountPending {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.balanceSubtext {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+/* Instant Payout Section - for fast cash outs */
+.instantPayoutSection {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 1px solid #fcd34d;
+  border-radius: 10px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.instantPayoutHeader {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.instantPayoutTitle {
+  font-weight: 600;
+  color: #92400e;
+  font-size: 1rem;
+}
+
+.instantPayoutFee {
+  font-size: 0.75rem;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  padding: 2px 8px;
+  border-radius: 12px;
+  color: #92400e;
+}
+
+.instantPayoutDesc {
+  font-size: 0.85rem;
+  color: #78350f;
+  margin-bottom: 12px;
+}
+
+.instantPayoutForm {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+}
+
+@media (max-width: 500px) {
+  .instantPayoutForm {
+    flex-direction: column;
+  }
+}
+
+.payoutInputGroup {
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0 12px;
+  flex: 1;
+}
+
+.currencySymbol {
+  color: #6b7280;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.payoutInput {
+  border: none;
+  background: transparent;
+  padding: 12px 8px;
+  font-size: 1rem;
+  width: 100%;
+  outline: none;
+}
+
+.payoutInput::-webkit-outer-spin-button,
+.payoutInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.payoutInput[type=number] {
+  -moz-appearance: textfield;
+}
+
+.instantPayoutBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.instantPayoutBtn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  transform: translateY(-1px);
+}
+
+.instantPayoutBtn:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.maxPayoutNote {
+  font-size: 0.75rem;
+  color: #92400e;
+  margin-top: 8px;
+  text-align: right;
+}
+
+.noBalanceText {
+  font-size: 0.9rem;
+  color: #64748b;
+  text-align: center;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+

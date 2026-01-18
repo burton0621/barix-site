@@ -3,16 +3,35 @@
 /*
   Profile Page
   ------------
-  Contractors manage company profile details.
-  Admins can edit; non-admins can view only.
+  Contractors manage their business information.
+
+  Sections include:
+  - Payout Settings (Stripe Connect) - Admin only
+  - Business Information - Admin only edit
+  - Company Logo - Admin only edit
+  - Business Address - Admin only edit
+  - Contact Information - Admin only edit
+  - Service Regions - Admin only edit
+  - Licenses - Admin only edit
 */
 
-import { useState, useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/providers/AuthProvider";
 import DashboardNavbar from "@/components/Navbar/DashboardNavbar";
 import styles from "./profile.module.css";
-import { FaPencilAlt, FaPlus, FaTrash } from "react-icons/fa";
+
+import {
+  FaPencilAlt,
+  FaPlus,
+  FaTrash,
+  FaUniversity,
+  FaCheckCircle,
+  FaClock,
+  FaBolt,
+  FaWallet,
+} from "react-icons/fa";
 
 function ConfirmModal({
   open,
@@ -47,7 +66,9 @@ function ConfirmModal({
           <button
             type="button"
             className={
-              confirmTone === "danger" ? styles.modalConfirmDanger : styles.modalConfirm
+              confirmTone === "danger"
+                ? styles.modalConfirmDanger
+                : styles.modalConfirm
             }
             onClick={onConfirm}
             disabled={loading}
@@ -62,8 +83,10 @@ function ConfirmModal({
 
 export default function ProfilePage() {
   const { isAdmin, isLoading: authLoading } = useAuth();
-  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
+  const [loading, setLoading] = useState(true);
   const [editingSection, setEditingSection] = useState(null);
 
   // MAIN PROFILE FIELDS
@@ -73,6 +96,28 @@ export default function ProfilePage() {
   const [businessEmail, setBusinessEmail] = useState("");
   const [businessWebsite, setBusinessWebsite] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
+  const [contractorId, setContractorId] = useState(null);
+
+  // STRIPE CONNECT STATE
+  const [stripeStatus, setStripeStatus] = useState({
+    connected: false,
+    payoutsEnabled: false,
+    chargesEnabled: false,
+    requirements: null,
+    loading: true,
+  });
+  const [connectingStripe, setConnectingStripe] = useState(false);
+
+  // BALANCE STATE
+  const [balance, setBalance] = useState({
+    available: 0,
+    pending: 0,
+    instantAvailable: 0,
+    instantPayoutEnabled: false,
+    loading: true,
+  });
+  const [processingPayout, setProcessingPayout] = useState(false);
+  const [payoutAmount, setPayoutAmount] = useState("");
 
   // RELATIONAL TABLE STATES
   const [addresses, setAddresses] = useState([]);
@@ -80,7 +125,7 @@ export default function ProfilePage() {
   const [licenses, setLicenses] = useState([]);
 
   // UI feedback
-  const [banner, setBanner] = useState({ type: "", message: "" }); // type: "success" | "error" | ""
+  const [banner, setBanner] = useState({ type: "", message: "" }); // "success" | "error" | ""
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
   const [confirmLogoDeleteOpen, setConfirmLogoDeleteOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -100,6 +145,162 @@ export default function ProfilePage() {
     []
   );
 
+  // Stripe callback status in URL params
+  useEffect(() => {
+    const stripeStatusParam = searchParams.get("stripe_status");
+    const stripeError = searchParams.get("stripe_error");
+
+    if (stripeStatusParam === "complete") {
+      console.log("Stripe onboarding completed successfully");
+    } else if (stripeStatusParam === "pending") {
+      console.log("Stripe onboarding incomplete - additional info needed");
+    } else if (stripeError) {
+      console.error("Stripe onboarding error:", stripeError);
+    }
+  }, [searchParams]);
+
+  // Fetch the current Stripe Connect status from our API
+  async function fetchStripeStatus(userId) {
+    try {
+      const response = await fetch(
+        `/api/stripe/connect/status?contractorId=${userId}`
+      );
+      const data = await response.json();
+
+      setStripeStatus({
+        connected: data.connected || false,
+        payoutsEnabled: data.payoutsEnabled || false,
+        chargesEnabled: data.chargesEnabled || false,
+        requirements: data.requirements || null,
+        loading: false,
+      });
+
+      if (data.payoutsEnabled) {
+        fetchBalance(userId);
+      } else {
+        setBalance((prev) => ({ ...prev, loading: false }));
+      }
+    } catch (error) {
+      console.error("Error fetching Stripe status:", error);
+      setStripeStatus((prev) => ({ ...prev, loading: false }));
+      setBalance((prev) => ({ ...prev, loading: false }));
+    }
+  }
+
+  // Fetch the available balance for instant payouts
+  async function fetchBalance(userId) {
+    try {
+      const response = await fetch(
+        `/api/stripe/connect/balance?contractorId=${userId}`
+      );
+      const data = await response.json();
+
+      setBalance({
+        available: data.available || 0,
+        pending: data.pending || 0,
+        instantAvailable: data.instantAvailable || 0,
+        instantPayoutEnabled: data.instantPayoutEnabled || false,
+        loading: false,
+      });
+    } catch (error) {
+      console.error("Error fetching balance:", error);
+      setBalance((prev) => ({ ...prev, loading: false }));
+    }
+  }
+
+  // Process an instant payout
+  async function handleInstantPayout() {
+    const amount = parseFloat(payoutAmount);
+
+    if (!amount || amount <= 0) {
+      alert("Please enter a valid amount");
+      return;
+    }
+
+    if (amount > balance.instantAvailable) {
+      alert(
+        `Maximum instant payout amount is $${balance.instantAvailable.toFixed(2)}`
+      );
+      return;
+    }
+
+    const fee = Math.max(amount * 0.01, 0.5);
+    const netAmount = amount - fee;
+
+    const confirmed = window.confirm(
+      `Instant Payout Summary:\n\n` +
+        `Amount: $${amount.toFixed(2)}\n` +
+        `Fee (1%): $${fee.toFixed(2)}\n` +
+        `You'll receive: $${netAmount.toFixed(2)}\n\n` +
+        `Funds will arrive in minutes. Continue?`
+    );
+    if (!confirmed) return;
+
+    setProcessingPayout(true);
+
+    try {
+      const response = await fetch("/api/stripe/connect/instant-payout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contractorId, amount }),
+      });
+
+      const data = await response.json();
+
+      if (data.error) {
+        alert("Payout failed: " + data.error);
+        return;
+      }
+
+      alert(
+        `Instant payout successful!\n\n` +
+          `Amount: $${data.payout.amount.toFixed(2)}\n` +
+          `Fee: $${data.payout.fee.toFixed(2)}\n` +
+          `Funds should arrive within minutes.`
+      );
+
+      setPayoutAmount("");
+      fetchBalance(contractorId);
+    } catch (error) {
+      console.error("Instant payout error:", error);
+      alert("Failed to process instant payout. Please try again.");
+    } finally {
+      setProcessingPayout(false);
+    }
+  }
+
+  // Start Stripe Connect onboarding
+  async function startStripeOnboarding() {
+    if (!contractorId) return;
+
+    setConnectingStripe(true);
+    try {
+      const response = await fetch("/api/stripe/connect/onboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contractorId,
+          email: businessEmail,
+          companyName,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.error) {
+        alert("Error setting up payouts: " + data.error);
+        return;
+      }
+
+      window.location.href = data.onboardingUrl;
+    } catch (error) {
+      console.error("Error starting Stripe onboarding:", error);
+      alert("Failed to start payout setup. Please try again.");
+    } finally {
+      setConnectingStripe(false);
+    }
+  }
+
   useEffect(() => {
     async function load() {
       setBanner({ type: "", message: "" });
@@ -109,9 +310,11 @@ export default function ProfilePage() {
       } = await supabase.auth.getUser();
 
       if (!user) {
-        window.location.href = "/login";
+        router.push("/login");
         return;
       }
+
+      setContractorId(user.id);
 
       // Load main contractor profile
       const { data: profile, error: profileErr } = await supabase
@@ -131,9 +334,19 @@ export default function ProfilePage() {
         setBusinessEmail(profile.business_email || "");
         setBusinessWebsite(profile.business_website || "");
         setLogoUrl(profile.logo_url || "");
+
+        if (profile.stripe_account_id) {
+          fetchStripeStatus(user.id);
+        } else {
+          setStripeStatus((prev) => ({ ...prev, loading: false }));
+          setBalance((prev) => ({ ...prev, loading: false }));
+        }
+      } else {
+        setStripeStatus((prev) => ({ ...prev, loading: false }));
+        setBalance((prev) => ({ ...prev, loading: false }));
       }
 
-      // Load ADDRESSES
+      // Load addresses
       const { data: addressRows } = await supabase
         .from("contractor_addresses")
         .select("*")
@@ -146,7 +359,7 @@ export default function ProfilePage() {
 
       setAddresses(normalizedAddresses);
 
-      // Load SERVICE REGIONS
+      // Load service regions
       const { data: regions } = await supabase
         .from("contractor_service_regions")
         .select("*")
@@ -154,7 +367,7 @@ export default function ProfilePage() {
 
       setServiceRegions(regions?.map((r) => r.region_name) || []);
 
-      // Load LICENSES
+      // Load licenses
       const { data: licenseRows } = await supabase
         .from("contractor_licenses")
         .select("*")
@@ -172,7 +385,7 @@ export default function ProfilePage() {
     }
 
     load();
-  }, []);
+  }, [router]);
 
   function startEdit(sectionKey) {
     if (!isAdmin) return;
@@ -181,7 +394,6 @@ export default function ProfilePage() {
   }
 
   function cancelEdit() {
-    // keeping it simple: just close edit mode (no revert)
     setEditingSection(null);
     setConfirmSaveOpen(false);
     setBanner({ type: "", message: "" });
@@ -196,9 +408,7 @@ export default function ProfilePage() {
     } = await supabase.auth.getUser();
 
     try {
-      /* -------------------------------
-         1. UPDATE MAIN PROFILE
-      --------------------------------*/
+      // 1) Update main profile
       const { error: mainErr } = await supabase
         .from("contractor_profiles")
         .update({
@@ -213,14 +423,11 @@ export default function ProfilePage() {
 
       if (mainErr) throw mainErr;
 
-      /* -------------------------------
-         2. REPLACE ADDRESSES
-      --------------------------------*/
+      // 2) Replace addresses
       const { error: addrDelErr } = await supabase
         .from("contractor_addresses")
         .delete()
         .eq("contractor_id", user.id);
-
       if (addrDelErr) throw addrDelErr;
 
       if (addresses.length > 0) {
@@ -236,46 +443,35 @@ export default function ProfilePage() {
             zip: a.zip,
             country: "USA",
           });
-
         if (addrInsErr) throw addrInsErr;
       }
 
-      /* -------------------------------
-         3. REPLACE SERVICE REGIONS
-      --------------------------------*/
+      // 3) Replace service regions
       const { error: regionDelErr } = await supabase
         .from("contractor_service_regions")
         .delete()
         .eq("contractor_id", user.id);
-
       if (regionDelErr) throw regionDelErr;
 
       if (serviceRegions.length > 0) {
         const rows = serviceRegions
           .map((r) => (r || "").trim())
           .filter(Boolean)
-          .map((r) => ({
-            contractor_id: user.id,
-            region_name: r,
-          }));
+          .map((r) => ({ contractor_id: user.id, region_name: r }));
 
         if (rows.length) {
           const { error: regionInsErr } = await supabase
             .from("contractor_service_regions")
             .insert(rows);
-
           if (regionInsErr) throw regionInsErr;
         }
       }
 
-      /* -------------------------------
-         4. REPLACE LICENSES
-      --------------------------------*/
+      // 4) Replace licenses
       const { error: licDelErr } = await supabase
         .from("contractor_licenses")
         .delete()
         .eq("contractor_id", user.id);
-
       if (licDelErr) throw licDelErr;
 
       if (licenses.length > 0) {
@@ -297,7 +493,6 @@ export default function ProfilePage() {
           const { error: licInsErr } = await supabase
             .from("contractor_licenses")
             .insert(rows);
-
           if (licInsErr) throw licInsErr;
         }
       }
@@ -333,28 +528,22 @@ export default function ProfilePage() {
       const newFileName = `logo.${fileExt}`;
       const filePath = `${user.id}/${newFileName}`;
 
-      // Upload file
       const { error: uploadError } = await supabase.storage
         .from("contractor-logos")
         .upload(filePath, file, { upsert: true });
-
       if (uploadError) throw uploadError;
 
-      // Create signed URL (valid 1 year)
       const { data: signedUrlData, error: signedErr } = await supabase.storage
         .from("contractor-logos")
         .createSignedUrl(filePath, 60 * 60 * 24 * 365);
-
       if (signedErr) throw signedErr;
 
       const signedURL = signedUrlData.signedUrl;
 
-      // Save URL to profile table
       const { error: dbErr } = await supabase
         .from("contractor_profiles")
         .update({ logo_url: signedURL })
         .eq("id", user.id);
-
       if (dbErr) throw dbErr;
 
       setLogoUrl(signedURL);
@@ -364,7 +553,6 @@ export default function ProfilePage() {
       setBanner({ type: "error", message: "Failed to upload logo." });
     } finally {
       setLogoWorking(false);
-      // allow re-upload same file
       event.target.value = "";
     }
   }
@@ -380,11 +568,9 @@ export default function ProfilePage() {
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      // List files in the user's folder
       const { data: files, error: listError } = await supabase.storage
         .from("contractor-logos")
         .list(user.id);
-
       if (listError) throw listError;
 
       if (files?.length) {
@@ -392,7 +578,6 @@ export default function ProfilePage() {
         const { error: deleteError } = await supabase.storage
           .from("contractor-logos")
           .remove(filePaths);
-
         if (deleteError) throw deleteError;
       }
 
@@ -400,7 +585,6 @@ export default function ProfilePage() {
         .from("contractor_profiles")
         .update({ logo_url: null })
         .eq("id", user.id);
-
       if (dbErr) throw dbErr;
 
       setLogoUrl("");
@@ -432,37 +616,21 @@ export default function ProfilePage() {
       <DashboardNavbar />
 
       <main className={styles.main}>
-        {/* Page Header */}
+        {/* Header */}
         <div className={styles.header}>
-          <div className={styles.headerLeft}>
-            <div className={styles.brandMark}>
-              {logoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={logoUrl} alt="Logo" className={styles.brandLogo} />
-              ) : (
-                <div className={styles.brandFallback}>
-                  {(companyName || "B").charAt(0).toUpperCase()}
-                </div>
-              )}
-            </div>
-
-            <div>
-              <h1 className={styles.h1}>
-                {companyName ? `${companyName} Profile` : "Company Profile"}
-              </h1>
-              <p className={styles.subhead}>
-                {isAdmin
-                  ? "Update your company details used across invoices and client communications."
-                  : "View your company details. Contact an admin to make changes."}
-              </p>
-            </div>
+          <div>
+            <h1 className={styles.h1}>
+              {companyName ? `${companyName} Profile` : "Company Profile"}
+            </h1>
+            <p className={styles.subhead}>
+              {isAdmin
+                ? "Update your company details used across invoices and client communications."
+                : "View your company details. Contact an admin to make changes."}
+            </p>
           </div>
 
-          {/* Right-side status */}
           <div className={styles.headerRight}>
-            <span className={styles.rolePill}>
-              {isAdmin ? "Admin" : "User"}
-            </span>
+            <span className={styles.rolePill}>{isAdmin ? "Admin" : "User"}</span>
           </div>
         </div>
 
@@ -470,14 +638,200 @@ export default function ProfilePage() {
         {banner.message ? (
           <div
             className={
-              banner.type === "success" ? styles.bannerSuccess : styles.bannerError
+              banner.type === "success"
+                ? styles.bannerSuccess
+                : styles.bannerError
             }
           >
             {banner.message}
           </div>
         ) : null}
 
-        {/* Logo Card */}
+        {/* Payout Settings */}
+        {isAdmin && (
+          <div
+            className={`${styles.payoutCard} ${
+              stripeStatus.payoutsEnabled
+                ? ""
+                : stripeStatus.connected
+                ? styles.pending
+                : styles.notConnected
+            }`}
+          >
+            <div className={styles.payoutHeader}>
+              <h2 className={styles.payoutTitle}>
+                <FaUniversity style={{ marginRight: 8, verticalAlign: "middle" }} />
+                Payout Settings
+              </h2>
+
+              <div className={styles.payoutStatus}>
+                <span
+                  className={`${styles.statusDot} ${
+                    stripeStatus.payoutsEnabled
+                      ? styles.enabled
+                      : stripeStatus.connected
+                      ? styles.pending
+                      : styles.notConnected
+                  }`}
+                />
+                {stripeStatus.loading ? (
+                  "Checking..."
+                ) : stripeStatus.payoutsEnabled ? (
+                  <span style={{ color: "#16a34a" }}>Payouts Enabled</span>
+                ) : stripeStatus.connected ? (
+                  <span style={{ color: "#d97706" }}>Verification Pending</span>
+                ) : (
+                  <span style={{ color: "#64748b" }}>Not Connected</span>
+                )}
+              </div>
+            </div>
+
+            {stripeStatus.loading ? (
+              <p className={styles.payoutDescription}>Loading payout status...</p>
+            ) : stripeStatus.payoutsEnabled ? (
+              <>
+                <p className={styles.payoutDescription}>
+                  <FaCheckCircle style={{ color: "#22c55e", marginRight: 6 }} />
+                  Your bank account is connected and you can receive payments from
+                  clients.
+                </p>
+
+                <div className={styles.balanceSection}>
+                  <div className={styles.balanceGrid}>
+                    <div className={styles.balanceCard}>
+                      <div className={styles.balanceLabel}>
+                        <FaWallet style={{ marginRight: 6 }} />
+                        Available Balance
+                      </div>
+                      <div className={styles.balanceAmount}>
+                        {balance.loading
+                          ? "..."
+                          : `$${balance.available.toFixed(2)}`}
+                      </div>
+                      <div className={styles.balanceSubtext}>Ready for payout</div>
+                    </div>
+
+                    <div className={styles.balanceCard}>
+                      <div className={styles.balanceLabel}>
+                        <FaClock style={{ marginRight: 6 }} />
+                        Pending
+                      </div>
+                      <div className={styles.balanceAmountPending}>
+                        {balance.loading
+                          ? "..."
+                          : `$${balance.pending.toFixed(2)}`}
+                      </div>
+                      <div className={styles.balanceSubtext}>
+                        Processing (2 days)
+                      </div>
+                    </div>
+                  </div>
+
+                  {!balance.loading && balance.available > 0 && (
+                    <div className={styles.instantPayoutSection}>
+                      <div className={styles.instantPayoutHeader}>
+                        <FaBolt style={{ color: "#f59e0b", marginRight: 6 }} />
+                        <span className={styles.instantPayoutTitle}>
+                          Instant Payout
+                        </span>
+                        <span className={styles.instantPayoutFee}>
+                          1% fee (min $0.50)
+                        </span>
+                      </div>
+
+                      <p className={styles.instantPayoutDesc}>
+                        Get your money in minutes instead of waiting 2 business
+                        days.
+                      </p>
+
+                      <div className={styles.instantPayoutForm}>
+                        <div className={styles.payoutInputGroup}>
+                          <span className={styles.currencySymbol}>$</span>
+                          <input
+                            type="number"
+                            className={styles.payoutInput}
+                            placeholder="0.00"
+                            value={payoutAmount}
+                            onChange={(e) => setPayoutAmount(e.target.value)}
+                            max={balance.instantAvailable}
+                            step="0.01"
+                            disabled={processingPayout}
+                          />
+                        </div>
+
+                        <button
+                          className={styles.instantPayoutBtn}
+                          onClick={handleInstantPayout}
+                          disabled={
+                            processingPayout ||
+                            !payoutAmount ||
+                            parseFloat(payoutAmount) <= 0
+                          }
+                        >
+                          {processingPayout ? "Processing..." : "Cash Out Now"}
+                        </button>
+                      </div>
+
+                      <div className={styles.maxPayoutNote}>
+                        Max instant: ${balance.instantAvailable.toFixed(2)}
+                      </div>
+                    </div>
+                  )}
+
+                  {!balance.loading &&
+                    balance.available === 0 &&
+                    balance.pending === 0 && (
+                      <p className={styles.noBalanceText}>
+                        No payments received yet. When clients pay your invoices,
+                        the funds will appear here.
+                      </p>
+                    )}
+                </div>
+
+                <button
+                  className={`${styles.payoutBtn} ${styles.secondary}`}
+                  onClick={startStripeOnboarding}
+                  disabled={connectingStripe}
+                  style={{ marginTop: 16 }}
+                >
+                  Update Payout Settings
+                </button>
+              </>
+            ) : stripeStatus.connected ? (
+              <>
+                <p className={styles.payoutDescription}>
+                  <FaClock style={{ color: "#f59e0b", marginRight: 6 }} />
+                  Your account is being verified. If additional information is
+                  needed, click below to continue setup.
+                </p>
+                <button
+                  className={styles.payoutBtn}
+                  onClick={startStripeOnboarding}
+                  disabled={connectingStripe}
+                >
+                  {connectingStripe ? "Redirecting..." : "Continue Setup"}
+                </button>
+              </>
+            ) : (
+              <>
+                <p className={styles.payoutDescription}>
+                  Connect your bank account to receive payments from clients.
+                  When clients pay invoices, the money is deposited directly into
+                  your bank account.
+                </p>
+                <button
+                  className={styles.payoutBtn}
+                  onClick={startStripeOnboarding}
+                  disabled={connectingStripe}
+                >
+                  {connectingStripe ? "Redirecting..." : "Set Up Payouts"}
+                </button>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Company Logo */}
         <section className={styles.card}>
           <div className={styles.cardHeader}>
             <div>
@@ -492,7 +846,11 @@ export default function ProfilePage() {
             <div className={styles.logoBox}>
               {logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={logoUrl} alt="Company Logo" className={styles.logoPreview} />
+                <img
+                  src={logoUrl}
+                  alt="Company Logo"
+                  className={styles.logoPreview}
+                />
               ) : (
                 <div className={styles.logoPlaceholder}>No logo uploaded</div>
               )}
@@ -772,7 +1130,9 @@ export default function ProfilePage() {
               </div>
               <div className={styles.readOnlyItemFull}>
                 <p className={styles.readOnlyLabel}>Website</p>
-                <p className={styles.readOnlyValue}>{businessWebsite || "Not set"}</p>
+                <p className={styles.readOnlyValue}>
+                  {businessWebsite || "Not set"}
+                </p>
               </div>
             </div>
           )}
@@ -838,7 +1198,9 @@ export default function ProfilePage() {
               <div className={styles.readOnlyItemFull}>
                 <p className={styles.readOnlyLabel}>Regions</p>
                 <p className={styles.readOnlyValue}>
-                  {serviceRegions.length ? serviceRegions.join(", ") : "No regions added"}
+                  {serviceRegions.length
+                    ? serviceRegions.join(", ")
+                    : "No regions added"}
                 </p>
               </div>
             </div>
@@ -850,7 +1212,9 @@ export default function ProfilePage() {
           <div className={styles.cardHeader}>
             <div>
               <h2 className={styles.cardTitle}>Licenses</h2>
-              <p className={styles.cardSubtitle}>License numbers and expiration dates.</p>
+              <p className={styles.cardSubtitle}>
+                License numbers and expiration dates.
+              </p>
             </div>
 
             {isAdmin ? (
@@ -905,7 +1269,9 @@ export default function ProfilePage() {
                   <button
                     type="button"
                     className={styles.inlineIconBtn}
-                    onClick={() => setLicenses(licenses.filter((_, i) => i !== idx))}
+                    onClick={() =>
+                      setLicenses(licenses.filter((_, i) => i !== idx))
+                    }
                     title="Remove"
                   >
                     <FaTrash />
@@ -931,10 +1297,14 @@ export default function ProfilePage() {
                   {licenses.length ? (
                     licenses.map((l, idx) => (
                       <div key={idx} className={styles.licenseLine}>
-                        <span className={styles.licenseStrong}>{l.number || "—"}</span>
+                        <span className={styles.licenseStrong}>
+                          {l.number || "—"}
+                        </span>
                         <span className={styles.licenseMuted}>
                           {l.state || "—"}
-                          {l.expiration ? ` • expires ${l.expiration}` : " • expires N/A"}
+                          {l.expiration
+                            ? ` • expires ${l.expiration}`
+                            : " • expires N/A"}
                         </span>
                       </div>
                     ))
@@ -947,7 +1317,7 @@ export default function ProfilePage() {
           )}
         </section>
 
-        {/* Footer actions (only when editing something) */}
+        {/* Footer actions */}
         {isEditing ? (
           <div className={styles.footerBar}>
             <button

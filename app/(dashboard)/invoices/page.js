@@ -20,6 +20,7 @@ import DashboardNavbar from "@/components/Navbar/DashboardNavbar";
 import AddServiceModal from "@/components/Services/AddServiceModal";
 import CreateInvoiceButton from "@/components/Invoices/CreateInvoiceButton/createInvoiceButton";
 import InvoiceModal from "@/components/Invoices/InvoiceModal/InvoiceModal";
+import OnboardingGate from "@/components/common/OnboardingGate/OnboardingGate";
 
 import styles from "./invoicesPage.module.css";
 
@@ -413,10 +414,11 @@ export default function InvoicesPage() {
     <div className={styles.page}>
       <DashboardNavbar />
 
-      <main className={styles.main}>
-        {/* Page Header */}
-        <div className={styles.header}>
-          <div className={styles.headerLeft}>
+      <OnboardingGate>
+        <main className={styles.main}>
+          {/* Page Header */}
+          <div className={styles.header}>
+            <div className={styles.headerLeft}>
             <h1 className={styles.title}>Invoices & Estimates</h1>
             <p className={styles.subtitle}>Create estimates for quotes, invoices for billing</p>
           </div>
@@ -703,7 +705,8 @@ export default function InvoicesPage() {
             )}
           </>
         )}
-      </main>
+        </main>
+      </OnboardingGate>
 
       {/* Add New Service modal */}
       <AddServiceModal

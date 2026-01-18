@@ -99,9 +99,9 @@ export default function Navbar() {
           ) : (
             <div className={styles.authButtons}>
               {/* Subtle sign in for returning users */}
-              {/* <Link href="/login" className={styles.signInBtn}>Sign in</Link> */}
+              <Link href="/login" className={styles.signInBtn}>Sign in</Link>
               {/* Prominent CTA for new users */}
-              {/* <Link href="/register" className={styles.loginBtn}>Get Started</Link> */}
+              <Link href="/register" className={styles.loginBtn}>Get Started</Link>
             </div>
           )}
         </nav>
