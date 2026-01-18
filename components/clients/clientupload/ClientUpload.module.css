@@ -1,0 +1,321 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  z-index: 9999;
+}
+
+.modal {
+  width: min(980px, 100%);
+  background: #0f172a;
+  color: #e5e7eb;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.5);
+  overflow: hidden;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 18px 10px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.title {
+  font-size: 18px;
+  margin: 0;
+  font-weight: 700;
+}
+
+.subtitle {
+  margin: 6px 0 0 0;
+  font-size: 13px;
+  color: rgba(229, 231, 235, 0.75);
+}
+
+.closeButton {
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.04);
+  color: #e5e7eb;
+  border-radius: 10px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.closeButton:hover {
+  background: rgba(255,255,255,0.08);
+}
+
+.modalBody {
+  padding: 16px 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.uploadCard,
+.previewCard {
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.fileInput {
+  display: none;
+}
+
+.uploadRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.fileMeta {
+  display: grid;
+  gap: 2px;
+  min-width: 220px;
+  flex: 1;
+}
+
+.fileName {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.hint {
+  font-size: 12px;
+  color: rgba(229, 231, 235, 0.7);
+}
+
+.primaryButton,
+.confirmButton,
+.ghostButton {
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+.primaryButton {
+  background: rgba(59, 130, 246, 0.85);
+  color: white;
+}
+
+.primaryButton:hover {
+  background: rgba(59, 130, 246, 1);
+}
+
+.confirmButton {
+  background: rgba(16, 185, 129, 0.85);
+  color: white;
+}
+
+.confirmButton:hover {
+  background: rgba(16, 185, 129, 1);
+}
+
+.ghostButton {
+  background: rgba(255,255,255,0.04);
+  color: #e5e7eb;
+}
+
+.ghostButton:hover {
+  background: rgba(255,255,255,0.08);
+}
+
+.primaryButton:disabled,
+.confirmButton:disabled,
+.ghostButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.statusInfo {
+  margin-top: 10px;
+  font-size: 13px;
+  color: rgba(229, 231, 235, 0.85);
+}
+
+.errorBox {
+  margin-top: 12px;
+  border-radius: 12px;
+  padding: 12px;
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  background: rgba(248, 113, 113, 0.10);
+}
+
+.errorTitle {
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.errorText {
+  font-size: 13px;
+  color: rgba(229, 231, 235, 0.9);
+}
+
+.successBox {
+  margin-top: 12px;
+  border-radius: 12px;
+  padding: 12px;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.10);
+  font-size: 13px;
+}
+
+.previewHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.previewStats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: rgba(229, 231, 235, 0.85);
+}
+
+.dot {
+  opacity: 0.5;
+}
+
+.dupText {
+  color: rgba(248, 113, 113, 0.95);
+}
+
+.readyText {
+  color: rgba(16, 185, 129, 0.95);
+}
+
+.tableWrap {
+  overflow: auto;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+}
+
+.table th,
+.table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  font-size: 13px;
+  vertical-align: top;
+}
+
+.table th {
+  text-align: left;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: rgba(229, 231, 235, 0.75);
+  background: rgba(255,255,255,0.03);
+}
+
+.statusCell {
+  white-space: nowrap;
+}
+
+.dupRow {
+  background: rgba(248, 113, 113, 0.10);
+}
+
+.dupBadge,
+.okBadge {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+.dupBadge {
+  background: rgba(248, 113, 113, 0.18);
+  border-color: rgba(248, 113, 113, 0.35);
+}
+
+.okBadge {
+  background: rgba(16, 185, 129, 0.14);
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.previewFooter {
+  padding: 10px;
+  font-size: 12px;
+  color: rgba(229, 231, 235, 0.7);
+  background: rgba(255,255,255,0.02);
+}
+
+.modalFooter {
+  padding: 12px 18px 16px 18px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 640px) {
+  .modalBody {
+    padding: 14px;
+  }
+  .modalHeader {
+    padding: 14px 14px 10px 14px;
+  }
+  .table {
+    min-width: 680px;
+  }
+}
+
+.templateButtons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.templateButton {
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px dashed rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(229, 231, 235, 0.95);
+}
+
+.templateButton:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.templateButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .templateButtons {
+    width: 100%;
+  }
+
+  .templateButton {
+    width: 100%;
+  }
+}
+
