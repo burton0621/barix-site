@@ -20,22 +20,31 @@ export default function HomePage() {
   useEffect(() => {
     let isMounted = true;
 
-    async function checkUser() {
+    // 1️⃣ Immediate check (covers already-hydrated sessions)
+    const checkUser = async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
 
-      // If logged in, send them to dashboard
       if (isMounted && user) {
-        // replace so they don't "go back" to marketing after redirect
         router.replace("/dashboard");
       }
-    }
+    };
 
     checkUser();
 
+    // 2️⃣ Listen for auth state changes (covers delayed hydration)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        router.replace("/dashboard");
+      }
+    });
+
     return () => {
       isMounted = false;
+      subscription.unsubscribe();
     };
   }, [router]);
 
@@ -62,7 +71,6 @@ export default function HomePage() {
             </a>
           </div>
 
-          {/* Invisible anchor: scroll target */}
           <div id="demo" className="scroll-mt-28" />
 
           <DemoFrame
