@@ -1,11 +1,11 @@
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.35);
+  background: rgba(15, 23, 42, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 50;
+  z-index: 9999; /* Must be higher than all modals */
 }
 
 .box {
@@ -28,6 +28,7 @@
   font-size: 14px;
   color: #4b5563;
   margin-bottom: 16px;
+  white-space: pre-line; /* Preserves line breaks from \n */
 }
 
 .buttons {

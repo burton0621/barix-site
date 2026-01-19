@@ -12,6 +12,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
+import Toast from "@/components/common/Toast/Toast";
 import styles from "./paymentPage.module.css";
 
 export default function PaymentPage() {
@@ -23,6 +24,14 @@ export default function PaymentPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [paying, setPaying] = useState(false);
+  
+  // Toast notification state for user-friendly feedback
+  const [toast, setToast] = useState({ open: false, message: "", type: "error" });
+  
+  // Helper to show toast notifications
+  const showToast = (message, type = "error") => {
+    setToast({ open: true, message, type });
+  };
 
   // Check if user canceled payment
   const wasCanceled = searchParams.get("canceled") === "true";
@@ -68,7 +77,7 @@ export default function PaymentPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        alert(data.error || "Failed to start payment");
+        showToast(data.error || "Failed to start payment");
         setPaying(false);
         return;
       }
@@ -77,7 +86,7 @@ export default function PaymentPage() {
       window.location.href = data.checkoutUrl;
     } catch (err) {
       console.error("Payment error:", err);
-      alert("Failed to start payment. Please try again.");
+      showToast("Failed to start payment. Please try again.");
       setPaying(false);
     }
   };
@@ -152,20 +161,29 @@ export default function PaymentPage() {
   }
 
   return (
-    <div className={styles.page}>
-      <div className={styles.container}>
-        {/* Header */}
-        <div className={styles.header}>
-          <h1 className={styles.title}>Invoice</h1>
-          <div className={styles.invoiceNumber}>#{invoice?.invoice_number}</div>
-        </div>
-
-        {/* Canceled message */}
-        {wasCanceled && (
-          <div className={styles.canceledBanner}>
-            Payment was canceled. You can try again when ready.
+    <>
+      {/* Toast notification for user-friendly feedback */}
+      <Toast 
+        open={toast.open}
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast({ ...toast, open: false })}
+      />
+      
+      <div className={styles.page}>
+        <div className={styles.container}>
+          {/* Header */}
+          <div className={styles.header}>
+            <h1 className={styles.title}>Invoice</h1>
+            <div className={styles.invoiceNumber}>#{invoice?.invoice_number}</div>
           </div>
-        )}
+
+          {/* Canceled message */}
+          {wasCanceled && (
+            <div className={styles.canceledBanner}>
+              Payment was canceled. You can try again when ready.
+            </div>
+          )}
 
         {/* Invoice Card */}
         <div className={styles.card}>
@@ -259,6 +277,7 @@ export default function PaymentPage() {
         </p>
       </div>
     </div>
+    </>
   );
 }
 

@@ -8,26 +8,21 @@
   
   Settings include:
   - Password change (available to all users)
-  - Subscription management (admin only) - now with Stripe integration
+  - Account status (admin only) - shows free demo mode
   - Account deletion (admin only)
   
-  The subscription section shows:
-  - Current plan status (active, trialing, past_due, canceled)
-  - Days remaining in trial
-  - Subscribe button (if no subscription)
-  - Manage Subscription button (opens Stripe portal)
+  FREE DEMO MODE: No subscription required. Only Stripe processing fees apply.
 */
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/providers/AuthProvider";
 import DashboardNavbar from "@/components/Navbar/DashboardNavbar";
 
 export default function SettingsPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const { session, membership, isAdmin, isLoading } = useAuth();
+  const { session, membership, isAdmin, isLoading, profile } = useAuth();
   
   const [loading, setLoading] = useState(true);
   const [contractorId, setContractorId] = useState(null);
@@ -39,16 +34,6 @@ export default function SettingsPage() {
   const [passwordSuccess, setPasswordSuccess] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
 
-  // Subscription state
-  const [subscription, setSubscription] = useState({
-    status: 'none',
-    hasAccess: false,
-    isTrialing: false,
-    daysRemaining: 0,
-    loading: true,
-  });
-  const [subscribing, setSubscribing] = useState(false);
-  const [openingPortal, setOpeningPortal] = useState(false);
 
   // Account deletion state
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -56,19 +41,9 @@ export default function SettingsPage() {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
 
-  // Check for success/cancel from Stripe redirect
-  useEffect(() => {
-    const subscriptionParam = searchParams.get("subscription");
-    if (subscriptionParam === "success") {
-      // They just subscribed, refresh the status
-      console.log("Subscription successful, refreshing status...");
-    } else if (subscriptionParam === "canceled") {
-      console.log("Subscription checkout was canceled");
-    }
-  }, [searchParams]);
 
   /*
-    Check if user is authenticated and load subscription status
+    Check if user is authenticated
   */
   useEffect(() => {
     if (!isLoading) {
@@ -78,90 +53,10 @@ export default function SettingsPage() {
         // Get the contractor ID from membership or directly from user
         const cId = membership?.contractor_id || session.user.id;
         setContractorId(cId);
-        fetchSubscriptionStatus(cId);
         setLoading(false);
       }
     }
   }, [isLoading, session, membership, router]);
-
-  // Fetch subscription status from our API
-  async function fetchSubscriptionStatus(cId) {
-    try {
-      const response = await fetch(`/api/stripe/subscription/status?contractorId=${cId}`);
-      const data = await response.json();
-      
-      setSubscription({
-        status: data.status || 'none',
-        hasAccess: data.hasAccess || false,
-        isTrialing: data.isTrialing || false,
-        daysRemaining: data.daysRemaining || 0,
-        periodEnd: data.periodEnd,
-        trialEnd: data.trialEnd,
-        loading: false,
-      });
-    } catch (error) {
-      console.error("Error fetching subscription:", error);
-      setSubscription(prev => ({ ...prev, loading: false }));
-    }
-  }
-
-  // Start subscription checkout
-  async function handleSubscribe() {
-    if (!contractorId) return;
-    
-    setSubscribing(true);
-    try {
-      const response = await fetch("/api/stripe/subscription/create-checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contractorId }),
-      });
-
-      const data = await response.json();
-
-      if (data.error) {
-        alert("Error: " + data.error);
-        setSubscribing(false);
-        return;
-      }
-
-      // Redirect to Stripe Checkout
-      window.location.href = data.checkoutUrl;
-    } catch (error) {
-      console.error("Subscription error:", error);
-      alert("Failed to start subscription. Please try again.");
-      setSubscribing(false);
-    }
-  }
-
-  // Open Stripe billing portal
-  async function handleManageSubscription() {
-    if (!contractorId) return;
-    
-    setOpeningPortal(true);
-    try {
-      const response = await fetch("/api/stripe/subscription/portal", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contractorId }),
-      });
-
-      const data = await response.json();
-
-      if (data.error) {
-        alert("Error: " + data.error);
-        setOpeningPortal(false);
-        return;
-      }
-
-      // Redirect to Stripe Portal
-      window.location.href = data.portalUrl;
-    } catch (error) {
-      console.error("Portal error:", error);
-      alert("Failed to open billing portal. Please try again.");
-      setOpeningPortal(false);
-    }
-  }
 
   // Handle account deletion - cancels Stripe and deletes all data
   async function handleDeleteAccount() {
@@ -241,26 +136,6 @@ export default function SettingsPage() {
     setChangingPassword(false);
   }
 
-  // Helper to get status badge color and text
-  function getStatusBadge(status) {
-    switch (status) {
-      case 'active':
-        return { color: 'bg-green-100 text-green-700', text: 'Active' };
-      case 'trialing':
-        return { color: 'bg-blue-100 text-blue-700', text: 'Free Trial' };
-      case 'past_due':
-        return { color: 'bg-yellow-100 text-yellow-700', text: 'Past Due' };
-      case 'canceled':
-        return { color: 'bg-gray-100 text-gray-700', text: 'Canceled' };
-      case 'canceling':
-        return { color: 'bg-orange-100 text-orange-700', text: 'Canceling' };
-      case 'unpaid':
-        return { color: 'bg-red-100 text-red-700', text: 'Unpaid' };
-      default:
-        return { color: 'bg-gray-100 text-gray-600', text: 'No Subscription' };
-    }
-  }
-
   if (loading || isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -268,8 +143,6 @@ export default function SettingsPage() {
       </div>
     );
   }
-
-  const statusBadge = getStatusBadge(subscription.status);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -287,144 +160,76 @@ export default function SettingsPage() {
           </p>
         </div>
 
-        {/* Subscription Section - Admin Only */}
+        {/* Account Status Section - Admin Only */}
         {isAdmin && (
           <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-1">
-              Subscription
+              Account Status
             </h2>
             <p className="text-sm text-gray-500 mb-6">
-              Manage your Barix Billing subscription.
+              Your Barix Billing account information.
             </p>
 
-            {subscription.loading ? (
-              <p className="text-gray-500">Loading subscription status...</p>
-            ) : subscription.hasAccess ? (
-              // Has active subscription or trial
-              <>
-                <div className="border border-gray-200 rounded-lg p-4 mb-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-900">
-                        Barix Pro - $20/month
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {subscription.isTrialing && subscription.daysRemaining > 0
-                          ? `${subscription.daysRemaining} days left in your free trial`
-                          : subscription.isTrialing 
-                            ? "Your free trial is active"
-                            : "Your subscription is active"
-                        }
-                      </p>
-                    </div>
-                    <span className={`px-3 py-1 ${statusBadge.color} text-sm font-medium rounded-full`}>
-                      {statusBadge.text}
-                    </span>
-                  </div>
-                </div>
-
-
-                {/* Past due warning */}
-                {subscription.status === 'past_due' && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                    <p className="text-sm text-yellow-800">
-                      Your payment is past due. Please update your payment method to avoid service interruption.
-                    </p>
-                  </div>
-                )}
-
-                {/* Action button */}
-                <button
-                  onClick={handleManageSubscription}
-                  disabled={openingPortal}
-                  className="px-5 py-2.5 bg-brand text-white font-semibold rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50"
-                >
-                  {openingPortal ? "Opening..." : "Manage Billing"}
-                </button>
-              </>
-            ) : subscription.status === 'canceled' ? (
-              // Canceled subscription
-              <>
-                <div className="border border-gray-200 rounded-lg p-4 mb-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-900">No Active Subscription</p>
-                      <p className="text-sm text-gray-500">
-                        Your subscription has been canceled.
-                      </p>
-                    </div>
-                    <span className={`px-3 py-1 ${statusBadge.color} text-sm font-medium rounded-full`}>
-                      {statusBadge.text}
-                    </span>
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleSubscribe}
-                  disabled={subscribing}
-                  className="px-5 py-2.5 bg-brand text-white font-semibold rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50"
-                >
-                  {subscribing ? "Redirecting..." : "Resubscribe - $20/month"}
-                </button>
-              </>
-            ) : (
-              // No subscription yet
-              <>
-                <div className="border border-gray-200 rounded-lg p-5 mb-6">
-                  <h3 className="font-semibold text-gray-900 text-lg">Barix Pro</h3>
-                  <p className="text-3xl font-bold text-gray-900 mt-2">
-                    $20<span className="text-base font-normal text-gray-500">/month</span>
+            <div className="border border-green-200 bg-green-50 rounded-lg p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="font-semibold text-gray-900 text-lg">
+                    {profile?.selected_plan 
+                      ? `${profile.selected_plan.charAt(0).toUpperCase() + profile.selected_plan.slice(1)} Plan`
+                      : "Free Demo"
+                    }
+                  </h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Free during demo - you have full access to all features.
                   </p>
-                  <p className="text-sm text-green-600 mt-1 font-medium">
-                    Includes 7-day free trial
-                  </p>
-                  
-                  <ul className="mt-4 space-y-2 text-sm text-gray-600">
-                    <li className="flex items-center gap-2">
-                      <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                      Unlimited invoices and estimates
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                      Unlimited clients
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                      Accept online payments
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                      Team members included
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                      Direct bank payouts
-                    </li>
-                  </ul>
                 </div>
+                <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-medium rounded-full">
+                  Active
+                </span>
+              </div>
+              
+              <div className="border-t border-green-200 pt-4 mt-4">
+                <p className="text-sm text-gray-600 font-medium mb-2">Whats included:</p>
+                <ul className="space-y-2 text-sm text-gray-600">
+                  <li className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Unlimited invoices and estimates
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Unlimited clients
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Accept online payments
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Team members included
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Direct bank payouts via Stripe Connect
+                  </li>
+                </ul>
+              </div>
 
-                <button
-                  onClick={handleSubscribe}
-                  disabled={subscribing}
-                  className="w-full px-5 py-3 bg-brand text-white font-semibold rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50 text-lg"
-                >
-                  {subscribing ? "Redirecting to checkout..." : "Start 7-Day Free Trial"}
-                </button>
-                <p className="text-center text-sm text-gray-500 mt-2">
-                  No credit card required to start
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
+                <p className="text-sm text-blue-800">
+                  <span className="font-medium">Payment Processing:</span> Only standard Stripe fees apply (2.9% + $0.30 for cards). Barix does not charge any additional platform fees during the demo period.
                 </p>
-              </>
-            )}
+              </div>
+            </div>
           </div>
         )}
 

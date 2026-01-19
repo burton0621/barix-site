@@ -20,6 +20,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/providers/AuthProvider";
 import DashboardNavbar from "@/components/Navbar/DashboardNavbar";
+import Toast from "@/components/common/Toast/Toast";
+import ConfirmDialog from "@/components/common/ConfirmDialog/ConfirmDialog";
 import styles from "./profile.module.css";
 
 import {
@@ -130,6 +132,22 @@ export default function ProfilePage() {
   const [confirmLogoDeleteOpen, setConfirmLogoDeleteOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [logoWorking, setLogoWorking] = useState(false);
+  
+  // Toast notification state for user-friendly feedback
+  const [toast, setToast] = useState({ open: false, message: "", type: "info" });
+  
+  // Payout confirmation dialog state
+  const [payoutConfirm, setPayoutConfirm] = useState({
+    open: false,
+    amount: 0,
+    fee: 0,
+    netAmount: 0,
+  });
+  
+  // Helper to show toast notifications
+  const showToast = (message, type = "error") => {
+    setToast({ open: true, message, type });
+  };
 
   const BUSINESS_TYPES = useMemo(
     () => [
@@ -209,17 +227,19 @@ export default function ProfilePage() {
   }
 
   // Process an instant payout
-  async function handleInstantPayout() {
+  // Shows the payout confirmation dialog before processing
+  function handleInstantPayoutClick() {
     const amount = parseFloat(payoutAmount);
 
     if (!amount || amount <= 0) {
-      alert("Please enter a valid amount");
+      showToast("Please enter a valid amount", "warning");
       return;
     }
 
     if (amount > balance.instantAvailable) {
-      alert(
-        `Maximum instant payout amount is $${balance.instantAvailable.toFixed(2)}`
+      showToast(
+        `Maximum instant payout amount is $${balance.instantAvailable.toFixed(2)}`,
+        "warning"
       );
       return;
     }
@@ -227,15 +247,19 @@ export default function ProfilePage() {
     const fee = Math.max(amount * 0.01, 0.5);
     const netAmount = amount - fee;
 
-    const confirmed = window.confirm(
-      `Instant Payout Summary:\n\n` +
-        `Amount: $${amount.toFixed(2)}\n` +
-        `Fee (1%): $${fee.toFixed(2)}\n` +
-        `You'll receive: $${netAmount.toFixed(2)}\n\n` +
-        `Funds will arrive in minutes. Continue?`
-    );
-    if (!confirmed) return;
+    // Show user-friendly confirmation dialog
+    setPayoutConfirm({
+      open: true,
+      amount,
+      fee,
+      netAmount,
+    });
+  }
 
+  // Actually processes the payout after user confirms
+  async function handleConfirmPayout() {
+    const { amount } = payoutConfirm;
+    setPayoutConfirm({ ...payoutConfirm, open: false });
     setProcessingPayout(true);
 
     try {
@@ -248,22 +272,20 @@ export default function ProfilePage() {
       const data = await response.json();
 
       if (data.error) {
-        alert("Payout failed: " + data.error);
+        showToast("Payout failed: " + data.error);
         return;
       }
 
-      alert(
-        `Instant payout successful!\n\n` +
-          `Amount: $${data.payout.amount.toFixed(2)}\n` +
-          `Fee: $${data.payout.fee.toFixed(2)}\n` +
-          `Funds should arrive within minutes.`
+      showToast(
+        `Payout of $${data.payout.amount.toFixed(2)} initiated. Funds will arrive within minutes.`,
+        "success"
       );
 
       setPayoutAmount("");
       fetchBalance(contractorId);
     } catch (error) {
       console.error("Instant payout error:", error);
-      alert("Failed to process instant payout. Please try again.");
+      showToast("Failed to process instant payout. Please try again.");
     } finally {
       setProcessingPayout(false);
     }
@@ -288,14 +310,14 @@ export default function ProfilePage() {
       const data = await response.json();
 
       if (data.error) {
-        alert("Error setting up payouts: " + data.error);
+        showToast("Error setting up payouts: " + data.error);
         return;
       }
 
       window.location.href = data.onboardingUrl;
     } catch (error) {
       console.error("Error starting Stripe onboarding:", error);
-      alert("Failed to start payout setup. Please try again.");
+      showToast("Failed to start payout setup. Please try again.");
     } finally {
       setConnectingStripe(false);
     }
@@ -612,16 +634,37 @@ export default function ProfilePage() {
   const isEditing = Boolean(editingSection);
 
   return (
-    <div className={styles.page}>
-      <DashboardNavbar />
+    <>
+      {/* Toast notification for user-friendly feedback */}
+      <Toast 
+        open={toast.open}
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast({ ...toast, open: false })}
+      />
+      
+      {/* Payout confirmation dialog */}
+      <ConfirmDialog
+        open={payoutConfirm.open}
+        title="Confirm Instant Payout"
+        message={`Amount: $${payoutConfirm.amount.toFixed(2)}\nFee (1%): $${payoutConfirm.fee.toFixed(2)}\nYou'll receive: $${payoutConfirm.netAmount.toFixed(2)}\n\nFunds will arrive in minutes.`}
+        confirmLabel="Payout Now"
+        cancelLabel="Cancel"
+        confirmType="primary"
+        onConfirm={handleConfirmPayout}
+        onCancel={() => setPayoutConfirm({ ...payoutConfirm, open: false })}
+      />
+      
+      <div className={styles.page}>
+        <DashboardNavbar />
 
-      <main className={styles.main}>
-        {/* Header */}
-        <div className={styles.header}>
-          <div>
-            <h1 className={styles.h1}>
-              {companyName ? `${companyName} Profile` : "Company Profile"}
-            </h1>
+        <main className={styles.main}>
+          {/* Header */}
+          <div className={styles.header}>
+            <div>
+              <h1 className={styles.h1}>
+                {companyName ? `${companyName} Profile` : "Company Profile"}
+              </h1>
             <p className={styles.subhead}>
               {isAdmin
                 ? "Update your company details used across invoices and client communications."
@@ -761,7 +804,7 @@ export default function ProfilePage() {
 
                         <button
                           className={styles.instantPayoutBtn}
-                          onClick={handleInstantPayout}
+                          onClick={handleInstantPayoutClick}
                           disabled={
                             processingPayout ||
                             !payoutAmount ||
@@ -1365,5 +1408,6 @@ export default function ProfilePage() {
         loading={logoWorking}
       />
     </div>
+    </>
   );
 }

@@ -88,10 +88,10 @@ export function AuthProvider({ children }) {
       contractorId = membershipData.contractor_id;
     }
 
-    // Load the company profile including subscription status
+    // Load the company profile including subscription status and selected plan
     const { data: profileData } = await supabase
       .from("contractor_profiles")
-      .select("company_name, logo_url, subscription_status, contracting_trade")
+      .select("company_name, logo_url, subscription_status, contracting_trade, selected_plan")
       .eq("id", contractorId)
       .single();
 
@@ -123,9 +123,11 @@ export function AuthProvider({ children }) {
   // Quick helper to check if current user is an admin
   const isAdmin = membership?.role === "admin";
   
-  // Check if user has completed onboarding (profile + subscription)
-  const hasActiveSubscription = ['active', 'trialing'].includes(subscriptionStatus);
-  const onboardingComplete = profileComplete && hasActiveSubscription;
+  // Check if user has completed onboarding
+  // FREE DEMO MODE: No subscription required - everyone has access
+  // Only Stripe processing fees apply, Barix is not charging platform fees yet
+  const hasActiveSubscription = true;
+  const onboardingComplete = profileComplete;
 
   // Function to refresh subscription status (call after subscribing)
   async function refreshSubscriptionStatus() {

@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabaseClient";
 import DashboardNavbar from "@/components/Navbar/DashboardNavbar";
 import AddServiceModal from "@/components/Services/AddServiceModal";
 import ConfirmDialog from "@/components/common/ConfirmDialog/ConfirmDialog";
+import Toast from "@/components/common/Toast/Toast";
 import { FiEdit2, FiTrash2 } from "react-icons/fi";
 import styles from "./servicesPage.module.css";
 
@@ -23,6 +24,14 @@ export default function ServicesPage() {
   // Confirm dialog state (matches your AddClientForm pattern)
   const [confirmAction, setConfirmAction] = useState(null); // null | "delete"
   const [pendingDeleteService, setPendingDeleteService] = useState(null);
+  
+  // Toast notification state for user-friendly feedback
+  const [toast, setToast] = useState({ open: false, message: "", type: "info" });
+  
+  // Helper to show toast notifications
+  const showToast = (message, type = "error") => {
+    setToast({ open: true, message, type });
+  };
 
   const [searchTerm, setSearchTerm] = useState("");
   const [sortField, setSortField] = useState("created_at"); // "name" | "rate" | "created_at"
@@ -121,7 +130,7 @@ export default function ServicesPage() {
 
       if (error) {
         console.error("Delete error:", error);
-        alert(`Error deleting service. ${error.message}`);
+        showToast(`Error deleting service: ${error.message}`);
         return;
       }
 
@@ -129,7 +138,7 @@ export default function ServicesPage() {
       setPendingDeleteService(null);
     } catch (err) {
       console.error("Unexpected delete error:", err);
-      alert(
+      showToast(
         `Unexpected error deleting service: ${
           err?.message ? err.message : String(err)
         }`
@@ -228,14 +237,23 @@ export default function ServicesPage() {
   }
 
   return (
-    <div className={styles.pageWrapper}>
-      <DashboardNavbar />
+    <>
+      {/* Toast notification for user-friendly feedback */}
+      <Toast 
+        open={toast.open}
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast({ ...toast, open: false })}
+      />
+      
+      <div className={styles.pageWrapper}>
+        <DashboardNavbar />
 
-      <main className={styles.main}>
-        {/* Header */}
-        <div className={styles.headerRow}>
-          <div>
-            <h1 className={styles.title}>Services</h1>
+        <main className={styles.main}>
+          {/* Header */}
+          <div className={styles.headerRow}>
+            <div>
+              <h1 className={styles.title}>Services</h1>
             <p className={styles.subtitle}>Manage your service catalog</p>
           </div>
 
@@ -445,5 +463,6 @@ export default function ServicesPage() {
         )}
       </main>
     </div>
+    </>
   );
 }

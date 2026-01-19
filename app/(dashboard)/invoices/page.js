@@ -21,6 +21,8 @@ import AddServiceModal from "@/components/Services/AddServiceModal";
 import CreateInvoiceButton from "@/components/Invoices/CreateInvoiceButton/createInvoiceButton";
 import InvoiceModal from "@/components/Invoices/InvoiceModal/InvoiceModal";
 import OnboardingGate from "@/components/common/OnboardingGate/OnboardingGate";
+import Toast from "@/components/common/Toast/Toast";
+import ConfirmDialog from "@/components/common/ConfirmDialog/ConfirmDialog";
 
 import styles from "./invoicesPage.module.css";
 
@@ -37,6 +39,21 @@ export default function InvoicesPage() {
   // State for the edit invoice modal
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
+  
+  // Toast notification state for user-friendly feedback
+  const [toast, setToast] = useState({ open: false, message: "", type: "info" });
+  
+  // Delete confirmation dialog state
+  const [deleteConfirm, setDeleteConfirm] = useState({
+    open: false,
+    invoice: null,
+    docType: "",
+  });
+  
+  // Helper to show toast notifications
+  const showToast = (message, type = "error") => {
+    setToast({ open: true, message, type });
+  };
 
   // Tab state: "all" | "estimate" | "invoice"
   const [activeTab, setActiveTab] = useState("all");
@@ -213,13 +230,20 @@ export default function InvoicesPage() {
 
   // Deletes an invoice/estimate after confirmation
   // Also deletes associated line items (cascade should handle this, but we do it explicitly)
-  const handleDeleteInvoice = async (invoice) => {
+  // Shows the delete confirmation dialog before proceeding
+  const handleDeleteClick = (invoice) => {
     const docType = invoice.document_type === "estimate" ? "estimate" : "invoice";
-    const confirmMessage = `Are you sure you want to delete ${docType} "${invoice.invoice_number}"?\n\nThis action cannot be undone.`;
-    
-    if (!window.confirm(confirmMessage)) {
-      return;
-    }
+    setDeleteConfirm({
+      open: true,
+      invoice,
+      docType,
+    });
+  };
+
+  // Actually performs the delete after user confirms
+  const handleConfirmDelete = async () => {
+    const { invoice, docType } = deleteConfirm;
+    setDeleteConfirm({ ...deleteConfirm, open: false });
 
     try {
       // First delete line items (in case cascade delete isn't set up)
@@ -241,16 +265,17 @@ export default function InvoicesPage() {
 
       if (invoiceError) {
         console.error("Error deleting invoice:", invoiceError);
-        alert(`Failed to delete ${docType}: ${invoiceError.message}`);
+        showToast(`Failed to delete ${docType}: ${invoiceError.message}`);
         return;
       }
 
-      // Refresh the list after successful deletion
+      // Show success message and refresh the list
+      showToast(`${docType.charAt(0).toUpperCase() + docType.slice(1)} deleted successfully`, "success");
       await fetchInvoices(user);
       
     } catch (err) {
       console.error("Unexpected error deleting invoice:", err);
-      alert(`An unexpected error occurred while deleting the ${docType}.`);
+      showToast(`An unexpected error occurred while deleting the ${docType}.`);
     }
   };
 
@@ -411,16 +436,37 @@ export default function InvoicesPage() {
   }
 
   return (
-    <div className={styles.page}>
-      <DashboardNavbar />
+    <>
+      {/* Toast notification for user-friendly feedback */}
+      <Toast 
+        open={toast.open}
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast({ ...toast, open: false })}
+      />
+      
+      {/* Delete confirmation dialog */}
+      <ConfirmDialog
+        open={deleteConfirm.open}
+        title={`Delete ${deleteConfirm.docType}?`}
+        message={`Are you sure you want to delete "${deleteConfirm.invoice?.invoice_number}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        confirmType="danger"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteConfirm({ ...deleteConfirm, open: false })}
+      />
+      
+      <div className={styles.page}>
+        <DashboardNavbar />
 
-      <OnboardingGate>
-        <main className={styles.main}>
-          {/* Page Header */}
-          <div className={styles.header}>
-            <div className={styles.headerLeft}>
-            <h1 className={styles.title}>Invoices & Estimates</h1>
-            <p className={styles.subtitle}>Create estimates for quotes, invoices for billing</p>
+        <OnboardingGate>
+          <main className={styles.main}>
+            {/* Page Header */}
+            <div className={styles.header}>
+              <div className={styles.headerLeft}>
+              <h1 className={styles.title}>Invoices & Estimates</h1>
+              <p className={styles.subtitle}>Create estimates for quotes, invoices for billing</p>
           </div>
 
           <div className={styles.headerActions}>
@@ -620,7 +666,7 @@ export default function InvoicesPage() {
                           </button>
                           <button
                             className={styles.deleteButton}
-                            onClick={() => handleDeleteInvoice(inv)}
+                            onClick={() => handleDeleteClick(inv)}
                             title={`Delete ${inv.document_type === "estimate" ? "estimate" : "invoice"}`}
                             aria-label={`Delete ${inv.invoice_number}`}
                           >
@@ -724,5 +770,6 @@ export default function InvoicesPage() {
         />
       )}
     </div>
+    </>
   );
 }

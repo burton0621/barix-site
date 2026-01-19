@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import ConfirmDialog from "../common/ConfirmDialog/ConfirmDialog";
+import Toast from "../common/Toast/Toast";
 import styles from "./AddServiceModal.module.css";
 
 export default function AddServiceModal({
@@ -24,6 +25,14 @@ export default function AddServiceModal({
 
   // confirm dialog state
   const [confirmAction, setConfirmAction] = useState(null); // null | "update" | "delete"
+  
+  // Toast notification state for user-friendly feedback
+  const [toast, setToast] = useState({ open: false, message: "", type: "error" });
+  
+  // Helper to show toast notifications
+  const showToast = (message, type = "error") => {
+    setToast({ open: true, message, type });
+  };
 
   // Reset/prefill fields every time modal opens or service changes
   useEffect(() => {
@@ -55,7 +64,7 @@ export default function AddServiceModal({
     const user = data?.user;
     if (error || !user) {
       console.error("getUser error:", error);
-      alert("You must be logged in to manage services.");
+      showToast("You must be logged in to manage services.");
       return null;
     }
     return user;
@@ -72,7 +81,7 @@ export default function AddServiceModal({
 
   const handleCreate = async () => {
     if (!name.trim()) {
-      alert("Please enter a service name.");
+      showToast("Please enter a service name.", "warning");
       return;
     }
 
@@ -94,7 +103,7 @@ export default function AddServiceModal({
 
       if (error) {
         console.error("Insert error:", error);
-        alert(`Error saving service. ${error.message}`);
+        showToast(`Error saving service: ${error.message}`);
         return;
       }
 
@@ -102,7 +111,7 @@ export default function AddServiceModal({
       onClose();
     } catch (err) {
       console.error("Unexpected error creating service:", err);
-      alert(
+      showToast(
         `Unexpected error creating service: ${
           err?.message ? err.message : String(err)
         }`
@@ -116,7 +125,7 @@ export default function AddServiceModal({
     if (!isEdit) return;
 
     if (!name.trim()) {
-      alert("Please enter a service name.");
+      showToast("Please enter a service name.", "warning");
       return;
     }
 
@@ -137,7 +146,7 @@ export default function AddServiceModal({
 
       if (error) {
         console.error("Update error:", error);
-        alert(`Error updating service. ${error.message}`);
+        showToast(`Error updating service: ${error.message}`);
         return;
       }
 
@@ -145,7 +154,7 @@ export default function AddServiceModal({
       onClose();
     } catch (err) {
       console.error("Unexpected error updating service:", err);
-      alert(
+      showToast(
         `Unexpected error updating service: ${
           err?.message ? err.message : String(err)
         }`
@@ -171,7 +180,7 @@ export default function AddServiceModal({
 
       if (error) {
         console.error("Delete error:", error);
-        alert(`Error deleting service. ${error.message}`);
+        showToast(`Error deleting service: ${error.message}`);
         return;
       }
 
@@ -179,7 +188,7 @@ export default function AddServiceModal({
       onClose();
     } catch (err) {
       console.error("Unexpected error deleting service:", err);
-      alert(
+      showToast(
         `Unexpected error deleting service: ${
           err?.message ? err.message : String(err)
         }`
@@ -203,16 +212,25 @@ export default function AddServiceModal({
   };
 
   return (
-    <div className={styles.overlay}>
-      <div className={styles.modal}>
-        {/* HEADER */}
-        <div className={styles.header}>
-          <h2 className={styles.title}>
-            {isEdit ? "Edit Service" : "Add New Service"}
-          </h2>
-          <button
-            className={styles.closeButton}
-            onClick={onClose}
+    <>
+      {/* Toast notification for user-friendly feedback */}
+      <Toast 
+        open={toast.open}
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast({ ...toast, open: false })}
+      />
+      
+      <div className={styles.overlay}>
+        <div className={styles.modal}>
+          {/* HEADER */}
+          <div className={styles.header}>
+            <h2 className={styles.title}>
+              {isEdit ? "Edit Service" : "Add New Service"}
+            </h2>
+            <button
+              className={styles.closeButton}
+              onClick={onClose}
             disabled={saving || deleting}
             aria-label="Close"
           >
@@ -327,5 +345,6 @@ export default function AddServiceModal({
         )}
       </div>
     </div>
+    </>
   );
 }
