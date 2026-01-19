@@ -18,6 +18,8 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import styles from "./InvoiceModal.module.css";
 import SearchableSelect from "@/components/common/SearchableSelect/SearchableSelect";
+import Toast from "@/components/common/Toast/Toast";
+import ConfirmDialog from "@/components/common/ConfirmDialog/ConfirmDialog";
 
 // The tax rate is currently fixed at 6% - this could be made dynamic later
 // if different users or states require different tax rates
@@ -50,6 +52,20 @@ export default function InvoiceModal({ open, onClose, onSaved, invoice = null, d
   const [loadingData, setLoadingData] = useState(false);
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
+  
+  // Success message state - shows a confirmation instead of browser alert
+  const [successMessage, setSuccessMessage] = useState("");
+  
+  // Confirmation state - shows a user-friendly confirm dialog before sending
+  const [showSendConfirm, setShowSendConfirm] = useState(false);
+  
+  // Toast notification state - for error messages
+  const [toast, setToast] = useState({ open: false, message: "", type: "error" });
+  
+  // Helper to show toast notifications
+  const showToast = (message, type = "error") => {
+    setToast({ open: true, message, type });
+  };
   
   // Track if we should send immediately after creating (for "Create & Send" button)
   // Using a ref instead of state because we need the value immediately in the submit handler
@@ -181,7 +197,7 @@ export default function InvoiceModal({ open, onClose, onSaved, invoice = null, d
 
       if (userError || !user) {
         console.error(userError);
-        alert("You must be logged in to manage invoices.");
+        showToast("You must be logged in to manage invoices.");
         setLoadingData(false);
         return;
       }
@@ -365,17 +381,17 @@ export default function InvoiceModal({ open, onClose, onSaved, invoice = null, d
     e.preventDefault();
 
     if (!user) {
-      alert("No user found. Please log in again.");
+      showToast("No user found. Please log in again.");
       return;
     }
 
     if (!clientId) {
-      alert("Please select a client.");
+      showToast("Please select a client.", "warning");
       return;
     }
 
     if (!issueDate || !dueDate) {
-      alert("Please select issue date and due date.");
+      showToast("Please select issue date and due date.", "warning");
       return;
     }
 
@@ -388,7 +404,7 @@ export default function InvoiceModal({ open, onClose, onSaved, invoice = null, d
     });
 
     if (validLineItems.length === 0) {
-      alert("Please add at least one valid line item.");
+      showToast("Please add at least one valid line item.", "warning");
       return;
     }
 
@@ -420,21 +436,27 @@ export default function InvoiceModal({ open, onClose, onSaved, invoice = null, d
             const result = await response.json();
 
             if (!response.ok) {
-              alert(`Created but failed to send: ${result.error}`);
+              showToast(`Created but failed to send: ${result.error}`);
               // Still notify parent to refresh list (will show as draft)
               if (typeof onSaved === "function") {
                 onSaved(newInvoice);
               }
             } else {
-              alert(`${isEstimate ? "Estimate" : "Invoice"} created and sent to ${result.clientEmail}!`);
+              // Show success message and auto-close after a brief delay
+              setSuccessMessage(`${isEstimate ? "Estimate" : "Invoice"} sent to ${result.clientEmail}`);
               // Notify parent with updated status so list shows "sent"
               if (typeof onSaved === "function") {
                 onSaved({ ...newInvoice, status: "sent" });
               }
+              // Auto-close the modal after showing success
+              setTimeout(() => {
+                setSuccessMessage("");
+                onClose();
+              }, 2000);
             }
           } catch (sendErr) {
             console.error("Error sending:", sendErr);
-            alert(`${isEstimate ? "Estimate" : "Invoice"} created but failed to send. You can send it later.`);
+            showToast(`${isEstimate ? "Estimate" : "Invoice"} created but failed to send. You can send it later.`, "warning");
             // Still notify parent to refresh list
             if (typeof onSaved === "function") {
               onSaved(newInvoice);
@@ -448,7 +470,7 @@ export default function InvoiceModal({ open, onClose, onSaved, invoice = null, d
       }
     } catch (err) {
       console.error(err);
-      alert("Unexpected error saving invoice.");
+      showToast("Unexpected error saving. Please try again.");
     } finally {
       setSaving(false);
       sendAfterCreateRef.current = false;
@@ -482,7 +504,7 @@ export default function InvoiceModal({ open, onClose, onSaved, invoice = null, d
 
     if (invoiceError) {
       console.error(invoiceError);
-      alert(`Error creating invoice: ${invoiceError.message}`);
+      showToast(`Error creating invoice: ${invoiceError.message}`);
       return null;
     }
 
@@ -523,7 +545,7 @@ export default function InvoiceModal({ open, onClose, onSaved, invoice = null, d
 
     if (lineItemsError) {
       console.error(lineItemsError);
-      alert(
+      showToast(
         `Invoice created, but there was an error saving line items: ${lineItemsError.message}`
       );
       return null;
@@ -542,27 +564,30 @@ export default function InvoiceModal({ open, onClose, onSaved, invoice = null, d
   };
 
   /*
-    Sends the invoice email to the client.
+    Shows the confirmation dialog before sending.
     Only available in edit mode since the invoice needs to exist first.
   */
-  const handleSendInvoice = async () => {
+  const handleSendClick = () => {
     if (!user || !invoice) {
-      alert("Please save the invoice first before sending.");
+      showToast("Please save the invoice first before sending.", "warning");
       return;
     }
 
     // Check if client has an email
     if (!selectedClient?.email) {
-      alert("This client doesn't have an email address. Please add one in the Clients page first.");
+      showToast("This client doesn't have an email address. Please add one in the Clients page first.", "warning");
       return;
     }
 
-    // Confirm before sending
-    const confirmed = window.confirm(
-      `Send invoice ${invoiceNumber} to ${selectedClient.email}?`
-    );
-    if (!confirmed) return;
+    // Show the user-friendly confirmation dialog
+    setShowSendConfirm(true);
+  };
 
+  /*
+    Actually sends the invoice email to the client after confirmation.
+  */
+  const handleConfirmSend = async () => {
+    setShowSendConfirm(false);
     setSending(true);
 
     try {
@@ -580,7 +605,7 @@ export default function InvoiceModal({ open, onClose, onSaved, invoice = null, d
       const result = await response.json();
 
       if (!response.ok) {
-        alert(result.error || "Failed to send invoice email.");
+        showToast(result.error || "Failed to send email.");
         setSending(false);
         return;
       }
@@ -590,15 +615,22 @@ export default function InvoiceModal({ open, onClose, onSaved, invoice = null, d
         setStatus("sent");
       }
 
-      alert(`Invoice sent successfully to ${result.clientEmail}!`);
-
+      // Show success message and auto-close after a brief delay
+      setSuccessMessage(`${isEstimate ? "Estimate" : "Invoice"} sent to ${result.clientEmail}`);
+      
       // Notify the parent that the invoice was updated (status changed to sent)
       if (typeof onSaved === "function" && result.statusUpdated) {
         onSaved({ ...invoice, status: "sent" });
       }
+      
+      // Auto-close the modal after showing success
+      setTimeout(() => {
+        setSuccessMessage("");
+        onClose();
+      }, 2000);
     } catch (err) {
       console.error("Error sending invoice:", err);
-      alert("Failed to send invoice. Please try again.");
+      showToast("Failed to send. Please try again.");
     } finally {
       setSending(false);
     }
@@ -631,7 +663,7 @@ export default function InvoiceModal({ open, onClose, onSaved, invoice = null, d
 
     if (invoiceError) {
       console.error(invoiceError);
-      alert(`Error updating invoice: ${invoiceError.message}`);
+      showToast(`Error updating invoice: ${invoiceError.message}`);
       return;
     }
 
@@ -645,7 +677,7 @@ export default function InvoiceModal({ open, onClose, onSaved, invoice = null, d
 
     if (deleteError) {
       console.error(deleteError);
-      alert(
+      showToast(
         `Invoice updated, but there was an error updating line items: ${deleteError.message}`
       );
       return;
@@ -687,7 +719,7 @@ export default function InvoiceModal({ open, onClose, onSaved, invoice = null, d
 
     if (lineItemsError) {
       console.error(lineItemsError);
-      alert(
+      showToast(
         `Invoice updated, but there was an error saving line items: ${lineItemsError.message}`
       );
       return;
@@ -702,8 +734,29 @@ export default function InvoiceModal({ open, onClose, onSaved, invoice = null, d
   };
 
   return (
-    <div className={styles.overlay}>
-      <div className={styles.modal}>
+    <>
+      {/* Toast notification - shows error/warning/success messages */}
+      <Toast 
+        open={toast.open}
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast({ ...toast, open: false })}
+      />
+      
+      {/* Send confirmation dialog - centered popup before sending */}
+      <ConfirmDialog
+        open={showSendConfirm}
+        title="Ready to send?"
+        message={`${isEstimate ? "Estimate" : "Invoice"} will be sent to:\nClient: ${selectedClient?.name || "—"}\nEmail: ${selectedClient?.email || "—"}`}
+        confirmLabel="Send Now"
+        cancelLabel="Cancel"
+        confirmType="primary"
+        onConfirm={handleConfirmSend}
+        onCancel={() => setShowSendConfirm(false)}
+      />
+      
+      <div className={styles.overlay}>
+        <div className={styles.modal}>
         {/* Header - shows different title based on create vs edit mode and document type */}
         <div className={styles.header}>
           <h2 className={styles.title}>
@@ -716,54 +769,73 @@ export default function InvoiceModal({ open, onClose, onSaved, invoice = null, d
             className={styles.closeButton}
             onClick={onClose}
             disabled={saving}
+            aria-label="Close"
           >
-            X
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M1 1L13 13M1 13L13 1" />
+            </svg>
           </button>
         </div>
 
         {/* Body */}
         <div className={styles.body}>
+          {/* Success message banner - shows when email is sent */}
+          {successMessage && (
+            <div className={styles.successBanner}>
+              <svg className={styles.successIcon} viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <span>{successMessage}</span>
+            </div>
+          )}
+
+          
           {loadingData ? (
             <div className={styles.loadingBox}>Loading...</div>
           ) : (
             <form className={styles.form} onSubmit={handleSubmit}>
-              {/* Top meta section - invoice number, client, dates, status */}
+              {/* Top row: Document number on left, Client dropdown on far right */}
+              <div className={styles.topRow}>
+                <div className={styles.topRowLeft}>
+                  <div className={styles.field}>
+                    <label className={styles.label}>
+                      {isEstimate ? "Estimate Number" : "Invoice Number"}
+                    </label>
+                    {isEditMode ? (
+                      <div className={styles.readonlyValue}>
+                        {invoiceNumber || "—"}
+                      </div>
+                    ) : (
+                      <div className={styles.readonlyValue}>
+                        {invoiceNumber || "Generating..."}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className={styles.topRowRight}>
+                  <div className={styles.field}>
+                    <label className={styles.label}>Client</label>
+                    <SearchableSelect
+                      value={clientId}
+                      onChange={(val) => {
+                        setClientId(val);
+                        const client = clients.find((c) => c.id === val);
+                        setSelectedClient(client || null);
+                      }}
+                      options={clients.map((client) => ({
+                        value: client.id,
+                        label: client.name,
+                      }))}
+                      placeholder="Select a client"
+                      disabled={saving || sending}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Dates and status row */}
               <div className={styles.gridTwoCols}>
-                <div className={styles.field}>
-                  <label className={styles.label}>
-                    {isEstimate ? "Estimate Number" : "Invoice Number"}
-                  </label>
-                  {isEditMode ? (
-                    // In edit mode, the number is read-only to prevent duplicates
-                    <div className={styles.readonlyValue}>
-                      {invoiceNumber || "—"}
-                    </div>
-                  ) : (
-                    <div className={styles.readonlyValue}>
-                      {invoiceNumber || "Generating..."}
-                    </div>
-                  )}
-                </div>
-
-                <div className={styles.field}>
-                  <label className={styles.label}>Client</label>
-                  <SearchableSelect
-                    value={clientId}
-                    onChange={(val) => {
-                      setClientId(val);
-                      // Update selected client info when client changes
-                      const client = clients.find((c) => c.id === val);
-                      setSelectedClient(client || null);
-                    }}
-                    options={clients.map((client) => ({
-                      value: client.id,
-                      label: client.name,
-                    }))}
-                    placeholder="Select a client"
-                    disabled={saving || sending}
-                  />
-                </div>
-
                 <div className={styles.field}>
                   <label className={styles.label}>Issue Date</label>
                   <input
@@ -981,7 +1053,7 @@ export default function InvoiceModal({ open, onClose, onSaved, invoice = null, d
                   <button
                     type="button"
                     className={styles.sendButton}
-                    onClick={handleSendInvoice}
+                    onClick={handleSendClick}
                     disabled={saving || sending || !selectedClient?.email}
                     title={
                       !selectedClient?.email
@@ -1069,6 +1141,7 @@ export default function InvoiceModal({ open, onClose, onSaved, invoice = null, d
         </div>
       </div>
     </div>
+    </>
   );
 }
 

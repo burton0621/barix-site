@@ -187,16 +187,6 @@ export default function DashboardPage() {
     init();
   }, [router]);
 
-  // When a new invoice is created from the dashboard button,
-  // refresh metrics and recent activity
-  const handleInvoiceCreated = async () => {
-    if (!userId) return;
-    await Promise.all([
-      fetchInvoiceMetrics(userId),
-      fetchRecentInvoices(userId),
-    ]);
-  };
-
   if (loading) {
     return (
       <div className={styles.loadingWrapper}>
@@ -213,14 +203,30 @@ export default function DashboardPage() {
 
       <main className={styles.main}>
         {/* Welcome Header */}
-        <div className={styles.headerBlock}>
-          <h1 className={styles.title}>
-            Welcome back
-            {profile?.company_name ? `, ${profile.company_name}` : ""}
-          </h1>
-          <p className={styles.subtitle}>
-            Here's what's happening with your invoicing today.
-          </p>
+        <div className={styles.headerRow}>
+          <div className={styles.headerBlock}>
+            <h1 className={styles.title}>
+              Welcome back
+              {profile?.company_name ? `, ${profile.company_name}` : ""}
+            </h1>
+            <p className={styles.subtitle}>
+              Here's what's happening with your invoicing today.
+            </p>
+          </div>
+          <div className={styles.headerActions}>
+            <CreateInvoiceButton
+              onCreated={() => {
+                // Refresh the dashboard data when an invoice is created
+                if (userId) {
+                  fetchInvoiceMetrics(userId);
+                  fetchRecentInvoices(userId);
+                }
+              }}
+              buttonText="Create Invoice"
+              documentType="invoice"
+              className={styles.primaryButton}
+            />
+          </div>
         </div>
 
         {/* Quick Stats */}
@@ -277,17 +283,6 @@ export default function DashboardPage() {
 
         {/* Get Started Section */}
         <GetStartedCard />
-
-        {/* Quick create invoice button directly under GetStartedCard */}
-        <div className={styles.recentCard}>
-          <h2 className={styles.sectionTitle}>Create a new invoice</h2>
-          <div className={styles.fullWidthButton}>
-            <CreateInvoiceButton
-              onCreated={handleInvoiceCreated}
-              buttonText="New Invoice"
-            />
-          </div>
-        </div>
 
         {/* Recent Activity */}
         <div className={styles.recentCard}>

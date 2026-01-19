@@ -29,8 +29,26 @@
 
 /* Header */
 
+/* Header row - title on left, action button on right */
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+  flex-wrap: wrap;
+}
+
 .headerBlock {
-  margin-bottom: 2.5rem; /* mb-10 */
+  flex: 1;
+  min-width: 200px;
+}
+
+.headerActions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .title {
@@ -344,11 +362,57 @@
   padding-bottom: 0.75rem;
 }
 
+/* Primary button style - matches invoices page */
+.primaryButton {
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.5rem;
+  border: none;
+  background-color: #2563eb;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+}
+
+.primaryButton:hover {
+  background-color: #1d4ed8;
+}
+
+.primaryButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Secondary button style - matches invoices page */
+.secondaryButton {
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.5rem;
+  border: 1px solid #d1d5db;
+  background-color: #ffffff;
+  color: #374151;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.secondaryButton:hover {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
+}
+
 @media (max-width: 640px) {
   .fullWidthButton button {
     padding-top: 1rem;
     padding-bottom: 1rem;
     font-size: 1rem;
+  }
+
+  .primaryButton,
+  .secondaryButton {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
   }
 }
 

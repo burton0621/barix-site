@@ -4,13 +4,13 @@
   Onboarding Gate Component
   -------------------------
   Wraps page content and shows a setup prompt if the user hasn't completed
-  their profile or subscription. Used on pages like Invoices, Clients, etc.
+  their profile. Used on pages like Invoices, Clients, etc.
   where we want to ensure users are fully set up before using features.
   
   Requirements to pass the gate:
   1. Profile complete (company name is set)
-  2. Active subscription (trialing or active)
   
+  FREE DEMO MODE: No subscription required. Only Stripe processing fees apply.
   If requirements aren't met, shows a friendly prompt with links to complete setup.
 */
 
@@ -56,7 +56,7 @@ export default function OnboardingGate({ children }) {
           Complete Your Setup
         </h2>
         <p className="text-gray-600 mb-8">
-          Before you can create invoices, please complete the following steps:
+          Before you can create invoices, please complete your company profile:
         </p>
 
         <div className="space-y-4 text-left mb-8">
@@ -100,48 +100,20 @@ export default function OnboardingGate({ children }) {
             </div>
           </div>
 
-          {/* Step 2: Subscribe */}
-          <div className={`flex items-start gap-3 p-4 rounded-lg border ${
-            hasActiveSubscription 
-              ? 'bg-green-50 border-green-200' 
-              : 'bg-gray-50 border-gray-200'
-          }`}>
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
-              hasActiveSubscription 
-                ? 'bg-green-500 text-white' 
-                : 'bg-gray-300 text-white'
-            }`}>
-              {hasActiveSubscription ? (
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              ) : (
-                <span className="text-sm font-medium">2</span>
-              )}
+          {/* Free Demo Notice */}
+          <div className="flex items-start gap-3 p-4 rounded-lg border bg-blue-50 border-blue-200">
+            <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 bg-blue-500 text-white">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
             </div>
             <div className="flex-1">
-              <p className={`font-medium ${hasActiveSubscription ? 'text-green-800' : 'text-gray-900'}`}>
-                Start Your Subscription
+              <p className="font-medium text-blue-800">
+                Free Demo Mode
               </p>
-              <p className={`text-sm ${hasActiveSubscription ? 'text-green-600' : 'text-gray-500'}`}>
-                {hasActiveSubscription 
-                  ? 'Your subscription is active' 
-                  : 'Start your 7-day free trial to unlock all features'
-                }
+              <p className="text-sm text-blue-600">
+                All features are free during demo. Only standard Stripe processing fees apply when accepting payments.
               </p>
-              {!hasActiveSubscription && isAdmin && (
-                <Link 
-                  href="/settings" 
-                  className="inline-block mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
-                >
-                  Go to Settings →
-                </Link>
-              )}
-              {!hasActiveSubscription && !isAdmin && (
-                <p className="mt-2 text-sm text-gray-500 italic">
-                  Contact your administrator to set up billing
-                </p>
-              )}
             </div>
           </div>
         </div>

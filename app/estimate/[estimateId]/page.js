@@ -14,6 +14,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Toast from "@/components/common/Toast/Toast";
+import ConfirmDialog from "@/components/common/ConfirmDialog/ConfirmDialog";
 import styles from "./estimatePage.module.css";
 
 export default function EstimatePage() {
@@ -25,6 +27,17 @@ export default function EstimatePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [processing, setProcessing] = useState(false);
+  
+  // Toast notification state for user-friendly feedback
+  const [toast, setToast] = useState({ open: false, message: "", type: "error" });
+  
+  // Decline confirmation dialog state
+  const [showDeclineConfirm, setShowDeclineConfirm] = useState(false);
+  
+  // Helper to show toast notifications
+  const showToast = (message, type = "error") => {
+    setToast({ open: true, message, type });
+  };
 
   // Fetch estimate details on mount
   useEffect(() => {
@@ -71,7 +84,7 @@ export default function EstimatePage() {
       const data = await response.json();
 
       if (!response.ok) {
-        alert(data.error || "Failed to accept estimate");
+        showToast(data.error || "Failed to accept estimate");
         return;
       }
 
@@ -79,22 +92,21 @@ export default function EstimatePage() {
       router.push(`/estimate/${estimateId}/accepted`);
     } catch (err) {
       console.error("Error accepting estimate:", err);
-      alert("Something went wrong. Please try again.");
+      showToast("Something went wrong. Please try again.");
     } finally {
       setProcessing(false);
     }
   }
 
-  // Handle declining the estimate
-  async function handleDecline() {
+  // Shows the decline confirmation dialog
+  function handleDeclineClick() {
     if (processing) return;
+    setShowDeclineConfirm(true);
+  }
 
-    // Ask for confirmation before declining
-    const confirmed = window.confirm(
-      "Are you sure you want to decline this estimate? This action cannot be undone."
-    );
-
-    if (!confirmed) return;
+  // Handle declining the estimate after confirmation
+  async function handleConfirmDecline() {
+    setShowDeclineConfirm(false);
 
     setProcessing(true);
 
@@ -106,7 +118,7 @@ export default function EstimatePage() {
       const data = await response.json();
 
       if (!response.ok) {
-        alert(data.error || "Failed to decline estimate");
+        showToast(data.error || "Failed to decline estimate");
         return;
       }
 
@@ -114,7 +126,7 @@ export default function EstimatePage() {
       router.push(`/estimate/${estimateId}/declined`);
     } catch (err) {
       console.error("Error declining estimate:", err);
-      alert("Something went wrong. Please try again.");
+      showToast("Something went wrong. Please try again.");
     } finally {
       setProcessing(false);
     }
@@ -186,10 +198,31 @@ export default function EstimatePage() {
 
   // Main estimate view
   return (
-    <div className={styles.page}>
-      <div className={styles.container}>
-        {/* Header with business info */}
-        <div className={styles.header}>
+    <>
+      {/* Toast notification for user-friendly feedback */}
+      <Toast 
+        open={toast.open}
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast({ ...toast, open: false })}
+      />
+      
+      {/* Decline confirmation dialog */}
+      <ConfirmDialog
+        open={showDeclineConfirm}
+        title="Decline Estimate?"
+        message="Are you sure you want to decline this estimate? This action cannot be undone."
+        confirmLabel="Yes, Decline"
+        cancelLabel="Cancel"
+        confirmType="danger"
+        onConfirm={handleConfirmDecline}
+        onCancel={() => setShowDeclineConfirm(false)}
+      />
+      
+      <div className={styles.page}>
+        <div className={styles.container}>
+          {/* Header with business info */}
+          <div className={styles.header}>
           <div className={styles.businessInfo}>
             <h1 className={styles.businessName}>
               {estimate.contractor?.business_name || "Business Name"}
@@ -309,7 +342,7 @@ export default function EstimatePage() {
           <div className={styles.actionButtons}>
             <button
               className={styles.declineButton}
-              onClick={handleDecline}
+              onClick={handleDeclineClick}
               disabled={processing}
             >
               {processing ? "Processing..." : "Decline Estimate"}
@@ -335,6 +368,7 @@ export default function EstimatePage() {
         </p>
       </div>
     </div>
+    </>
   );
 }
 

@@ -34,8 +34,8 @@ const supabaseAdmin = createClient(
 );
 
 // Platform fee percentage - this is what Barix keeps from each transaction
-// Set to 0 if you don't want to charge a platform fee
-const PLATFORM_FEE_PERCENT = 2.9; // 2.9% goes to Barix
+// Currently set to 0 for free demo mode - only Stripe's processing fees apply
+const PLATFORM_FEE_PERCENT = 0;
 
 export async function POST(request) {
   try {
