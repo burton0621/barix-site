@@ -24,6 +24,9 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { checkRateLimit, apiError } from "@/lib/api/middleware";
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 
 // Allowed sort fields to prevent SQL injection via sort parameter
 const ALLOWED_SORT_FIELDS = [
