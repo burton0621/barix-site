@@ -47,7 +47,7 @@ export default function ProductPage() {
             Techs capture jobs in the field. Office tracks cash flow in real time.
           </Feature>
           <Feature title="Integrations">
-            Airtable today, QuickBooks export, Zapier hooks, webhooks for everything important.
+            Export you invoices directly to QuickBooks.
           </Feature>
         </section>
 
