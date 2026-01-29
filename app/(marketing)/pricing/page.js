@@ -39,7 +39,7 @@ export default function PricingPage() {
       <main className="mx-auto max-w-6xl px-4 py-12">
         {/* Hero */}
         <section className="text-center">
-          <h1 className="text-4xl font-bold tracking-tight md:text-5xl">Pricing that scales with you</h1>
+          <h1 className="text-4xl font-bold tracking-tight md:text-5xl">Free Demo</h1>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-gray-600">
             Transparent monthly plans. Processing fees separate.
           </p>
@@ -88,24 +88,36 @@ export default function PricingPage() {
           />
         </section>
 
-        {/* Fees callout */}
+        {/* Processing Fees */}
         <section className="mt-12 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-semibold">Payment processing</h2>
+          <h2 className="text-xl font-semibold">Payment Processing Fees</h2>
           <p className="mt-2 text-gray-600">
-            We offer internal payment processing so all you have to do is get paid.
+            When you accept payments through Barix, only standard Stripe processing fees apply:
           </p>
-          <p className="mt-2 text-sm text-gray-500">
-            Ask for our merchant rate sheet and pilot pricing.
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <div className="bg-gray-50 rounded-lg p-4">
+              <p className="font-medium text-gray-900">Card Payments</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">2.9% + $0.30</p>
+              <p className="text-sm text-gray-500">Per successful transaction</p>
+            </div>
+            <div className="bg-gray-50 rounded-lg p-4">
+              <p className="font-medium text-gray-900">ACH Payments</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">0.8%</p>
+              <p className="text-sm text-gray-500">$5 cap per transaction</p>
+            </div>
+          </div>
+          <p className="mt-4 text-sm text-gray-500">
+            Barix does not charge any additional platform fees during the demo period.
           </p>
         </section>
 
         {/* FAQ */}
         <section className="mt-12">
-          <h2 className="text-2xl font-semibold tracking-tight">Pricing FAQ</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">FAQ</h2>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <div className="rounded-xl border border-gray-200 bg-white p-4">
-              <p className="font-medium">Is there a long term contract?</p>
-              <p className="mt-1 text-gray-600">No. Month to month with the option to lock annual for a discount.</p>
+              <p className="font-medium">How long is the demo period?</p>
+              <p className="mt-1 text-gray-600">The demo is available indefinitely while we are in beta. We will notify you before any changes.</p>
             </div>
             <div className="rounded-xl border border-gray-200 bg-white p-4">
               <p className="font-medium">What are the processing fees?</p>

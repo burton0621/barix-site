@@ -20,6 +20,8 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/providers/AuthProvider";
 import DashboardNavbar from "@/components/Navbar/DashboardNavbar";
+import Toast from "@/components/common/Toast/Toast";
+import ConfirmDialog from "@/components/common/ConfirmDialog/ConfirmDialog";
 
 export default function TeamPage() {
   const router = useRouter();
@@ -37,6 +39,20 @@ export default function TeamPage() {
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState("");
   const [inviteSuccess, setInviteSuccess] = useState("");
+  
+  // Toast notification state for user-friendly feedback
+  const [toast, setToast] = useState({ open: false, message: "", type: "info" });
+  
+  // Remove member confirmation dialog state
+  const [removeConfirm, setRemoveConfirm] = useState({
+    open: false,
+    member: null,
+  });
+  
+  // Helper to show toast notifications
+  const showToast = (message, type = "error") => {
+    setToast({ open: true, message, type });
+  };
 
   /*
     Load team members when the page mounts
@@ -170,10 +186,11 @@ export default function TeamPage() {
       .eq("id", memberId);
 
     if (error) {
-      alert("Failed to update role: " + error.message);
+      showToast("Failed to update role: " + error.message);
       return;
     }
 
+    showToast("Role updated successfully", "success");
     loadTeamMembers();
   }
 
@@ -181,19 +198,25 @@ export default function TeamPage() {
     Remove a team member
     Admins cannot remove themselves (to prevent orphaned companies)
   */
-  async function handleRemoveMember(member) {
+  // Shows the remove confirmation dialog
+  async function handleRemoveClick(member) {
     // Prevent removing yourself
     const { data: { user } } = await supabase.auth.getUser();
     if (member.user_id === user.id) {
-      alert("You cannot remove yourself from the team.");
+      showToast("You cannot remove yourself from the team.", "warning");
       return;
     }
 
-    const confirmed = window.confirm(
-      `Remove ${member.name || member.email} from the team?`
-    );
-    
-    if (!confirmed) return;
+    setRemoveConfirm({
+      open: true,
+      member,
+    });
+  }
+
+  // Actually removes the member after confirmation
+  async function handleConfirmRemove() {
+    const { member } = removeConfirm;
+    setRemoveConfirm({ ...removeConfirm, open: false });
 
     const { error } = await supabase
       .from("team_members")
@@ -201,10 +224,11 @@ export default function TeamPage() {
       .eq("id", member.id);
 
     if (error) {
-      alert("Failed to remove member: " + error.message);
+      showToast("Failed to remove member: " + error.message);
       return;
     }
 
+    showToast(`${member.name || member.email} removed from team`, "success");
     loadTeamMembers();
   }
 
@@ -240,17 +264,38 @@ export default function TeamPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <DashboardNavbar />
+    <>
+      {/* Toast notification for user-friendly feedback */}
+      <Toast 
+        open={toast.open}
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast({ ...toast, open: false })}
+      />
       
-      <main className="max-w-4xl mx-auto px-6 py-10">
-        {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Team</h1>
-          <p className="mt-1 text-gray-600">
-            Manage who has access to your Barix account
-          </p>
-        </div>
+      {/* Remove member confirmation dialog */}
+      <ConfirmDialog
+        open={removeConfirm.open}
+        title="Remove Team Member?"
+        message={`Are you sure you want to remove ${removeConfirm.member?.name || removeConfirm.member?.email || 'this member'} from the team?`}
+        confirmLabel="Remove"
+        cancelLabel="Cancel"
+        confirmType="danger"
+        onConfirm={handleConfirmRemove}
+        onCancel={() => setRemoveConfirm({ ...removeConfirm, open: false })}
+      />
+      
+      <div className="min-h-screen bg-gray-50">
+        <DashboardNavbar />
+        
+        <main className="max-w-4xl mx-auto px-6 py-10">
+          {/* Page Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Team</h1>
+            <p className="mt-1 text-gray-600">
+              Manage who has access to your Barix account
+            </p>
+          </div>
 
         {/* Invite Form */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
@@ -394,7 +439,7 @@ export default function TeamPage() {
 
                     {/* Remove Button */}
                     <button
-                      onClick={() => handleRemoveMember(member)}
+                      onClick={() => handleRemoveClick(member)}
                       className="p-2 text-gray-400 hover:text-red-500 transition-colors"
                       title="Remove from team"
                     >
@@ -435,6 +480,7 @@ export default function TeamPage() {
         </div>
       </main>
     </div>
+    </>
   );
 }
 

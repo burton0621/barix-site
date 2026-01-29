@@ -208,6 +208,11 @@
   color: #0a2540;
 }
 
+.settingsIcon {
+  width: 20px;
+  height: 20px;
+}
+
 
 /* ----------------------------------------
    SIGN OUT BUTTON

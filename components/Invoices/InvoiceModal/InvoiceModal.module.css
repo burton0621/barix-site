@@ -1,0 +1,776 @@
+/*
+  Invoice Modal Styles
+  --------------------
+  Responsive modal for creating and editing invoices.
+  Includes tablet and mobile breakpoints for a seamless experience across devices.
+*/
+
+/* Overlay - dark backdrop behind the modal */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 210;
+  padding: 16px; /* Gives some breathing room on mobile */
+}
+
+/* Modal container - the white card that holds the form */
+.modal {
+  width: 100%;
+  max-width: 960px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.25);
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  position: relative; /* For absolute positioning of close button */
+}
+
+/* Header - title and close button */
+.header {
+  padding: 16px 24px;
+  padding-right: 60px; /* Make room for the close button */
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0; /* Prevents header from shrinking when content is long */
+}
+
+.title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+/* Close button positioned in top right corner of the modal */
+.closeButton {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  border: none;
+  background: #f3f4f6;
+  cursor: pointer;
+  font-size: 16px;
+  color: #6b7280;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  z-index: 10;
+}
+
+.closeButton:hover {
+  color: #374151;
+  background-color: #e5e7eb;
+}
+
+/* Body - scrollable content area */
+.body {
+  padding: 16px 24px 20px 24px;
+  overflow-y: auto;
+  flex: 1; /* Takes remaining space and scrolls if needed */
+}
+
+/* Success banner - shown when email is sent successfully */
+.successBanner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border: 1px solid #a7f3d0;
+  border-radius: 12px;
+  color: #065f46;
+  font-weight: 500;
+  font-size: 0.95rem;
+  margin-bottom: 16px;
+  animation: slideIn 0.3s ease-out;
+}
+
+.successIcon {
+  width: 24px;
+  height: 24px;
+  color: #10b981;
+  flex-shrink: 0;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Confirm banner - user-friendly confirmation before sending (positioned at bottom) */
+.confirmBannerBottom {
+  padding: 20px;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border: 1px solid #93c5fd;
+  border-radius: 12px;
+  margin-top: 20px;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.confirmContent {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.confirmIcon {
+  width: 28px;
+  height: 28px;
+  color: #2563eb;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.confirmText {
+  flex: 1;
+}
+
+.confirmTitle {
+  margin: 0 0 4px 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e40af;
+}
+
+.confirmEmail {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #1e3a8a;
+}
+
+.confirmEmail strong {
+  color: #1e40af;
+}
+
+.confirmActions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.confirmCancel {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid #93c5fd;
+  background: white;
+  color: #1e40af;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.confirmCancel:hover {
+  background: #f0f9ff;
+  border-color: #60a5fa;
+}
+
+.confirmSend {
+  padding: 8px 20px;
+  border-radius: 8px;
+  border: none;
+  background: #2563eb;
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.confirmSend:hover {
+  background: #1d4ed8;
+}
+
+/* Loading state */
+.loadingBox {
+  padding: 40px 0;
+  text-align: center;
+  color: #6b7280;
+}
+
+/* Form layout */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Two-column grid for the invoice header fields */
+/* Top row layout - Document number on left, Client dropdown on far right */
+.topRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.topRowLeft {
+  flex: 1;
+  min-width: 200px;
+}
+
+.topRowRight {
+  flex: 1;
+  min-width: 250px;
+  max-width: 350px;
+}
+
+/* Two-column grid for dates and status */
+.gridTwoCols {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px 20px;
+}
+
+/* Generic form field container */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.label {
+  font-size: 0.85rem;
+  color: #374151;
+  font-weight: 500;
+}
+
+/* Input, select, and textarea base styles */
+.input,
+.select,
+.textarea {
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  font-size: 0.9rem;
+  box-sizing: border-box;
+  background-color: #ffffff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+/* Read-only value display (for invoice number) */
+.readonlyValue {
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+  font-size: 0.9rem;
+  color: #111827;
+  box-sizing: border-box;
+}
+
+/* Section dividers (like Line Items section) */
+.section {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 16px;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.addLineButton {
+  border: none;
+  background: none;
+  font-size: 0.85rem;
+  color: #2563eb;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.15s ease;
+}
+
+.addLineButton:hover {
+  text-decoration: underline;
+  background-color: #eff6ff;
+}
+
+/* Line items table - uses CSS grid for flexible columns */
+.lineItemsTable {
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  overflow: visible; /* Allow dropdowns to overflow */
+}
+
+.lineItemsHeaderRow {
+  display: grid;
+  grid-template-columns: 1.2fr 1.7fr 0.8fr 1fr 0.6fr;
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 8px 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.lineItemRow {
+  display: grid;
+  grid-template-columns: 1.2fr 1.7fr 0.8fr 1fr 0.6fr;
+  padding: 8px 10px;
+  gap: 6px;
+  align-items: center;
+  border-top: 1px solid #f3f4f6;
+}
+
+.lineItemRow:first-child {
+  border-top: none;
+}
+
+/* Column containers for line items */
+.colService,
+.colName,
+.colQty,
+.colRate,
+.colRemove {
+  display: flex;
+  min-width: 0; /* Allows content to shrink properly in grid */
+}
+
+.colService,
+.colName,
+.colQty,
+.colRate {
+  align-items: center;
+}
+
+.colRemove {
+  justify-content: flex-end;
+}
+
+/* Remove button for line items */
+.removeLineButton {
+  border: none;
+  background: none;
+  color: #ef4444;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.15s ease;
+  white-space: nowrap;
+}
+
+.removeLineButton:hover {
+  text-decoration: underline;
+  background-color: #fef2f2;
+}
+
+/* Footer row - notes on left, totals on right */
+.footerRow {
+  display: grid;
+  grid-template-columns: minmax(0, 2.2fr) minmax(0, 1.1fr);
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.notesField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Totals box - shows subtotal, tax, and total */
+.totalsBox {
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 10px 12px;
+  background-color: #f9fafb;
+  font-size: 0.9rem;
+}
+
+.totalRow,
+.totalRowFinal {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.totalRowFinal {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 6px;
+  margin-top: 6px;
+  margin-bottom: 0;
+}
+
+.totalLabel {
+  color: #4b5563;
+}
+
+.totalValue {
+  font-weight: 500;
+  color: #111827;
+  font-variant-numeric: tabular-nums;
+}
+
+.totalLabelFinal {
+  color: #111827;
+  font-weight: 600;
+}
+
+.totalValueFinal {
+  color: #111827;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Action buttons at the bottom */
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #e5e7eb;
+  margin-top: 4px;
+}
+
+.cancelButton {
+  padding: 9px 14px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background-color: #ffffff;
+  color: #374151;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.cancelButton:hover {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.saveButton {
+  padding: 9px 16px;
+  border-radius: 8px;
+  border: none;
+  background-color: #2563eb;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.saveButton:hover {
+  background-color: #1d4ed8;
+}
+
+/* Create & Send button - green to indicate immediate action */
+.createAndSendButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.createAndSendButton:hover:not(:disabled) {
+  background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+  transform: translateY(-1px);
+}
+
+.createAndSendButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Send Invoice button - green to differentiate from save */
+.sendButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border-radius: 8px;
+  border: none;
+  background-color: #059669;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.sendButton:hover {
+  background-color: #047857;
+}
+
+.sendButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sendIcon {
+  width: 16px;
+  height: 16px;
+}
+
+.saveButton:disabled,
+.cancelButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 
+  TABLET BREAKPOINT (768px and below)
+  -----------------------------------
+  Adjusts the layout for tablet-sized screens
+*/
+@media (max-width: 768px) {
+  .modal {
+    max-width: 100%;
+    border-radius: 12px;
+    max-height: 95vh;
+  }
+
+  .body {
+    padding: 12px 16px 16px 16px;
+  }
+
+  /* Adjust line items grid for smaller screens */
+  .lineItemsHeaderRow,
+  .lineItemRow {
+    grid-template-columns: 1.4fr 1.8fr 0.9fr 1.1fr 0.6fr;
+  }
+
+  /* Stack notes and totals vertically */
+  .footerRow {
+    grid-template-columns: 1fr;
+  }
+
+  /* Totals box takes full width on tablet */
+  .totalsBox {
+    order: -1; /* Show totals above notes on tablet/mobile */
+  }
+}
+
+/* 
+  MOBILE BREAKPOINT (480px and below)
+  -----------------------------------
+  Completely restructures the layout for phone screens
+*/
+@media (max-width: 480px) {
+  .overlay {
+    padding: 0;
+    align-items: flex-end; /* Modal slides up from bottom on mobile */
+  }
+
+  .modal {
+    max-width: 100%;
+    border-radius: 16px 16px 0 0;
+    max-height: 95vh;
+  }
+
+  .header {
+    padding: 14px 16px;
+  }
+
+  .title {
+    font-size: 1rem;
+  }
+
+  .body {
+    padding: 12px 16px 20px 16px;
+  }
+
+  /* Stack the top row fields on mobile */
+  .topRow {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .topRowLeft,
+  .topRowRight {
+    max-width: 100%;
+    min-width: 100%;
+  }
+
+  /* Stack the date/status fields in a single column */
+  .gridTwoCols {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  /* Hide the line items header row on mobile - it takes too much space */
+  .lineItemsHeaderRow {
+    display: none;
+  }
+
+  /* Restructure line items as stacked cards on mobile */
+  .lineItemRow {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 10px;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  .lineItemRow:first-child {
+    border-top: none;
+  }
+
+  /* Each column in the line item takes full width on mobile */
+  .colService,
+  .colName,
+  .colQty,
+  .colRate {
+    width: 100%;
+  }
+
+  .colRemove {
+    width: 100%;
+    justify-content: flex-start;
+    padding-top: 4px;
+  }
+
+  /* Add labels before each field on mobile since we hid the header */
+  .colService::before {
+    content: "Service";
+    display: block;
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+
+  .colName::before {
+    content: "Description";
+    display: block;
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+
+  .colQty::before {
+    content: "Quantity";
+    display: block;
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+
+  .colRate::before {
+    content: "Rate ($)";
+    display: block;
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+
+  /* Make the columns wrap their content properly */
+  .colService,
+  .colName,
+  .colQty,
+  .colRate,
+  .colRemove {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  /* Totals box adjustments for mobile */
+  .totalsBox {
+    padding: 12px;
+  }
+
+  /* Action buttons stack on very small screens if needed */
+  .actions {
+    flex-wrap: wrap;
+  }
+
+  .cancelButton,
+  .saveButton,
+  .createAndSendButton {
+    flex: 1;
+    min-width: 120px;
+    text-align: center;
+  }
+}
+
+/* 
+  SMALL MOBILE (360px and below)
+  ------------------------------
+  Extra adjustments for very small phone screens
+*/
+@media (max-width: 360px) {
+  .body {
+    padding: 10px 12px 16px 12px;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .cancelButton,
+  .saveButton,
+  .createAndSendButton {
+    width: 100%;
+  }
+}
+

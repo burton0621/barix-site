@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/providers/AuthProvider";
 import DashboardNavbar from "@/components/Navbar/DashboardNavbar";
 import GetStartedCard from "@/components/dashboard/getStartedCard/getStartedCard";
+import CreateInvoiceButton from "@/components/Invoices/CreateInvoiceButton/createInvoiceButton";
 
 import styles from "./DashboardPage.module.css";
 
@@ -14,6 +15,9 @@ export default function DashboardPage() {
   const { profile } = useAuth();
 
   const [loading, setLoading] = useState(true);
+
+  // Keep track of userId so we can refresh after creating invoices
+  const [userId, setUserId] = useState(null);
 
   // Metrics
   const [metricsLoading, setMetricsLoading] = useState(false);
@@ -170,6 +174,8 @@ export default function DashboardPage() {
         return;
       }
 
+      setUserId(user.id);
+
       await Promise.all([
         fetchInvoiceMetrics(user.id),
         fetchRecentInvoices(user.id),
@@ -197,14 +203,30 @@ export default function DashboardPage() {
 
       <main className={styles.main}>
         {/* Welcome Header */}
-        <div className={styles.headerBlock}>
-          <h1 className={styles.title}>
-            Welcome back
-            {profile?.company_name ? `, ${profile.company_name}` : ""}
-          </h1>
-          <p className={styles.subtitle}>
-            Here's what's happening with your invoicing today.
-          </p>
+        <div className={styles.headerRow}>
+          <div className={styles.headerBlock}>
+            <h1 className={styles.title}>
+              Welcome back
+              {profile?.company_name ? `, ${profile.company_name}` : ""}
+            </h1>
+            <p className={styles.subtitle}>
+              Here's what's happening with your invoicing today.
+            </p>
+          </div>
+          <div className={styles.headerActions}>
+            <CreateInvoiceButton
+              onCreated={() => {
+                // Refresh the dashboard data when an invoice is created
+                if (userId) {
+                  fetchInvoiceMetrics(userId);
+                  fetchRecentInvoices(userId);
+                }
+              }}
+              buttonText="Create Invoice"
+              documentType="invoice"
+              className={styles.primaryButton}
+            />
+          </div>
         </div>
 
         {/* Quick Stats */}
@@ -259,7 +281,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Get Started Section (all logic inside the component) */}
+        {/* Get Started Section */}
         <GetStartedCard />
 
         {/* Recent Activity */}

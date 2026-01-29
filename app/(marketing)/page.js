@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -14,30 +14,49 @@ import DemoFrame from "@/components/marketing/DemoFrame";
 import ClientPanel from "@/components/marketing/ClientPanel";
 
 export default function HomePage() {
-  const [contactOpen, setContactOpen] = React.useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    let isMounted = true;
+    let mounted = true;
 
-    async function checkUser() {
+    const initAuth = async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
 
-      // If logged in, send them to dashboard
-      if (isMounted && user) {
-        // replace so they don't "go back" to marketing after redirect
+      if (!mounted) return;
+
+      if (user) {
+        router.replace("/dashboard");
+        return;
+      }
+
+      // No user → safe to show landing page
+      setAuthChecked(true);
+    };
+
+    initAuth();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
         router.replace("/dashboard");
       }
-    }
-
-    checkUser();
+    });
 
     return () => {
-      isMounted = false;
+      mounted = false;
+      subscription.unsubscribe();
     };
   }, [router]);
+
+  //Prevent landing page flash while auth is resolving
+  if (!authChecked) {
+    return null; // or a spinner if you prefer
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
@@ -48,7 +67,6 @@ export default function HomePage() {
         <ValueProps />
         <LogoCloud />
 
-        {/* Demo */}
         <section className="mx-auto max-w-6xl px-4 pb-16">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-lg font-semibold tracking-tight">
@@ -62,7 +80,6 @@ export default function HomePage() {
             </a>
           </div>
 
-          {/* Invisible anchor: scroll target */}
           <div id="demo" className="scroll-mt-28" />
 
           <DemoFrame
