@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -14,26 +14,31 @@ import DemoFrame from "@/components/marketing/DemoFrame";
 import ClientPanel from "@/components/marketing/ClientPanel";
 
 export default function HomePage() {
-  const [contactOpen, setContactOpen] = React.useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    let isMounted = true;
+    let mounted = true;
 
-    // 1️⃣ Immediate check (covers already-hydrated sessions)
-    const checkUser = async () => {
+    const initAuth = async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
 
-      if (isMounted && user) {
+      if (!mounted) return;
+
+      if (user) {
         router.replace("/dashboard");
+        return;
       }
+
+      // No user → safe to show landing page
+      setAuthChecked(true);
     };
 
-    checkUser();
+    initAuth();
 
-    // 2️⃣ Listen for auth state changes (covers delayed hydration)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -43,10 +48,15 @@ export default function HomePage() {
     });
 
     return () => {
-      isMounted = false;
+      mounted = false;
       subscription.unsubscribe();
     };
   }, [router]);
+
+  //Prevent landing page flash while auth is resolving
+  if (!authChecked) {
+    return null; // or a spinner if you prefer
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
@@ -57,7 +67,6 @@ export default function HomePage() {
         <ValueProps />
         <LogoCloud />
 
-        {/* Demo */}
         <section className="mx-auto max-w-6xl px-4 pb-16">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-lg font-semibold tracking-tight">
