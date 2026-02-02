@@ -633,6 +633,41 @@
   color: #4b5563;
 }
 
+/* Document type badges - to differentiate estimates from invoices */
+.invoiceNumberCell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.docTypeBadgeEstimate {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background-color: #fef3c7;
+  color: #92400e;
+  min-width: 32px;
+}
+
+.docTypeBadgeInvoice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background-color: #dbeafe;
+  color: #1e40af;
+  min-width: 32px;
+}
+
 /* Sortable headers */
 
 .sortableHeader {

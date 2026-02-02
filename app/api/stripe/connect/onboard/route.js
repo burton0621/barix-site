@@ -95,7 +95,29 @@ export async function POST(request) {
 
     let stripeAccountId = contractor.stripe_account_id;
 
-    // If no Stripe account exists yet, create one
+    // If a Stripe account ID exists, verify it's still valid in the current Stripe environment
+    // (handles cases where we switched from test to live keys, or account was deleted)
+    if (stripeAccountId) {
+      try {
+        await stripe.accounts.retrieve(stripeAccountId);
+        console.log("Verified existing Stripe account:", stripeAccountId);
+      } catch (verifyError) {
+        // Account doesn't exist in current Stripe environment (test vs live mode switch)
+        console.log("Stored Stripe account not found, will create new one:", verifyError.message);
+        stripeAccountId = null;
+        
+        // Clear the invalid account ID from database
+        await supabaseAdmin
+          .from("contractor_profiles")
+          .update({ 
+            stripe_account_id: null,
+            stripe_connected_at: null,
+          })
+          .eq("id", contractorId);
+      }
+    }
+
+    // If no valid Stripe account exists, create one
     if (!stripeAccountId) {
       console.log("Creating new Stripe Connect account for contractor:", contractorId);
       

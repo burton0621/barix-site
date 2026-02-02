@@ -92,8 +92,32 @@ export async function GET(request) {
       });
 
     } catch (stripeError) {
-      // If we can't reach Stripe, return cached data from our database
       console.error("Error fetching from Stripe:", stripeError);
+      
+      // Check if the account doesn't exist (e.g., test vs live mode switch)
+      if (stripeError.code === 'account_invalid' || stripeError.type === 'StripeInvalidRequestError') {
+        // Clear the invalid account ID from database
+        await supabaseAdmin
+          .from("contractor_profiles")
+          .update({ 
+            stripe_account_id: null,
+            stripe_connected_at: null,
+            stripe_payouts_enabled: false,
+            stripe_charges_enabled: false,
+            stripe_requirements: null,
+          })
+          .eq("id", contractorId);
+        
+        return NextResponse.json({
+          connected: false,
+          payoutsEnabled: false,
+          chargesEnabled: false,
+          requirements: null,
+          message: "Payout account needs to be reconnected",
+        });
+      }
+      
+      // For other errors (network issues, etc.), return cached data
       return NextResponse.json({
         connected: true,
         payoutsEnabled: contractor.stripe_payouts_enabled,

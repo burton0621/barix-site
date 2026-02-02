@@ -74,12 +74,12 @@ export async function GET(request, { params }) {
     if (invoice.owner_id) {
       const { data: profile } = await supabaseAdmin
         .from("contractor_profiles")
-        .select("business_name")
+        .select("company_name")
         .eq("id", invoice.owner_id)
         .single();
       
-      if (profile?.business_name) {
-        businessName = profile.business_name;
+      if (profile?.company_name) {
+        businessName = profile.company_name;
       }
     }
 
