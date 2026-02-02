@@ -129,6 +129,7 @@ export async function POST(request) {
         country: "US",
         email: accountEmail,
         capabilities: {
+          // Request both card_payments and transfers (required by Stripe)
           card_payments: { requested: true },
           transfers: { requested: true },
         },

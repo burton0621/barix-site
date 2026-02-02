@@ -831,16 +831,12 @@
   background: #cbd5e1;
   cursor: not-allowed;
   transform: none;
-}
-
-.maxPayoutNote {
+}.maxPayoutNote {
   font-size: 0.75rem;
   color: #92400e;
   margin-top: 8px;
   text-align: right;
-}
-
-.noBalanceText {
+}.noBalanceText {
   font-size: 0.9rem;
   color: #64748b;
   text-align: center;
