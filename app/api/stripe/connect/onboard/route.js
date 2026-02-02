@@ -129,7 +129,7 @@ export async function POST(request) {
         country: "US",
         email: accountEmail,
         capabilities: {
-          // Only request transfers - they just need to receive payouts
+          card_payments: { requested: true },
           transfers: { requested: true },
         },
         business_type: "individual",
