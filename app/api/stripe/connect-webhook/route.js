@@ -4,12 +4,12 @@
   Handles webhook events from Stripe related to connected accounts.
   This is separate from the regular payment webhook because Connect
   events have different signatures and purposes.
-  
+
   Key events we handle:
   - account.updated: When a connected account's status changes (verification complete, etc.)
   - payout.paid: When a payout to a contractor's bank succeeds
   - payout.failed: When a payout fails (insufficient funds, bank issue, etc.)
-  
+
   Configure this webhook in Stripe Dashboard:
   Developers > Webhooks > Add endpoint
   URL: https://yourdomain.com/api/stripe/connect-webhook
@@ -19,6 +19,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2023-10-16",
@@ -41,21 +44,21 @@ export async function POST(request) {
       event = stripe.webhooks.constructEvent(
         body,
         signature,
-        process.env.STRIPE_CONNECT_WEBHOOK_SECRET || process.env.STRIPE_WEBHOOK_SECRET
+        process.env.STRIPE_CONNECT_WEBHOOK_SECRET ||
+          process.env.STRIPE_WEBHOOK_SECRET
       );
     } catch (err) {
-      console.error("Connect webhook signature verification failed:", err.message);
-      return NextResponse.json(
-        { error: "Invalid signature" },
-        { status: 400 }
+      console.error(
+        "Connect webhook signature verification failed:",
+        err.message
       );
+      return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
     }
 
     console.log("Connect webhook received:", event.type);
 
     // Handle different event types
     switch (event.type) {
-      
       // Account status changed - this is the main event we care about
       // Fires when verification completes, requirements change, etc.
       case "account.updated": {
@@ -78,7 +81,10 @@ export async function POST(request) {
         if (updateError) {
           console.error("Error updating contractor status:", updateError);
         } else {
-          console.log("Updated contractor payout status for account:", account.id);
+          console.log(
+            "Updated contractor payout status for account:",
+            account.id
+          );
         }
         break;
       }
@@ -137,7 +143,6 @@ export async function POST(request) {
     // Always return 200 to acknowledge receipt
     // If we return an error, Stripe will retry the webhook
     return NextResponse.json({ received: true });
-
   } catch (error) {
     console.error("Connect webhook error:", error);
     return NextResponse.json(
@@ -146,11 +151,3 @@ export async function POST(request) {
     );
   }
 }
-
-// Disable body parsing - Stripe needs the raw body for signature verification
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-

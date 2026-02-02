@@ -2,7 +2,7 @@
   Stripe Webhook Handler
   ----------------------
   Handles webhook events from Stripe for both invoice payments and subscriptions.
-  
+
   Events handled:
   - checkout.session.completed: Invoice paid or subscription started
   - customer.subscription.created: New subscription created
@@ -10,7 +10,7 @@
   - customer.subscription.deleted: Subscription canceled
   - invoice.payment_succeeded: Recurring subscription payment succeeded
   - invoice.payment_failed: Payment failed (dunning)
-  
+
   Important: Configure this in Stripe Dashboard:
   Developers > Webhooks > Add endpoint
   URL: https://yourdomain.com/api/stripe/webhook
@@ -19,6 +19,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2023-10-16",
@@ -56,14 +59,13 @@ export async function POST(request) {
 
     // Handle the event based on type
     switch (event.type) {
-      
       // ============================================
       // CHECKOUT SESSION COMPLETED
       // This fires for both invoice payments and new subscriptions
       // ============================================
       case "checkout.session.completed": {
         const session = event.data.object;
-        
+
         // Check if this is a subscription checkout or invoice payment
         if (session.mode === "subscription") {
           // This is a new subscription
@@ -85,8 +87,8 @@ export async function POST(request) {
                 stripe_subscription_id: subscriptionId,
                 subscription_status: subscription.status,
                 subscription_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-                trial_ends_at: subscription.trial_end 
-                  ? new Date(subscription.trial_end * 1000).toISOString() 
+                trial_ends_at: subscription.trial_end
+                  ? new Date(subscription.trial_end * 1000).toISOString()
                   : null,
                 subscribed_at: new Date().toISOString(),
               })
@@ -101,7 +103,7 @@ export async function POST(request) {
         } else {
           // This is an invoice payment (existing logic)
           const invoiceId = session.metadata?.invoice_id;
-          
+
           if (!invoiceId) {
             console.log("No invoice ID in session - might be subscription only");
             break;
@@ -155,9 +157,11 @@ export async function POST(request) {
             .from("contractor_profiles")
             .update({
               subscription_status: subscription.status,
-              subscription_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-              trial_ends_at: subscription.trial_end 
-                ? new Date(subscription.trial_end * 1000).toISOString() 
+              subscription_period_end: new Date(
+                subscription.current_period_end * 1000
+              ).toISOString(),
+              trial_ends_at: subscription.trial_end
+                ? new Date(subscription.trial_end * 1000).toISOString()
                 : null,
             })
             .eq("id", contractor.id);
@@ -197,7 +201,10 @@ export async function POST(request) {
             })
             .eq("id", contractor.id);
 
-          console.log("Marked subscription as canceled for contractor:", contractor.id);
+          console.log(
+            "Marked subscription as canceled for contractor:",
+            contractor.id
+          );
         }
         break;
       }
@@ -208,7 +215,7 @@ export async function POST(request) {
       // ============================================
       case "invoice.payment_failed": {
         const invoice = event.data.object;
-        
+
         // Only handle subscription invoices (not one-time payments)
         if (invoice.subscription) {
           const customerId = invoice.customer;
@@ -231,7 +238,10 @@ export async function POST(request) {
               })
               .eq("id", contractor.id);
 
-            console.log("Marked subscription as past_due for contractor:", contractor.id);
+            console.log(
+              "Marked subscription as past_due for contractor:",
+              contractor.id
+            );
             // You could also send an email notification here
           }
         }
@@ -258,19 +268,8 @@ export async function POST(request) {
 
     // Return 200 to acknowledge receipt of the event
     return NextResponse.json({ received: true });
-
   } catch (error) {
     console.error("Webhook error:", error);
-    return NextResponse.json(
-      { error: "Webhook handler failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Webhook handler failed" }, { status: 500 });
   }
 }
-
-// Disable body parsing - Stripe needs the raw body
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};

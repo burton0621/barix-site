@@ -8,7 +8,7 @@ import AddServiceModal from "@/components/Services/AddServiceModal";
 import ConfirmDialog from "@/components/common/ConfirmDialog/ConfirmDialog";
 import Toast from "@/components/common/Toast/Toast";
 import { FiEdit2, FiTrash2 } from "react-icons/fi";
-import styles from "./servicesPage.module.css";
+import styles from "./servicespage.module.css";
 
 export default function ServicesPage() {
   const router = useRouter();
