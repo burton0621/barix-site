@@ -85,12 +85,18 @@ export async function GET(request, { params }) {
     if (estimate.owner_id) {
       const { data: contractorData, error: contractorError } = await supabaseAdmin
         .from("contractor_profiles")
-        .select("id, business_name, email, phone")
+        .select("id, company_name, business_email, business_phone")
         .eq("id", estimate.owner_id)
         .single();
 
       if (!contractorError && contractorData) {
-        contractor = contractorData;
+        // Map to expected field names for backward compatibility
+        contractor = {
+          id: contractorData.id,
+          business_name: contractorData.company_name,
+          email: contractorData.business_email,
+          phone: contractorData.business_phone,
+        };
       }
     }
 

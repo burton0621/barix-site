@@ -624,7 +624,12 @@ export default function InvoicesPage() {
                         className={styles.tableRow}
                       >
                         <td className={styles.td}>
-                          {inv.invoice_number || "—"}
+                          <div className={styles.invoiceNumberCell}>
+                            <span className={inv.document_type === "estimate" ? styles.docTypeBadgeEstimate : styles.docTypeBadgeInvoice}>
+                              {inv.document_type === "estimate" ? "EST" : "INV"}
+                            </span>
+                            <span>{inv.invoice_number || "—"}</span>
+                          </div>
                         </td>
                         <td className={styles.td}>
                           {inv.clients?.name || "—"}

@@ -15,7 +15,7 @@
   - Licenses - Admin only edit
 */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/providers/AuthProvider";
@@ -93,7 +93,6 @@ export default function ProfilePage() {
 
   // MAIN PROFILE FIELDS
   const [companyName, setCompanyName] = useState("");
-  const [contractingTrade, setContractingTrade] = useState("");
   const [businessPhone, setBusinessPhone] = useState("");
   const [businessEmail, setBusinessEmail] = useState("");
   const [businessWebsite, setBusinessWebsite] = useState("");
@@ -148,20 +147,6 @@ export default function ProfilePage() {
   const showToast = (message, type = "error") => {
     setToast({ open: true, message, type });
   };
-
-  const BUSINESS_TYPES = useMemo(
-    () => [
-      "HVAC",
-      "Lawn Care",
-      "Plumbing",
-      "Roofing",
-      "Painting",
-      "Carpentry",
-      "Electrical",
-      "General Contracting",
-    ],
-    []
-  );
 
   // Stripe callback status in URL params
   useEffect(() => {
@@ -351,7 +336,6 @@ export default function ProfilePage() {
 
       if (profile) {
         setCompanyName(profile.company_name || "");
-        setContractingTrade(profile.contracting_trade || "");
         setBusinessPhone(profile.business_phone || "");
         setBusinessEmail(profile.business_email || "");
         setBusinessWebsite(profile.business_website || "");
@@ -435,7 +419,6 @@ export default function ProfilePage() {
         .from("contractor_profiles")
         .update({
           company_name: companyName,
-          contracting_trade: contractingTrade,
           business_phone: businessPhone,
           business_email: businessEmail,
           business_website: businessWebsite,
@@ -964,34 +947,12 @@ export default function ProfilePage() {
                   onChange={(e) => setCompanyName(e.target.value)}
                 />
               </div>
-
-              <div className={styles.field}>
-                <label className={styles.label}>Contracting Trade</label>
-                <select
-                  className={styles.select}
-                  value={contractingTrade}
-                  onChange={(e) => setContractingTrade(e.target.value)}
-                >
-                  <option value="">Select trade</option>
-                  {BUSINESS_TYPES.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
-              </div>
             </div>
           ) : (
             <div className={styles.readOnlyGrid}>
               <div className={styles.readOnlyItem}>
                 <p className={styles.readOnlyLabel}>Company Name</p>
                 <p className={styles.readOnlyValue}>{companyName || "Not set"}</p>
-              </div>
-              <div className={styles.readOnlyItem}>
-                <p className={styles.readOnlyLabel}>Trade</p>
-                <p className={styles.readOnlyValue}>
-                  {contractingTrade || "Not set"}
-                </p>
               </div>
             </div>
           )}

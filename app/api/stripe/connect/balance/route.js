@@ -59,9 +59,35 @@ export async function GET(request) {
     }
 
     // Fetch the balance from Stripe for this connected account
-    const balance = await stripe.balance.retrieve({
-      stripeAccount: contractor.stripe_account_id,
-    });
+    let balance;
+    try {
+      balance = await stripe.balance.retrieve({
+        stripeAccount: contractor.stripe_account_id,
+      });
+    } catch (stripeError) {
+      // Account doesn't exist (e.g., test vs live mode switch)
+      if (stripeError.code === 'account_invalid' || stripeError.type === 'StripeInvalidRequestError') {
+        // Clear the invalid account ID from database
+        await supabaseAdmin
+          .from("contractor_profiles")
+          .update({ 
+            stripe_account_id: null,
+            stripe_connected_at: null,
+            stripe_payouts_enabled: false,
+            stripe_charges_enabled: false,
+          })
+          .eq("id", contractorId);
+        
+        return NextResponse.json({
+          connected: false,
+          available: 0,
+          pending: 0,
+          instantPayoutEnabled: false,
+          message: "Payout account needs to be reconnected",
+        });
+      }
+      throw stripeError;
+    }
 
     // Calculate totals from all currency balances (usually just USD)
     // The balance object contains arrays for each currency
@@ -125,6 +151,8 @@ export async function GET(request) {
     );
   }
 }
+
+
 
 
 
