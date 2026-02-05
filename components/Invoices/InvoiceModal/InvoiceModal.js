@@ -85,6 +85,7 @@ export default function InvoiceModal({ open, onClose, onSaved, invoice = null, d
   const [dueDate, setDueDate] = useState("");
   const [status, setStatus] = useState("draft");
   const [notes, setNotes] = useState("");
+  const [internalNotes, setInternalNotes] = useState("");
 
   // Line items are stored as an array of objects, each representing a single line on the invoice
   const [lineItems, setLineItems] = useState([
@@ -113,6 +114,7 @@ export default function InvoiceModal({ open, onClose, onSaved, invoice = null, d
     setDueDate(formatDateForInput(in30));
     setStatus("draft");
     setNotes("");
+    setInternalNotes("");
     setLineItems([
       { serviceId: "", name: "", description: "", quantity: "1", rate: "" },
     ]);
@@ -136,6 +138,7 @@ export default function InvoiceModal({ open, onClose, onSaved, invoice = null, d
     setDueDate(invoiceData.due_date || "");
     setStatus(invoiceData.status || "draft");
     setNotes(invoiceData.notes || "");
+    setInternalNotes(invoiceData.internal_notes || "");
 
     // If the invoice has client data attached (from the list query), use it
     // Otherwise we'll get the client info from the clients array once it loads
@@ -493,6 +496,7 @@ export default function InvoiceModal({ open, onClose, onSaved, invoice = null, d
         due_date: dueDate,
         status,
         notes: notes || null,
+        internal_notes: internalNotes || null,
         subtotal,
         tax_rate: TAX_RATE,
         tax_amount: taxAmount,
@@ -652,6 +656,7 @@ export default function InvoiceModal({ open, onClose, onSaved, invoice = null, d
         due_date: dueDate,
         status,
         notes: notes || null,
+        internal_notes: internalNotes || null,
         subtotal,
         tax_rate: TAX_RATE,
         tax_amount: taxAmount,
@@ -1011,6 +1016,17 @@ export default function InvoiceModal({ open, onClose, onSaved, invoice = null, d
                     disabled={saving || sending}
                     placeholder="Optional notes to your customer (payment terms, thank you note, etc.)"
                   />
+                  <label className={styles.label}>
+                    Internal Notes (not shown on invoice)
+                  </label>
+                  <textarea
+                    className={`${styles.textarea} ${styles.internalNotes}`}
+                    value={internalNotes}
+                    onChange={(e) => setInternalNotes(e.target.value)}
+                    disabled={saving || sending}
+                    placeholder="Internal notes (not shown to customer)"
+                  />
+                  
                 </div>
 
                 <div className={styles.totalsBox}>
@@ -1098,7 +1114,7 @@ export default function InvoiceModal({ open, onClose, onSaved, invoice = null, d
                         : "Creating..."
                       : isEditMode
                       ? "Save Changes"
-                      : "Create Invoice"}
+                      : "Create & Save"}
                   </button>
                 )}
 

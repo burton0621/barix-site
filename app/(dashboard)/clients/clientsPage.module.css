@@ -336,3 +336,87 @@
     width: 56px;
   }
 }
+
+/* Modal (Add/Edit Client) */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  z-index: 60;
+}
+
+.modalCard {
+  width: 100%;
+  max-width: 900px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+  max-height: calc(100vh - 36px);
+  display: flex;
+  flex-direction: column;
+}
+
+.modalHeader {
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.modalTitle {
+  font-size: 16px;
+  font-weight: 750;
+  color: #111827;
+}
+
+.modalSubtitle {
+  margin-top: 4px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.modalClose {
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.modalClose:hover {
+  background: #f9fafb;
+}
+
+.modalBody {
+  padding: 14px 16px 18px;
+  overflow: auto; /* allows scrolling if AddClientForm is tall */
+}
+
+/* Mobile tightening */
+@media (max-width: 640px) {
+  .modalOverlay {
+    padding: 12px;
+    align-items: flex-end; /* feels like a sheet */
+  }
+
+  .modalCard {
+    max-width: 100%;
+    border-radius: 16px 16px 0 0;
+    max-height: calc(100vh - 12px);
+  }
+
+  .modalBody {
+    padding: 12px 12px 16px;
+  }
+}
