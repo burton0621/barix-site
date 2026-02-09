@@ -20,13 +20,15 @@ import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/providers/AuthProvider";
 import DashboardNavbar from "@/components/Navbar/DashboardNavbar";
 
+import styles from "./settings.module.css";
+
 export default function SettingsPage() {
   const router = useRouter();
   const { session, membership, isAdmin, isLoading, profile } = useAuth();
-  
+
   const [loading, setLoading] = useState(true);
   const [contractorId, setContractorId] = useState(null);
-  
+
   // Password change state
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -34,13 +36,11 @@ export default function SettingsPage() {
   const [passwordSuccess, setPasswordSuccess] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
 
-
   // Account deletion state
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmPhrase, setDeleteConfirmPhrase] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
-
 
   /*
     Check if user is authenticated
@@ -50,7 +50,6 @@ export default function SettingsPage() {
       if (!session) {
         router.push("/login");
       } else {
-        // Get the contractor ID from membership or directly from user
         const cId = membership?.contractor_id || session.user.id;
         setContractorId(cId);
         setLoading(false);
@@ -61,7 +60,7 @@ export default function SettingsPage() {
   // Handle account deletion - cancels Stripe and deletes all data
   async function handleDeleteAccount() {
     if (!contractorId || !session?.user?.id) return;
-    
+
     if (deleteConfirmPhrase !== "DELETE MY ACCOUNT") {
       setDeleteError("Please type 'DELETE MY ACCOUNT' exactly to confirm");
       return;
@@ -89,7 +88,6 @@ export default function SettingsPage() {
         return;
       }
 
-      // Account deleted - sign out and redirect to home
       await supabase.auth.signOut();
       router.push("/?deleted=true");
     } catch (error) {
@@ -98,7 +96,6 @@ export default function SettingsPage() {
       setDeleting(false);
     }
   }
-
 
   /*
     Handle password change
@@ -121,7 +118,7 @@ export default function SettingsPage() {
     setChangingPassword(true);
 
     const { error } = await supabase.auth.updateUser({
-      password: newPassword
+      password: newPassword,
     });
 
     if (error) {
@@ -138,217 +135,153 @@ export default function SettingsPage() {
 
   if (loading || isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-500">Loading...</p>
+      <div className={styles.loadingWrapper}>
+        <p className={styles.loadingText}>Loading...</p>
       </div>
     );
   }
 
+  const planName = profile?.selected_plan
+    ? `${profile.selected_plan.charAt(0).toUpperCase() + profile.selected_plan.slice(1)} Plan`
+    : "Free Demo";
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={styles.page}>
       <DashboardNavbar />
-      
-      <main className="max-w-3xl mx-auto px-6 py-10">
+
+      <main className={styles.container}>
         {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-          <p className="mt-1 text-gray-600">
-            {isAdmin 
-              ? "Manage your account settings and subscription" 
-              : "Manage your account settings"
-            }
+        <div className={styles.header}>
+          <h1 className={styles.title}>Settings</h1>
+          <p className={styles.subtitle}>
+            {isAdmin ? "Manage your account settings and subscription" : "Manage your account settings"}
           </p>
         </div>
 
         {/* Account Status Section - Admin Only */}
         {isAdmin && (
-          <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-1">
-              Account Status
-            </h2>
-            <p className="text-sm text-gray-500 mb-6">
-              Your Barix Billing account information.
-            </p>
+          <section className={styles.card}>
+            <h2 className={styles.cardTitle}>Account Status</h2>
+            <p className={styles.cardSubtitle}>Your Barix Billing account information.</p>
 
-            <div className="border border-green-200 bg-green-50 rounded-lg p-5">
-              <div className="flex items-center justify-between mb-4">
+            <div className={styles.statusBox}>
+              <div className={styles.statusHeader}>
                 <div>
-                  <h3 className="font-semibold text-gray-900 text-lg">
-                    {profile?.selected_plan 
-                      ? `${profile.selected_plan.charAt(0).toUpperCase() + profile.selected_plan.slice(1)} Plan`
-                      : "Free Demo"
-                    }
-                  </h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Free during demo - you have full access to all features.
-                  </p>
+                  <h3 className={styles.statusPlan}>{planName}</h3>
+                  <p className={styles.statusDesc}>Free during demo - you have full access to all features.</p>
                 </div>
-                <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-medium rounded-full">
-                  Active
-                </span>
+                <span className={styles.activePill}>Active</span>
               </div>
-              
-              <div className="border-t border-green-200 pt-4 mt-4">
-                <p className="text-sm text-gray-600 font-medium mb-2">Whats included:</p>
-                <ul className="space-y-2 text-sm text-gray-600">
-                  <li className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    Unlimited invoices and estimates
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    Unlimited clients
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    Accept online payments
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    Team members included
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    Direct bank payouts via Stripe Connect
-                  </li>
+
+              <div className={styles.statusDivider}>
+                <p className={styles.whatsIncluded}>Whats included:</p>
+                <ul className={styles.featureList}>
+                  {FEATURES.map((text) => (
+                    <li key={text} className={styles.featureItem}>
+                      <CheckIcon className={styles.checkIcon} />
+                      {text}
+                    </li>
+                  ))}
                 </ul>
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
-                <p className="text-sm text-blue-800">
-                  <span className="font-medium">Payment Processing:</span> Only standard Stripe fees apply (2.9% + $0.30 for cards). Barix does not charge any additional platform fees during the demo period.
+              <div className={styles.processingBox}>
+                <p className={styles.processingText}>
+                  <span className={styles.processingStrong}>Payment Processing:</span> Only standard Stripe fees apply
+                  (2.9% + $0.30 for cards). Barix does not charge any additional platform fees during the demo period.
                 </p>
               </div>
             </div>
-          </div>
+          </section>
         )}
 
-        {/* Password Change Section - Available to all users */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-1">
-            Change Password
-          </h2>
-          <p className="text-sm text-gray-500 mb-6">
-            Update your password to keep your account secure.
-          </p>
+        {/* Password Change Section */}
+        <section className={styles.card}>
+          <h2 className={styles.cardTitle}>Change Password</h2>
+          <p className={styles.cardSubtitle}>Update your password to keep your account secure.</p>
 
-          <form onSubmit={handlePasswordChange} className="space-y-4 max-w-md">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                New Password
-              </label>
+          <form onSubmit={handlePasswordChange} className={styles.form}>
+            <div className={styles.field}>
+              <label className={styles.label}>New Password</label>
               <input
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Enter new password"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                className={styles.input}
                 required
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Confirm New Password
-              </label>
+            <div className={styles.field}>
+              <label className={styles.label}>Confirm New Password</label>
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirm new password"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                className={styles.input}
                 required
               />
             </div>
 
-            {passwordError && (
-              <p className="text-sm text-red-600">{passwordError}</p>
-            )}
+            {passwordError && <p className={styles.errorText}>{passwordError}</p>}
+            {passwordSuccess && <p className={styles.successText}>{passwordSuccess}</p>}
 
-            {passwordSuccess && (
-              <p className="text-sm text-green-600">{passwordSuccess}</p>
-            )}
-
-            <button
-              type="submit"
-              disabled={changingPassword}
-              className="px-5 py-2.5 bg-brand text-white font-semibold rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+            <button type="submit" disabled={changingPassword} className={styles.primaryButton}>
               {changingPassword ? "Updating..." : "Update Password"}
             </button>
           </form>
-        </div>
+        </section>
 
         {/* Danger Zone - Admin Only */}
         {isAdmin && (
-          <div className="bg-white rounded-xl border border-red-200 p-6">
-            <h2 className="text-lg font-semibold text-red-600 mb-1">
-              Danger Zone
-            </h2>
-            <p className="text-sm text-gray-500 mb-6">
-              Irreversible actions that affect your account.
-            </p>
+          <section className={`${styles.card} ${styles.dangerCard}`}>
+            <h2 className={styles.dangerTitle}>Danger Zone</h2>
+            <p className={styles.cardSubtitle}>Irreversible actions that affect your account.</p>
 
             {!showDeleteConfirm ? (
-              <div className="flex items-center justify-between">
+              <div className={styles.dangerRow}>
                 <div>
-                  <p className="font-medium text-gray-900">Delete Account</p>
-                  <p className="text-sm text-gray-500">
-                    Permanently delete your account and all data.
-                  </p>
+                  <p className={styles.dangerRowTitle}>Delete Account</p>
+                  <p className={styles.dangerRowDesc}>Permanently delete your account and all data.</p>
                 </div>
-                <button
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="px-4 py-2 border border-red-300 text-red-600 font-medium rounded-lg hover:bg-red-50 transition-colors"
-                >
+                <button onClick={() => setShowDeleteConfirm(true)} className={styles.outlineDangerButton}>
                   Delete Account
                 </button>
               </div>
             ) : (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <p className="font-medium text-red-800 mb-2">
-                  Are you absolutely sure?
+              <div className={styles.confirmBox}>
+                <p className={styles.confirmTitle}>Are you absolutely sure?</p>
+                <p className={styles.confirmDesc}>
+                  This will permanently delete your account, cancel your subscription, and remove all your data including
+                  invoices, clients, and services. This action cannot be undone.
                 </p>
-                <p className="text-sm text-red-700 mb-4">
-                  This will permanently delete your account, cancel your subscription, 
-                  and remove all your data including invoices, clients, and services. 
-                  This action cannot be undone.
-                </p>
-                
-                <label className="block text-sm font-medium text-red-800 mb-2">
-                  Type <span className="font-mono bg-red-100 px-1">DELETE MY ACCOUNT</span> to confirm:
+
+                <label className={styles.confirmLabel}>
+                  Type <span className={styles.monoChip}>DELETE MY ACCOUNT</span> to confirm:
                 </label>
+
                 <input
                   type="text"
                   value={deleteConfirmPhrase}
                   onChange={(e) => setDeleteConfirmPhrase(e.target.value)}
                   placeholder="DELETE MY ACCOUNT"
-                  className="w-full px-3 py-2 border border-red-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className={styles.dangerInput}
                   disabled={deleting}
                 />
 
-                {deleteError && (
-                  <p className="text-sm text-red-600 mb-4">{deleteError}</p>
-                )}
+                {deleteError && <p className={styles.errorText}>{deleteError}</p>}
 
-                <div className="flex gap-3">
+                <div className={styles.buttonRow}>
                   <button
                     onClick={handleDeleteAccount}
                     disabled={deleting || deleteConfirmPhrase !== "DELETE MY ACCOUNT"}
-                    className="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className={styles.solidDangerButton}
                   >
                     {deleting ? "Deleting..." : "Permanently Delete Account"}
                   </button>
+
                   <button
                     onClick={() => {
                       setShowDeleteConfirm(false);
@@ -356,26 +289,46 @@ export default function SettingsPage() {
                       setDeleteError("");
                     }}
                     disabled={deleting}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 disabled:opacity-50 transition-colors"
+                    className={styles.cancelButton}
                   >
                     Cancel
                   </button>
                 </div>
               </div>
             )}
-          </div>
+          </section>
         )}
 
-        {/* Info for non-admins about restricted settings */}
+        {/* Info for non-admins */}
         {!isAdmin && (
-          <div className="bg-gray-100 rounded-xl p-6">
-            <p className="text-sm text-gray-600">
-              <span className="font-medium">Looking for subscription or account settings?</span>
-              {" "}Contact your team administrator to manage billing and company-wide settings.
+          <section className={styles.infoCard}>
+            <p className={styles.infoText}>
+              <span className={styles.infoStrong}>Looking for subscription or account settings?</span>{" "}
+              Contact your team administrator to manage billing and company-wide settings.
             </p>
-          </div>
+          </section>
         )}
       </main>
     </div>
+  );
+}
+
+const FEATURES = [
+  "Unlimited invoices and estimates",
+  "Unlimited clients",
+  "Accept online payments",
+  "Team members included",
+  "Direct bank payouts via Stripe Connect",
+];
+
+function CheckIcon({ className }) {
+  return (
+    <svg className={className} fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+      <path
+        fillRule="evenodd"
+        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+        clipRule="evenodd"
+      />
+    </svg>
   );
 }

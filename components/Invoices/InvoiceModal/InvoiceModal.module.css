@@ -366,6 +366,7 @@
   gap: 6px;
   align-items: center;
   border-top: 1px solid #f3f4f6;
+  overflow: visible; /* Allow dropdowns to overflow */
 }
 
 .lineItemRow:first-child {
@@ -380,6 +381,8 @@
 .colRemove {
   display: flex;
   min-width: 0; /* Allows content to shrink properly in grid */
+  z-index: 50;
+  position: relative;
 }
 
 .colService,
@@ -774,3 +777,7 @@
   }
 }
 
+/* Optional */
+.internalNotes {
+  background-color: #ffeaea;
+}

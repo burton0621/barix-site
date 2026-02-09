@@ -99,13 +99,13 @@ export async function POST(request) {
     // Fetch the contractor/company profile to get business name
     const { data: profile } = await supabaseAdmin
       .from("contractor_profiles")
-      .select("business_name, email, phone")
+      .select("company_name, business_email, business_phone")
       .eq("id", userId)
       .single();
 
-    const businessName = profile?.business_name || "Your Service Provider";
-    const businessEmail = profile?.email || "";
-    const businessPhone = profile?.phone || "";
+    const businessName = profile?.company_name || "Your Service Provider";
+    const businessEmail = profile?.business_email || "";
+    const businessPhone = profile?.business_phone || "";
 
     // Determine if this is an estimate or invoice
     const isEstimate = invoice.document_type === "estimate";
