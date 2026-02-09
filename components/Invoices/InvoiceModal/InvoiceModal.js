@@ -87,6 +87,22 @@ export default function InvoiceModal({ open, onClose, onSaved, invoice = null, d
   const [notes, setNotes] = useState("");
   const [internalNotes, setInternalNotes] = useState("");
 
+    // Invoice settings (from contractor_settings)
+  const [defaultDueDays, setDefaultDueDays] = useState(30);
+
+  // Track whether the user manually changed due date (so we don't keep auto-overwriting it)
+  const dueDateTouchedRef = useRef(false);
+
+  const addDays = (yyyyMmDd, days) => {
+    // yyyy-mm-dd -> Date (local-safe)
+    const [y, m, d] = (yyyyMmDd || "").split("-").map(Number);
+    if (!y || !m || !d) return "";
+    const dt = new Date(y, m - 1, d);
+    dt.setDate(dt.getDate() + Number(days || 0));
+    return formatDateForInput(dt);
+  };
+
+
   // Line items are stored as an array of objects, each representing a single line on the invoice
   const [lineItems, setLineItems] = useState([
     { serviceId: "", name: "", description: "", quantity: "1", rate: "" },
@@ -104,22 +120,23 @@ export default function InvoiceModal({ open, onClose, onSaved, invoice = null, d
   */
   const resetForm = useCallback(() => {
     const today = new Date();
-    const in30 = new Date();
-    in30.setDate(today.getDate() + 30);
+    const issue = formatDateForInput(today);
+    const due = addDays(issue, defaultDueDays);
 
     setInvoiceNumber(generateDocumentNumber(actualDocType));
     setClientId("");
     setSelectedClient(null);
-    setIssueDate(formatDateForInput(today));
-    setDueDate(formatDateForInput(in30));
+    setIssueDate(issue);
+    setDueDate(due || issue); // fallback if parsing fails
     setStatus("draft");
     setNotes("");
     setInternalNotes("");
-    setLineItems([
-      { serviceId: "", name: "", description: "", quantity: "1", rate: "" },
-    ]);
+    setLineItems([{ serviceId: "", name: "", description: "", quantity: "1", rate: "" }]);
+
+    dueDateTouchedRef.current = false;
     sendAfterCreateRef.current = false;
-  }, [actualDocType]);
+  }, [actualDocType, defaultDueDays]);
+
 
   /*
     Loads the invoice data into the form when editing an existing invoice.
@@ -245,6 +262,33 @@ export default function InvoiceModal({ open, onClose, onSaved, invoice = null, d
       } else {
         resetForm();
       }
+
+            // Determine contractorId (membership-based if available, fallback to user.id)
+      let contractorIdToUse = user.id;
+
+      const { data: membershipRow, error: membershipErr } = await supabase
+        .from("memberships")
+        .select("contractor_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!membershipErr && membershipRow?.contractor_id) {
+        contractorIdToUse = membershipRow.contractor_id;
+      }
+
+      // Load invoice settings (default due days)
+      const { data: settingsRow, error: settingsErr } = await supabase
+        .from("contractor_settings")
+        .select("default_invoice_due_days")
+        .eq("contractor_id", contractorIdToUse)
+        .maybeSingle();
+
+      if (!settingsErr && settingsRow?.default_invoice_due_days != null) {
+        setDefaultDueDays(Number(settingsRow.default_invoice_due_days) || 30);
+      } else {
+        setDefaultDueDays(30);
+      }
+
 
       setLoadingData(false);
     }
