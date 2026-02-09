@@ -40,7 +40,7 @@ export default function DashboardNavbar() {
   }
 
   // Close sidebar on route change
-  useEffect(() => {f
+  useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
 

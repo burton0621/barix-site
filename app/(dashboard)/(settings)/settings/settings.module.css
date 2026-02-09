@@ -1,13 +1,18 @@
+/* =========================
+   Settings Page Styles
+   ========================= */
+
 /* Page + loading */
 
 .page {
   min-height: 100vh;
-  background: #f9fafb; /* gray-50 */
+  background-color: #f9fafb; /* gray-50 */
+  overflow-x: hidden; /* prevent sideways scroll */
 }
 
 .loadingWrapper {
   min-height: 100vh;
-  background: #f9fafb;
+  background-color: #f9fafb;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -15,58 +20,179 @@
 
 .loadingText {
   color: #6b7280; /* gray-500 */
+  font-size: 14px;
 }
 
-/* Layout */
+/* Container + header */
 
 .container {
-  max-width: 48rem; /* ~ max-w-3xl */
+  width: 100%;
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 2.5rem 1.5rem; /* py-10 px-6 */
+  padding: 24px 16px 40px;
 }
 
 .header {
-  margin-bottom: 2rem; /* mb-8 */
+  margin-bottom: 18px;
 }
 
 .title {
-  font-size: 1.875rem; /* text-3xl */
-  line-height: 2.25rem;
-  font-weight: 700;
+  font-size: 28px;
+  font-weight: 800;
   color: #111827; /* gray-900 */
+  letter-spacing: -0.02em;
+  margin: 0;
 }
 
 .subtitle {
-  margin-top: 0.25rem; /* mt-1 */
-  color: #4b5563; /* gray-600 */
+  margin: 6px 0 0;
+  color: #6b7280; /* gray-500 */
+  font-size: 14px;
 }
 
-/* Cards */
+/* =========================
+   Sidebar Layout (NEW)
+   ========================= */
+
+.settingsLayout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+/* Sidebar card */
+.settingsSidebar {
+  position: sticky;
+  top: 88px; /* adjust if your navbar height differs */
+  align-self: start;
+
+  background: #ffffff;
+  border: 1px solid #e5e7eb; /* gray-200 */
+  border-radius: 14px;
+  padding: 10px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.sidebarNav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sidebarLink {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 10px 12px;
+  border-radius: 12px;
+
+  text-decoration: none;
+  color: #111827; /* gray-900 */
+  font-weight: 650;
+  font-size: 14px;
+
+  transition: background-color 120ms ease, color 120ms ease, transform 120ms ease;
+}
+
+.sidebarLink:hover {
+  background-color: #f3f4f6; /* gray-100 */
+}
+
+.sidebarLinkActive {
+  background-color: #111827; /* gray-900 */
+  color: #ffffff;
+}
+
+.sidebarLinkActive:hover {
+  background-color: #111827;
+}
+
+.settingsContent {
+  min-width: 0; /* prevents child overflow causing “scrunch” */
+}
+
+/* Mobile: sidebar becomes horizontal tabs */
+@media (max-width: 900px) {
+  .settingsLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .settingsSidebar {
+    position: static;
+    padding: 8px;
+  }
+
+  .sidebarNav {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 8px;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .sidebarNav::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .sidebarNav::-webkit-scrollbar-thumb {
+    background: #e5e7eb;
+    border-radius: 999px;
+  }
+
+  .sidebarLink {
+    white-space: nowrap;
+    border: 1px solid #e5e7eb;
+    background: #ffffff;
+  }
+
+  .sidebarLink:hover {
+    background: #f9fafb;
+  }
+}
+
+/* =========================
+   Cards
+   ========================= */
 
 .card {
   background: #ffffff;
   border: 1px solid #e5e7eb; /* gray-200 */
-  border-radius: 0.75rem; /* rounded-xl */
-  padding: 1.5rem; /* p-6 */
-  margin-bottom: 1.5rem; /* mb-6 */
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  margin-bottom: 16px;
 }
 
 .cardTitle {
-  font-size: 1.125rem; /* text-lg */
-  line-height: 1.75rem;
-  font-weight: 600;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
   color: #111827;
-  margin-bottom: 0.25rem; /* mb-1 */
 }
 
 .cardSubtitle {
-  font-size: 0.875rem; /* text-sm */
-  line-height: 1.25rem;
-  color: #6b7280; /* gray-500 */
-  margin-bottom: 1.5rem; /* mb-6 */
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: #6b7280;
 }
 
-/* Account Status */
+/* =========================
+   Account Status
+   ========================= */
+
+.statusBox {
+  margin-top: 14px;
+  border-radius: 14px;
+  padding: 14px;
+  background: #F0FDF4;
+  
+  /* Active account styling */
+  border: 1px solid #a7f3d0;        /* emerald-200 */
+  box-shadow: 0 0 0 3px #ecfdf5;    /* emerald-50 glow */
+}
+
 
 .statusBox {
   border: 1px solid #bbf7d0; /* green-200 */
@@ -166,351 +292,309 @@
   font-weight: 500;
 }
 
-/* Form */
+/* =========================
+   Forms
+   ========================= */
 
 .form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem; /* space-y-4 */
-  max-width: 28rem; /* max-w-md */
+  margin-top: 14px;
+  display: grid;
+  gap: 14px;
 }
 
 .field {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  gap: 6px;
 }
 
 .label {
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-  font-weight: 500;
-  color: #374151; /* gray-700 */
-  margin-bottom: 0.25rem; /* mb-1 */
+  font-size: 12px;
+  font-weight: 800;
+  color: #111827;
 }
 
 .input {
-  width: 100%;
-  padding: 0.625rem 1rem; /* py-2.5 px-4 */
+  height: 40px;
+  border-radius: 12px;
   border: 1px solid #d1d5db; /* gray-300 */
-  border-radius: 0.5rem; /* rounded-lg */
+  padding: 0 12px;
+  font-size: 14px;
+  color: #111827;
+  background: #ffffff;
   outline: none;
+  transition: box-shadow 120ms ease, border-color 120ms ease;
 }
 
 .input:focus {
-  border-color: transparent;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.0); /* placeholder */
+  border-color: #111827;
+  box-shadow: 0 0 0 4px rgba(17, 24, 39, 0.08);
 }
-
-/* If you already have a global brand focus ring utility, keep it there.
-   Otherwise, uncomment and set your brand color:
-*/
-/*
-.input:focus {
-  border-color: transparent;
-  box-shadow: 0 0 0 2px var(--brand-500);
-}
-*/
-
-/* Messages */
 
 .errorText {
-  font-size: 0.875rem;
-  color: #dc2626; /* red-600 */
+  margin: 0;
+  color: #b91c1c; /* red-700 */
+  font-size: 13px;
+  font-weight: 650;
 }
 
 .successText {
-  font-size: 0.875rem;
-  color: #16a34a; /* green-600 */
+  margin: 0;
+  color: #065f46; /* emerald-800 */
+  font-size: 13px;
+  font-weight: 650;
 }
 
 /* Buttons */
 
 .primaryButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.625rem 1.25rem; /* py-2.5 px-5 */
-  border-radius: 0.5rem;
+  height: 42px;
+  border-radius: 12px;
   border: none;
-  background: var(--brand, #2563eb); /* fallback if no css var */
-  color: #fff;
-  font-weight: 600;
+  background: #111827;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 14px;
   cursor: pointer;
-  transition: background-color 150ms ease, opacity 150ms ease;
+  transition: transform 80ms ease, opacity 120ms ease;
 }
 
 .primaryButton:hover {
-  background: var(--brand-700, #1d4ed8);
+  opacity: 0.94;
+}
+
+.primaryButton:active {
+  transform: translateY(1px);
 }
 
 .primaryButton:disabled {
-  opacity: 0.5;
   cursor: not-allowed;
+  opacity: 0.6;
 }
 
-/* Danger Zone */
+/* =========================
+   Danger Zone
+   ========================= */
 
 .dangerCard {
   border-color: #fecaca; /* red-200 */
+  background: #fff7f7;
 }
 
 .dangerTitle {
-  font-size: 1.125rem;
-  line-height: 1.75rem;
-  font-weight: 600;
-  color: #dc2626; /* red-600 */
-  margin-bottom: 0.25rem;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 900;
+  color: #991b1b; /* red-800 */
 }
 
 .dangerRow {
+  margin-top: 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 14px;
 }
 
 .dangerRowTitle {
-  font-weight: 500;
+  margin: 0;
+  font-weight: 900;
   color: #111827;
+  font-size: 14px;
 }
 
 .dangerRowDesc {
-  font-size: 0.875rem;
+  margin: 6px 0 0;
   color: #6b7280;
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 .outlineDangerButton {
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  border: 1px solid #fca5a5; /* red-300 */
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid #ef4444; /* red-500 */
   background: transparent;
-  color: #dc2626; /* red-600 */
-  font-weight: 500;
+  color: #991b1b; /* red-800 */
+  font-weight: 900;
+  font-size: 13px;
   cursor: pointer;
-  transition: background-color 150ms ease;
+  transition: background-color 120ms ease, transform 80ms ease;
   white-space: nowrap;
 }
 
 .outlineDangerButton:hover {
-  background: #fef2f2; /* red-50 */
+  background: rgba(239, 68, 68, 0.08);
 }
 
-/* Confirm Box */
+.outlineDangerButton:active {
+  transform: translateY(1px);
+}
 
 .confirmBox {
-  background: #fef2f2; /* red-50 */
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 14px;
   border: 1px solid #fecaca; /* red-200 */
-  border-radius: 0.5rem;
-  padding: 1rem;
+  background: #ffffff;
 }
 
 .confirmTitle {
-  font-weight: 600;
-  color: #991b1b; /* red-800 */
-  margin-bottom: 0.5rem;
+  margin: 0;
+  font-weight: 900;
+  color: #111827;
+  font-size: 14px;
 }
 
 .confirmDesc {
-  font-size: 0.875rem;
-  color: #b91c1c; /* red-700 */
-  margin-bottom: 1rem;
+  margin: 8px 0 12px;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .confirmLabel {
   display: block;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #991b1b;
-  margin-bottom: 0.5rem;
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #111827;
 }
 
 .monoChip {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  background: #fee2e2; /* red-100 */
-  padding: 0.125rem 0.25rem;
-  border-radius: 0.25rem;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
 }
 
 .dangerInput {
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.5rem;
+  height: 40px;
+  border-radius: 12px;
   border: 1px solid #fca5a5; /* red-300 */
+  padding: 0 12px;
+  font-size: 14px;
+  color: #111827;
+  background: #fff;
   outline: none;
-  margin-bottom: 1rem;
+  transition: box-shadow 120ms ease, border-color 120ms ease;
+  width: 100%;
 }
 
 .dangerInput:focus {
-  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25);
-  border-color: #ef4444; /* red-500 */
+  border-color: #ef4444;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.12);
 }
 
 .buttonRow {
+  margin-top: 12px;
   display: flex;
-  gap: 0.75rem; /* gap-3 */
+  gap: 10px;
   flex-wrap: wrap;
 }
 
 .solidDangerButton {
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
+  height: 42px;
+  padding: 0 14px;
+  border-radius: 12px;
   border: none;
-  background: #dc2626; /* red-600 */
+  background: #ef4444; /* red-500 */
   color: #ffffff;
-  font-weight: 500;
+  font-weight: 900;
+  font-size: 13px;
   cursor: pointer;
-  transition: background-color 150ms ease, opacity 150ms ease;
+  transition: transform 80ms ease, opacity 120ms ease;
 }
 
 .solidDangerButton:hover {
-  background: #b91c1c; /* red-700 */
+  opacity: 0.95;
+}
+
+.solidDangerButton:active {
+  transform: translateY(1px);
 }
 
 .solidDangerButton:disabled {
-  opacity: 0.5;
   cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .cancelButton {
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  border: none;
-  background: #e5e7eb; /* gray-200 */
-  color: #374151; /* gray-700 */
-  font-weight: 500;
+  height: 42px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #111827;
+  font-weight: 900;
+  font-size: 13px;
   cursor: pointer;
-  transition: background-color 150ms ease, opacity 150ms ease;
+  transition: background-color 120ms ease, transform 80ms ease;
 }
 
 .cancelButton:hover {
-  background: #d1d5db; /* gray-300 */
+  background: #f3f4f6;
+}
+
+.cancelButton:active {
+  transform: translateY(1px);
 }
 
 .cancelButton:disabled {
-  opacity: 0.5;
   cursor: not-allowed;
+  opacity: 0.6;
 }
 
-/* Non-admin info card */
+/* =========================
+   Info card (non-admin)
+   ========================= */
 
 .infoCard {
-  background: #f3f4f6; /* gray-100 */
-  border-radius: 0.75rem;
-  padding: 1.5rem;
-}
-
-.infoText {
-  font-size: 0.875rem;
-  color: #4b5563;
-}
-
-.infoStrong {
-  font-weight: 500;
-  color: #374151;
-}
-
-/* ---------------- Settings Layout (Sidebar + Content) ---------------- */
-
-.settingsLayout {
-  display: grid;
-  grid-template-columns: 260px 1fr;
-  gap: 16px;
-  align-items: start;
-}
-
-/* Sidebar card */
-.settingsSidebar {
-  position: sticky;
-  top: 88px; /* adjust if your navbar height differs */
-  align-self: start;
-
   background: #ffffff;
-  border: 1px solid #e5e7eb; /* gray-200 */
-  border-radius: 14px;
-  padding: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 14px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
-.sidebarNav {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.infoText {
+  margin: 0;
+  color: #374151;
+  font-size: 13px;
+  line-height: 1.45;
 }
 
-.sidebarLink {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-
-  padding: 10px 12px;
-  border-radius: 12px;
-
-  text-decoration: none;
-  color: #111827; /* gray-900 */
-  font-weight: 600;
-  font-size: 14px;
-
-  transition: background-color 120ms ease, color 120ms ease, transform 120ms ease;
+.infoStrong {
+  font-weight: 900;
+  color: #111827;
 }
 
-.sidebarLink:hover {
-  background-color: #f3f4f6; /* gray-100 */
-}
+/* =========================
+   Responsive tweaks
+   ========================= */
 
-.settingsContent {
-  min-width: 0; /* prevents overflow from children */
-}
-
-/* ---------------- Mobile: turn sidebar into tab bar ---------------- */
-
-@media (max-width: 900px) {
-  .settingsLayout {
-    grid-template-columns: 1fr;
+@media (max-width: 520px) {
+  .title {
+    font-size: 24px;
   }
 
-  .settingsSidebar {
-    position: static;
-    padding: 8px;
+  .dangerRow {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
-  .sidebarNav {
-    flex-direction: row;
-    overflow-x: auto;
-    gap: 8px;
-    padding-bottom: 4px;
-    -webkit-overflow-scrolling: touch;
+  .outlineDangerButton {
+    width: 100%;
   }
 
-  .sidebarNav::-webkit-scrollbar {
-    height: 6px;
+  .buttonRow {
+    flex-direction: column;
   }
 
-  .sidebarNav::-webkit-scrollbar-thumb {
-    background: #e5e7eb;
-    border-radius: 999px;
+  .solidDangerButton,
+  .cancelButton {
+    width: 100%;
   }
-
-  .sidebarLink {
-    white-space: nowrap;
-    padding: 10px 12px;
-    border: 1px solid #e5e7eb;
-    background: #ffffff;
-  }
-
-  .sidebarLink:hover {
-    background: #f9fafb;
-  }
-}
-
-.sidebarLinkActive {
-  background-color: #111827; /* gray-900 */
-  color: #ffffff;
-}
-
-.sidebarLinkActive:hover {
-  background-color: #111827;
-}
-
-.page {
-  overflow-x: hidden;
 }
