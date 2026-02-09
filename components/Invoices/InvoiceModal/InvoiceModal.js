@@ -865,7 +865,7 @@ export default function InvoiceModal({ open, onClose, onSaved, invoice = null, d
                   />
                 </div>
 
-                <div className={styles.field}>
+                {/* <div className={styles.field}>
                   <label className={styles.label}>Status</label>
                   <select
                     className={styles.select}
@@ -878,7 +878,7 @@ export default function InvoiceModal({ open, onClose, onSaved, invoice = null, d
                     <option value="paid">Paid</option>
                     <option value="overdue">Overdue</option>
                   </select>
-                </div>
+                </div> */}
               </div>
 
               {/* Line Items Section */}
@@ -951,7 +951,7 @@ export default function InvoiceModal({ open, onClose, onSaved, invoice = null, d
                           className={styles.input}
                           type="number"
                           min="0"
-                          step="0.01"
+                          step="1"
                           value={item.quantity}
                           onChange={(e) =>
                             handleLineItemFieldChange(
@@ -971,7 +971,7 @@ export default function InvoiceModal({ open, onClose, onSaved, invoice = null, d
                           className={styles.input}
                           type="number"
                           min="0"
-                          step="0.01"
+                          step="1"
                           value={item.rate}
                           onChange={(e) =>
                             handleLineItemFieldChange(
