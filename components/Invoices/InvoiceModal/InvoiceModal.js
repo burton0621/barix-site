@@ -1,3 +1,5 @@
+//invoiceModal.js
+
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -404,12 +406,21 @@ export default function InvoiceModal({
       if (typeof onSaved === "function") onSaved(created);
       onClose();
     } catch (err) {
-      console.error(err);
-      showToast("Unexpected error saving. Please try again.");
-    } finally {
-      setSaving(false);
-      sendAfterCreateRef.current = false;
-    }
+  console.error("Save invoice failed:", err);
+
+  // Try common shapes: Error, Supabase error, Postgrest error
+  const msg =
+    err?.message ||
+    err?.error?.message ||
+    err?.details ||
+    err?.hint ||
+    "Unexpected error saving. Please try again.";
+
+  showToast(msg);
+} finally {
+  setSaving(false);
+  sendAfterCreateRef.current = false;
+}
   };
 
   return (
@@ -718,13 +729,15 @@ export default function InvoiceModal({
                     </div>
 
                     <div className={styles.totalsBox}>
+                      {/* Line items */}
                       <div className={styles.totalRow}>
-                        <span className={styles.totalLabel}>Subtotal</span>
+                        <span className={styles.totalLabel}>Line items</span>
                         <span className={styles.totalValue}>
                           ${Number(baseSubtotal ?? 0).toFixed(2)}
                         </span>
                       </div>
 
+                      {/* Indirect materials */}
                       {indirectEnabled && Number(indirectCharge ?? 0) > 0 && (
                         <div className={styles.totalRow}>
                           <span className={styles.totalLabel}>Indirect materials</span>
@@ -734,6 +747,15 @@ export default function InvoiceModal({
                         </div>
                       )}
 
+                      {/* Subtotal (line items + indirect) */}
+                      <div className={styles.totalRow}>
+                        <span className={styles.totalLabel}>Subtotal</span>
+                        <span className={styles.totalValue}>
+                          ${Number(subtotal ?? 0).toFixed(2)}
+                        </span>
+                      </div>
+
+                      {/* Tax */}
                       <div className={styles.totalRow}>
                         <span className={styles.totalLabel}>Tax ({(TAX_RATE * 100).toFixed(0)}%)</span>
                         <span className={styles.totalValue}>
@@ -743,6 +765,7 @@ export default function InvoiceModal({
 
                       <div className={styles.totalDivider} />
 
+                      {/* Total */}
                       <div className={styles.totalRowFinal}>
                         <span className={styles.totalLabelFinal}>Total</span>
                         <span className={styles.totalValueFinal}>
@@ -750,7 +773,6 @@ export default function InvoiceModal({
                         </span>
                       </div>
                     </div>
-
                   </div>
                 </div>
 

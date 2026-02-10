@@ -51,11 +51,12 @@ export function computeTotals(lineItems, indirect) {
     }
   }
 
-  const subtotal = baseSubtotal + indirectCharge;
-  const taxAmount = subtotal * TAX_RATE;
-  const total = subtotal + taxAmount;
+    const subtotal = round2(baseSubtotal + indirectCharge);
+    const taxAmount = round2(subtotal * TAX_RATE);
+    const total = round2(subtotal + taxAmount);
 
-  return { baseSubtotal, indirectCharge, subtotal, taxAmount, total };
+    return { baseSubtotal: round2(baseSubtotal), indirectCharge: round2(indirectCharge), subtotal, taxAmount, total };
+
 }
 
 
@@ -127,4 +128,9 @@ export function toEditableLineItems(lineItemsRows) {
     quantity: String(row.quantity || "1"),
     rate: String(row.rate || ""),
   }));
+}
+
+function round2(n) {
+  const x = Number(n);
+  return Math.round((Number.isFinite(x) ? x : 0) * 100) / 100;
 }
