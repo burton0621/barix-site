@@ -259,9 +259,31 @@ export default function InvoiceModal({ open, onClose, onSaved, invoice = null, d
             setSelectedClient(fullClient);
           }
         }
-      } else {
-        resetForm();
-      }
+        
+        const { data: freshInvoice, error: freshInvoiceError } = await supabase
+        .from("invoices")
+        .select("*, clients(id, name, email)")
+        .eq("id", invoice.id)
+        .single();
+
+        if (freshInvoiceError) {
+          console.error("Error fetching fresh invoice data:", freshInvoiceError);
+          await loadInvoiceData(invoice); // fallback to original data
+        } else {
+          await loadInvoiceData(freshInvoice);
+        }
+
+        const idToMatch = (freshInvoice?.client_id || invoice.client_id);
+        if (idToMatch && clientsData) {
+          const fullClient = clientsData.find((c) => c.id === idToMatch);
+          if (fullClient) {
+            setSelectedClient(fullClient);
+          }
+        }
+
+        } else {
+          resetForm();
+        }
 
             // Determine contractorId (membership-based if available, fallback to user.id)
       let contractorIdToUse = user.id;
@@ -908,21 +930,6 @@ export default function InvoiceModal({ open, onClose, onSaved, invoice = null, d
                     required
                   />
                 </div>
-
-                {/* <div className={styles.field}>
-                  <label className={styles.label}>Status</label>
-                  <select
-                    className={styles.select}
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value)}
-                    disabled={saving || sending}
-                  >
-                    <option value="draft">Draft</option>
-                    <option value="sent">Sent</option>
-                    <option value="paid">Paid</option>
-                    <option value="overdue">Overdue</option>
-                  </select>
-                </div> */}
               </div>
 
               {/* Line Items Section */}

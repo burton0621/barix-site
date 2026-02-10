@@ -151,7 +151,7 @@ export default function SettingsPage() {
       <main className={styles.container}>
         {/* Page Header */}
         <div className={styles.header}>
-          <h1 className={styles.title}>Settings</h1>
+          <h1 className={styles.title}>Account</h1>
           <p className={styles.subtitle}>
             {isAdmin ? "Manage your account settings and subscription" : "Manage your account settings"}
           </p>
