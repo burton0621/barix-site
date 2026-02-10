@@ -101,7 +101,7 @@
 }
 
 .sidebarLinkActive {
-  background-color: #111827; /* gray-900 */
+  background-color: #0A2540; /* gray-900 */
   color: #ffffff;
 }
 
@@ -137,19 +137,29 @@
   }
 
   .sidebarNav::-webkit-scrollbar-thumb {
-    background: #e5e7eb;
+    background: #ffffff;
     border-radius: 999px;
   }
 
   .sidebarLink {
     white-space: nowrap;
-    border: 1px solid #e5e7eb;
-    background: #ffffff;
+    border: 1px solid #0A2540;
+    background: #ffffff; /*uneselected background */
   }
 
   .sidebarLink:hover {
-    background: #f9fafb;
+    background: #ffffff;
   }
+
+  .sidebarLinkActive {
+  background-color: #0A2540; /* gray-900 */
+  color: #ffffff;
+  }
+
+  .sidebarLinkActive:hover {
+  background-color: #0A2540;
+}
+
 }
 
 /* =========================

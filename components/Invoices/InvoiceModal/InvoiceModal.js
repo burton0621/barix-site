@@ -21,7 +21,7 @@ import {
   toLineItemsInsertPayload,
   validateLineItems,
   formatDateForInput,
-} from "./InvoiceUtils";
+} from "./invoiceUtils";
 
 import {
   createInvoiceHeader,

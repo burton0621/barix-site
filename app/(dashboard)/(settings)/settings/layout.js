@@ -30,9 +30,9 @@ export default function SettingsLayout({ children }) {
               <Link className={linkClass("/settings/invoice")} href="/settings/invoice">
                 Invoice Settings
               </Link>
-              <Link className={linkClass("/settings/temp-wip")} href="/settings/temp-wip">
+              {/* <Link className={linkClass("/settings/temp-wip")} href="/settings/temp-wip">
                 Temp WIP
-              </Link>
+              </Link> */}
             </nav>
           </aside>
 
