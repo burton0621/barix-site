@@ -19,7 +19,7 @@ import { supabase } from "@/lib/supabaseClient";
 import DashboardNavbar from "@/components/Navbar/DashboardNavbar";
 import AddServiceModal from "@/components/Services/AddServiceModal";
 import CreateInvoiceButton from "@/components/Invoices/CreateInvoiceButton/createInvoiceButton";
-import InvoiceModal from "@/components/Invoices/InvoiceModal/invoiceModal";
+import InvoiceModal from "@/components/Invoices/InvoiceModal/InvoiceModal";
 import OnboardingGate from "@/components/common/OnboardingGate/OnboardingGate";
 import Toast from "@/components/common/Toast/Toast";
 import ConfirmDialog from "@/components/common/ConfirmDialog/ConfirmDialog";

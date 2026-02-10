@@ -8,7 +8,7 @@
 "use client";
 
 import { useState } from "react";
-import InvoiceModal from "../InvoiceModal/invoiceModal";
+import InvoiceModal from "../InvoiceModal/InvoiceModal";
 import styles from "./createInvoiceButton.module.css";
 
 export default function CreateInvoiceButton({
