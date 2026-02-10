@@ -715,31 +715,42 @@ export default function InvoiceModal({
                           )}
                         </div>
                       )}
-
-                      <div className={styles.indirectPreviewRow}>
-                        <span className={styles.indirectPreviewLabel}>Adds</span>
-                        <span className={styles.indirectPreviewValue}>
-                          ${Number(indirectCharge ?? 0).toFixed(2)}
-                        </span>
-                      </div>
                     </div>
 
                     <div className={styles.totalsBox}>
                       <div className={styles.totalRow}>
                         <span className={styles.totalLabel}>Subtotal</span>
-                        <span className={styles.totalValue}>${Number(subtotal ?? 0).toFixed(2)}</span>
-                      </div>
-                      <div className={styles.totalRow}>
-                        <span className={styles.totalLabel}>
-                          Tax ({(TAX_RATE * 100).toFixed(0)}%)
+                        <span className={styles.totalValue}>
+                          ${Number(baseSubtotal ?? 0).toFixed(2)}
                         </span>
-                        <span className={styles.totalValue}>${Number(taxAmount ?? 0).toFixed(2)}</span>
                       </div>
+
+                      {indirectEnabled && Number(indirectCharge ?? 0) > 0 && (
+                        <div className={styles.totalRow}>
+                          <span className={styles.totalLabel}>Indirect materials</span>
+                          <span className={styles.totalValue}>
+                            ${Number(indirectCharge ?? 0).toFixed(2)}
+                          </span>
+                        </div>
+                      )}
+
+                      <div className={styles.totalRow}>
+                        <span className={styles.totalLabel}>Tax ({(TAX_RATE * 100).toFixed(0)}%)</span>
+                        <span className={styles.totalValue}>
+                          ${Number(taxAmount ?? 0).toFixed(2)}
+                        </span>
+                      </div>
+
+                      <div className={styles.totalDivider} />
+
                       <div className={styles.totalRowFinal}>
                         <span className={styles.totalLabelFinal}>Total</span>
-                        <span className={styles.totalValueFinal}>${Number(total ?? 0).toFixed(2)}</span>
+                        <span className={styles.totalValueFinal}>
+                          ${Number(total ?? 0).toFixed(2)}
+                        </span>
                       </div>
                     </div>
+
                   </div>
                 </div>
 

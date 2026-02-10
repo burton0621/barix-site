@@ -885,3 +885,9 @@
 .internalNotes {
   background-color: #ffeaea;
 }
+
+.totalDivider {
+  height: 1px;
+  background: #e5e7eb; /* gray-200 */
+  margin: 10px 0;
+}
