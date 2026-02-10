@@ -53,17 +53,16 @@ export default function Footer({ onOpenContact }) {
                 info@barixbilling.com
               </a>
               {onOpenContact ? (
-                <Button
-                  size="sm"
+                <button
                   onClick={onOpenContact}
-                  className="bg-white !text-brand hover:bg-gray-100"
+                  className="rounded-xl border-2 border-white bg-transparent px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-white hover:text-brand-900"
                 >
                   Talk to sales
-                </Button>
+                </button>
               ) : (
                 <a
                   href="/contact"
-                  className="rounded-2xl bg-white px-4 py-2 text-sm font-semibold text-[#0B1D33] hover:bg-gray-100"
+                  className="rounded-xl border-2 border-white bg-transparent px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-white hover:text-brand-900"
                 >
                   Talk to sales
                 </a>
