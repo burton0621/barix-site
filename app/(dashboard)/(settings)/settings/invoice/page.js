@@ -15,30 +15,50 @@ export default function InvoiceSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [contractorId, setContractorId] = useState(null);
 
-  // Form state
+  // -----------------------
+  // Invoice defaults
+  // -----------------------
   const [defaultDueDays, setDefaultDueDays] = useState(30);
-  const [indirectType, setIndirectType] = useState("amount"); // "amount" | "percent"
-  const [indirectValue, setIndirectValue] = useState("0");
+
+  // -----------------------
+  // Indirect materials
+  // -----------------------
+  const [enableIndirectMaterials, setEnableIndirectMaterials] = useState(false);
+  const [indirectAmount, setIndirectAmount] = useState("0");
+  const [indirectPercent, setIndirectPercent] = useState("0");
+  const [indirectDefaultType, setIndirectDefaultType] = useState("amount"); // "amount" | "percent"
+
+  // -----------------------
+  // Other settings
+  // -----------------------
   const [enablePercentInvoices, setEnablePercentInvoices] = useState(false);
 
+  // -----------------------
   // UI state
+  // -----------------------
   const [saving, setSaving] = useState(false);
   const [errorText, setErrorText] = useState("");
   const [successText, setSuccessText] = useState("");
 
+  // -----------------------
+  // Auth / contractor resolution
+  // -----------------------
   useEffect(() => {
-    if (!isLoading) {
-      if (!session) {
-        router.push("/login");
-      } else {
-        const cId = membership?.contractor_id || session.user.id;
-        setContractorId(cId);
-        setLoading(false);
-      }
+    if (isLoading) return;
+
+    if (!session) {
+      router.push("/login");
+      return;
     }
+
+    const cId = membership?.contractor_id || session.user.id;
+    setContractorId(cId);
+    setLoading(false);
   }, [isLoading, session, membership, router]);
 
-  // Load current settings (if exists)
+  // -----------------------
+  // Load settings
+  // -----------------------
   useEffect(() => {
     if (!contractorId) return;
 
@@ -50,21 +70,31 @@ export default function InvoiceSettingsPage() {
 
       const { data, error } = await supabase
         .from("contractor_settings")
-        .select("default_invoice_due_days, indirect_materials_type, indirect_materials_value, enable_percent_invoices")
+        .select(`
+          default_invoice_due_days,
+          enable_indirect_materials,
+          indirect_materials_amount,
+          indirect_materials_percent,
+          indirect_materials_default_type,
+          enable_percent_invoices
+        `)
         .eq("contractor_id", contractorId)
         .maybeSingle();
 
       if (cancelled) return;
 
       if (error) {
-        // If you haven't created this table yet, you'll see the error here.
         setErrorText(error.message);
         return;
       }
 
       setDefaultDueDays(data?.default_invoice_due_days ?? 30);
-      setIndirectType(data?.indirect_materials_type ?? "amount");
-      setIndirectValue(String(data?.indirect_materials_value ?? 0));
+
+      setEnableIndirectMaterials(!!data?.enable_indirect_materials);
+      setIndirectAmount(String(data?.indirect_materials_amount ?? 0));
+      setIndirectPercent(String(data?.indirect_materials_percent ?? 0));
+      setIndirectDefaultType(data?.indirect_materials_default_type ?? "amount");
+
       setEnablePercentInvoices(!!data?.enable_percent_invoices);
     }
 
@@ -75,6 +105,9 @@ export default function InvoiceSettingsPage() {
     };
   }, [contractorId]);
 
+  // -----------------------
+  // Save handler
+  // -----------------------
   async function handleSave(e) {
     e.preventDefault();
     if (!contractorId) return;
@@ -85,36 +118,44 @@ export default function InvoiceSettingsPage() {
 
     const due = Number(defaultDueDays);
     if (!Number.isFinite(due) || due < 0 || due > 365) {
-      setErrorText("Default due date must be a number of days between 0 and 365.");
+      setErrorText("Default due date must be between 0 and 365 days.");
       setSaving(false);
       return;
     }
 
-    const val = Number(indirectValue);
-    if (!Number.isFinite(val) || val < 0) {
-      setErrorText("Indirect materials must be a valid number (0 or greater).");
-      setSaving(false);
-      return;
-    }
+    const amountVal = Number(indirectAmount);
+    const percentVal = Number(indirectPercent);
 
-    if (indirectType === "percent" && val > 100) {
-      setErrorText("Indirect materials % cannot be greater than 100.");
-      setSaving(false);
-      return;
+    if (enableIndirectMaterials) {
+      if (!Number.isFinite(amountVal) || amountVal < 0) {
+        setErrorText("Indirect amount must be 0 or greater.");
+        setSaving(false);
+        return;
+      }
+
+      if (!Number.isFinite(percentVal) || percentVal < 0 || percentVal > 100) {
+        setErrorText("Indirect percent must be between 0 and 100.");
+        setSaving(false);
+        return;
+      }
     }
 
     const payload = {
       contractor_id: contractorId,
       default_invoice_due_days: due,
-      indirect_materials_type: indirectType,
-      indirect_materials_value: val,
+
+      enable_indirect_materials: enableIndirectMaterials,
+      indirect_materials_amount: amountVal,
+      indirect_materials_percent: percentVal,
+      indirect_materials_default_type: indirectDefaultType,
+
       enable_percent_invoices: !!enablePercentInvoices,
       updated_at: new Date().toISOString(),
     };
 
-    const { error } = await supabase.from("contractor_settings").upsert(payload, {
-      onConflict: "contractor_id",
-    });
+    const { error } = await supabase
+      .from("contractor_settings")
+      .upsert(payload, { onConflict: "contractor_id" });
 
     if (error) {
       setErrorText(error.message);
@@ -126,6 +167,9 @@ export default function InvoiceSettingsPage() {
     setSaving(false);
   }
 
+  // -----------------------
+  // Loading state
+  // -----------------------
   if (loading || isLoading) {
     return (
       <div className={shared.loadingWrapper}>
@@ -134,9 +178,13 @@ export default function InvoiceSettingsPage() {
     );
   }
 
+  // -----------------------
+  // Render
+  // -----------------------
   return (
     <div className={styles.page}>
       <form onSubmit={handleSave}>
+
         {/* Card 1: Default Due Date */}
         <section className={shared.card}>
           <h2 className={shared.cardTitle}>Default Invoice Due Date</h2>
@@ -160,7 +208,7 @@ export default function InvoiceSettingsPage() {
                   max="365"
                   value={defaultDueDays}
                   onChange={(e) => setDefaultDueDays(e.target.value)}
-                  className={shared.input}
+                  className={`${shared.input} ${styles.compactNumberInput}`}
                 />
                 <p className={styles.helperText}>Allowed range: 0–365</p>
               </div>
@@ -172,53 +220,103 @@ export default function InvoiceSettingsPage() {
         <section className={shared.card}>
           <h2 className={shared.cardTitle}>Indirect Materials</h2>
           <p className={shared.cardSubtitle}>
-            Automatically include a flat amount or percent to help cover indirect materials per invoice.
+            Automatically include indirect material costs on invoices.
           </p>
 
           <div className={styles.cardBody}>
+            {/* Enable toggle */}
             <div className={styles.settingRow}>
               <div className={styles.settingText}>
-                <p className={styles.settingTitle}>Type</p>
+                <p className={styles.settingTitle}>Enable indirect materials</p>
                 <p className={styles.settingDesc}>
-                  Choose whether the indirect materials charge is a dollar amount or a percentage.
+                  When enabled, indirect materials can be applied to invoices.
                 </p>
               </div>
 
-              <div className={styles.rightControl}>
-                <select
-                  value={indirectType}
-                  onChange={(e) => setIndirectType(e.target.value)}
-                  className={shared.input}
-                >
-                  <option value="amount">$ Amount</option>
-                  <option value="percent">% Percent</option>
-                </select>
-              </div>
-            </div>
-
-            <div className={styles.settingRow}>
-              <div className={styles.settingText}>
-                <p className={styles.settingTitle}>Value</p>
-                <p className={styles.settingDesc}>
-                  If percent is selected, we’ll validate the value as 0–100.
-                </p>
+              <div
+                className={`${styles.statusToggle} ${
+                  enableIndirectMaterials
+                    ? styles.statusEnabled
+                    : styles.statusDisabled
+                }`}
+                onClick={() => setEnableIndirectMaterials((v) => !v)}
+              >
+                {enableIndirectMaterials ? "Enabled" : "Disabled"}
               </div>
 
-              <div className={styles.rightControl}>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={indirectValue}
-                  onChange={(e) => setIndirectValue(e.target.value)}
-                  className={shared.input}
-                />
-              </div>
             </div>
+
+            {enableIndirectMaterials && (
+              <>
+                {/* Amount */}
+                <div className={styles.settingRow}>
+                  <div className={styles.settingText}>
+                    <p className={styles.settingTitle}>Flat amount ($)</p>
+                    <p className={styles.settingDesc}>
+                      A fixed dollar amount added to the invoice.
+                    </p>
+                  </div>
+
+                  <div className={styles.rightControl}>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={indirectAmount}
+                      onChange={(e) => setIndirectAmount(e.target.value)}
+                      className={`${shared.input} ${styles.compactNumberInput}`}
+                    />
+                  </div>
+                </div>
+
+                {/* Percent */}
+                <div className={styles.settingRow}>
+                  <div className={styles.settingText}>
+                    <p className={styles.settingTitle}>Percent (%)</p>
+                    <p className={styles.settingDesc}>
+                      A percentage of the invoice subtotal.
+                    </p>
+                  </div>
+
+                  <div className={styles.rightControl}>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.5"
+                      value={indirectPercent}
+                      onChange={(e) => setIndirectPercent(e.target.value)}
+                      className={`${shared.input} ${styles.compactPercentInput}`}
+                    />
+                  </div>
+                </div>
+
+                {/* Default selector */}
+                <div className={styles.settingRow}>
+                  <div className={styles.settingText}>
+                    <p className={styles.settingTitle}>Default type</p>
+                    <p className={styles.settingDesc}>
+                      Choose which indirect material option is selected by default.
+                    </p>
+                  </div>
+
+                  <div className={styles.rightControl}>
+                    <select
+                      value={indirectDefaultType}
+                      onChange={(e) => setIndirectDefaultType(e.target.value)}
+                      className={shared.input}
+                    >
+                      <option value="amount">Use amount by default</option>
+                      <option value="percent">Use percent by default</option>
+                    </select>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </section>
 
-        {/* Card 3: Enable % based invoices */}
+        {/* Card 3: Percent-Based Invoices */}
         <section className={shared.card}>
           <h2 className={shared.cardTitle}>Percent-Based Invoices</h2>
           <p className={shared.cardSubtitle}>

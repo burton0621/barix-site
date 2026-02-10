@@ -78,3 +78,40 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Compact numeric inputs */
+.compactNumberInput {
+  width: 100px;
+  text-align: right;
+  padding-right: 0.75rem;
+}
+
+/* Slightly smaller for percentages */
+.compactPercentInput {
+  width: 90px;
+  text-align: right;
+  padding-right: 0.75rem;
+}
+
+.statusToggle {
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border: 1px solid transparent;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  user-select: none;
+}
+
+.statusEnabled {
+  background-color: #ecfdf5; /* green-50 */
+  color: #065f46;            /* green-800 */
+  border-color: #6ee7b7;     /* green-300 */
+}
+
+.statusDisabled {
+  background-color: #fef2f2; /* red-50 */
+  color: #7f1d1d;            /* red-900 */
+  border-color: #fecaca;     /* red-300 */
+}
