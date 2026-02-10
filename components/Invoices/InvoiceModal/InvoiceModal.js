@@ -34,6 +34,7 @@ import {
   resolveContractorId,
   sendInvoiceEmail,
   updateInvoiceHeader,
+  fetchIndirectMaterialsDefaults,
 } from "./invoiceQueries";
 
 export default function InvoiceModal({
@@ -80,12 +81,36 @@ export default function InvoiceModal({
 
   const [lineItems, setLineItems] = useState([makeBlankLineItem()]);
 
-  // Totals (memo so it doesn't recompute unnecessarily)
-  const totals = useMemo(() => computeTotals(lineItems), [lineItems]);
-  const { subtotal, taxAmount, total } = totals;
+  // -----------------------
+  // Indirect materials (per invoice)
+  // -----------------------
+  const [indirectEnabled, setIndirectEnabled] = useState(false);
+  const [indirectType, setIndirectType] = useState("amount"); // "amount" | "percent"
+  const [indirectAmount, setIndirectAmount] = useState("0");
+  const [indirectPercent, setIndirectPercent] = useState("0");
+
+  // Totals (memo)
+  const totals = useMemo(
+    () =>
+      computeTotals(lineItems, {
+        enabled: indirectEnabled,
+        type: indirectType,
+        amount: indirectAmount,
+        percent: indirectPercent,
+      }),
+    [lineItems, indirectEnabled, indirectType, indirectAmount, indirectPercent]
+  );
+
+  const { baseSubtotal, indirectCharge, subtotal, taxAmount, total } = totals || {
+    baseSubtotal: 0,
+    indirectCharge: 0,
+    subtotal: 0,
+    taxAmount: 0,
+    total: 0,
+  };
 
   const resetForm = useCallback(
-    (dueDaysToUse) => {
+    (dueDaysToUse, indirectDefaults) => {
       const today = new Date();
       const issue = formatDateForInput(today);
       const due = addDays(issue, dueDaysToUse ?? defaultDueDays);
@@ -99,6 +124,19 @@ export default function InvoiceModal({
       setNotes("");
       setInternalNotes("");
       setLineItems([makeBlankLineItem()]);
+
+      // Indirect defaults
+      if (indirectDefaults) {
+        setIndirectEnabled(!!indirectDefaults.enabled);
+        setIndirectType(indirectDefaults.defaultType === "percent" ? "percent" : "amount");
+        setIndirectAmount(String(indirectDefaults.amount ?? 0));
+        setIndirectPercent(String(indirectDefaults.percent ?? 0));
+      } else {
+        setIndirectEnabled(false);
+        setIndirectType("amount");
+        setIndirectAmount("0");
+        setIndirectPercent("0");
+      }
 
       dueDateTouchedRef.current = false;
       sendAfterCreateRef.current = false;
@@ -117,6 +155,14 @@ export default function InvoiceModal({
     setNotes(invoiceData.notes || "");
     setInternalNotes(invoiceData.internal_notes || "");
 
+    // Load per-invoice indirect settings
+    setIndirectEnabled(!!invoiceData.enable_indirect_materials);
+    setIndirectAmount(String(invoiceData.indirect_materials_amount ?? 0));
+    setIndirectPercent(String(invoiceData.indirect_materials_percent ?? 0));
+    setIndirectType(
+      invoiceData.indirect_materials_default_type === "percent" ? "percent" : "amount"
+    );
+
     if (invoiceData.clients) setSelectedClient(invoiceData.clients);
 
     const rows = await fetchInvoiceLineItems(invoiceData.id);
@@ -133,21 +179,20 @@ export default function InvoiceModal({
         const authedUser = await getAuthedUser();
         setUser(authedUser);
 
-        // Settings first so defaults are correct
         const contractorId = await resolveContractorId(authedUser.id);
-        const dueDays = await fetchDefaultDueDays(contractorId);
-        setDefaultDueDays(dueDays);
 
-        const [clientsData, servicesData] = await Promise.all([
+        const [dueDays, indirectDefaults, clientsData, servicesData] = await Promise.all([
+          fetchDefaultDueDays(contractorId),
+          fetchIndirectMaterialsDefaults(contractorId),
           fetchClients(),
           fetchServices(),
         ]);
 
+        setDefaultDueDays(dueDays);
         setClients(clientsData);
         setServices(servicesData);
 
         if (isEditMode && invoice?.id) {
-          // Prefer freshest invoice data
           const fresh = await fetchFreshInvoice(invoice.id).catch(() => invoice);
           await loadInvoiceIntoForm(fresh);
 
@@ -157,7 +202,7 @@ export default function InvoiceModal({
             if (fullClient) setSelectedClient(fullClient);
           }
         } else {
-          resetForm(dueDays);
+          resetForm(dueDays, indirectDefaults);
         }
       } catch (err) {
         console.error(err);
@@ -281,6 +326,20 @@ export default function InvoiceModal({
       return;
     }
 
+    // basic validation for indirect inputs
+    const amt = Number(indirectAmount);
+    const pct = Number(indirectPercent);
+    if (indirectEnabled) {
+      if (indirectType === "amount" && (!Number.isFinite(amt) || amt < 0)) {
+        showToast("Indirect materials amount must be 0 or greater.", "warning");
+        return;
+      }
+      if (indirectType === "percent" && (!Number.isFinite(pct) || pct < 0 || pct > 100)) {
+        showToast("Indirect materials percent must be between 0 and 100.", "warning");
+        return;
+      }
+    }
+
     setSaving(true);
 
     try {
@@ -297,6 +356,11 @@ export default function InvoiceModal({
           subtotal,
           taxAmount,
           total,
+
+          enableIndirectMaterials: indirectEnabled,
+          indirectMaterialsAmount: Number(indirectAmount),
+          indirectMaterialsPercent: Number(indirectPercent),
+          indirectMaterialsDefaultType: indirectType,
         });
 
         const payload = toLineItemsInsertPayload({ invoiceId: invoice.id, lineItems: valid });
@@ -307,7 +371,6 @@ export default function InvoiceModal({
         return;
       }
 
-      // Create
       const created = await createInvoiceHeader({
         userId: user.id,
         clientId,
@@ -321,15 +384,19 @@ export default function InvoiceModal({
         taxAmount,
         total,
         documentType: actualDocType,
+
+        enableIndirectMaterials: indirectEnabled,
+        indirectMaterialsAmount: Number(indirectAmount),
+        indirectMaterialsPercent: Number(indirectPercent),
+        indirectMaterialsDefaultType: indirectType,
       });
 
       const payload = toLineItemsInsertPayload({ invoiceId: created.id, lineItems: valid });
       await insertInvoiceLineItems(payload);
 
-      // If Create & Send
       if (sendAfterCreateRef.current) {
         sendAfterCreateRef.current = false;
-        if (typeof onSaved === "function") onSaved(created); // refresh list even if send fails
+        if (typeof onSaved === "function") onSaved(created);
         await doSend(created.id);
         return;
       }
@@ -371,7 +438,13 @@ export default function InvoiceModal({
         <div className={styles.modal}>
           <div className={styles.header}>
             <h2 className={styles.title}>
-              {isEditMode ? (isEstimate ? "Edit Estimate" : "Edit Invoice") : isEstimate ? "Create Estimate" : "Create Invoice"}
+              {isEditMode
+                ? isEstimate
+                  ? "Edit Estimate"
+                  : "Edit Invoice"
+                : isEstimate
+                ? "Create Estimate"
+                : "Create Invoice"}
             </h2>
 
             <button
@@ -380,7 +453,15 @@ export default function InvoiceModal({
               disabled={saving || sending}
               aria-label="Close"
             >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 14 14"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              >
                 <path d="M1 1L13 13M1 13L13 1" />
               </svg>
             </button>
@@ -505,7 +586,9 @@ export default function InvoiceModal({
                             className={styles.input}
                             type="text"
                             value={item.description}
-                            onChange={(e) => handleLineItemFieldChange(index, "description", e.target.value)}
+                            onChange={(e) =>
+                              handleLineItemFieldChange(index, "description", e.target.value)
+                            }
                             placeholder="Description on invoice"
                             disabled={saving || sending}
                             required
@@ -519,7 +602,9 @@ export default function InvoiceModal({
                             min="0"
                             step="1"
                             value={item.quantity}
-                            onChange={(e) => handleLineItemFieldChange(index, "quantity", e.target.value)}
+                            onChange={(e) =>
+                              handleLineItemFieldChange(index, "quantity", e.target.value)
+                            }
                             disabled={saving || sending}
                             required
                           />
@@ -555,6 +640,7 @@ export default function InvoiceModal({
                   </div>
                 </div>
 
+                {/* Footer row (notes + right column) */}
                 <div className={styles.footerRow}>
                   <div className={styles.notesField}>
                     <label className={styles.label}>Notes (shown on invoice)</label>
@@ -576,24 +662,95 @@ export default function InvoiceModal({
                     />
                   </div>
 
-                  <div className={styles.totalsBox}>
-                    <div className={styles.totalRow}>
-                      <span className={styles.totalLabel}>Subtotal</span>
-                      <span className={styles.totalValue}>${subtotal.toFixed(2)}</span>
+                  <div className={styles.totalsColumn}>
+                    <div className={styles.indirectBox}>
+                      <div className={styles.indirectHeader}>
+                        <span className={styles.indirectTitle}>Indirect materials</span>
+
+                        <button
+                          type="button"
+                          className={`${styles.indirectToggle} ${
+                            indirectEnabled ? styles.indirectOn : styles.indirectOff
+                          }`}
+                          onClick={() => setIndirectEnabled((v) => !v)}
+                          disabled={saving || sending}
+                        >
+                          {indirectEnabled ? "Enabled" : "Disabled"}
+                        </button>
+                      </div>
+
+                      {indirectEnabled && (
+                        <div className={styles.indirectControls}>
+                          <select
+                            className={styles.indirectSelect}
+                            value={indirectType}
+                            onChange={(e) => setIndirectType(e.target.value)}
+                            disabled={saving || sending}
+                          >
+                            <option value="amount">$ Amount</option>
+                            <option value="percent">% Percent</option>
+                          </select>
+
+                          {indirectType === "amount" ? (
+                            <input
+                              className={styles.indirectInput}
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={indirectAmount}
+                              onChange={(e) => setIndirectAmount(e.target.value)}
+                              disabled={saving || sending}
+                            />
+                          ) : (
+                            <input
+                              className={styles.indirectInput}
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="0.5"
+                              value={indirectPercent}
+                              onChange={(e) => setIndirectPercent(e.target.value)}
+                              disabled={saving || sending}
+                            />
+                          )}
+                        </div>
+                      )}
+
+                      <div className={styles.indirectPreviewRow}>
+                        <span className={styles.indirectPreviewLabel}>Adds</span>
+                        <span className={styles.indirectPreviewValue}>
+                          ${Number(indirectCharge ?? 0).toFixed(2)}
+                        </span>
+                      </div>
                     </div>
-                    <div className={styles.totalRow}>
-                      <span className={styles.totalLabel}>Tax ({(TAX_RATE * 100).toFixed(0)}%)</span>
-                      <span className={styles.totalValue}>${taxAmount.toFixed(2)}</span>
-                    </div>
-                    <div className={styles.totalRowFinal}>
-                      <span className={styles.totalLabelFinal}>Total</span>
-                      <span className={styles.totalValueFinal}>${total.toFixed(2)}</span>
+
+                    <div className={styles.totalsBox}>
+                      <div className={styles.totalRow}>
+                        <span className={styles.totalLabel}>Subtotal</span>
+                        <span className={styles.totalValue}>${Number(subtotal ?? 0).toFixed(2)}</span>
+                      </div>
+                      <div className={styles.totalRow}>
+                        <span className={styles.totalLabel}>
+                          Tax ({(TAX_RATE * 100).toFixed(0)}%)
+                        </span>
+                        <span className={styles.totalValue}>${Number(taxAmount ?? 0).toFixed(2)}</span>
+                      </div>
+                      <div className={styles.totalRowFinal}>
+                        <span className={styles.totalLabelFinal}>Total</span>
+                        <span className={styles.totalValueFinal}>${Number(total ?? 0).toFixed(2)}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
+                {/* Actions row (separate from footerRow) */}
                 <div className={styles.actions}>
-                  <button type="button" className={styles.cancelButton} onClick={onClose} disabled={saving || sending}>
+                  <button
+                    type="button"
+                    className={styles.cancelButton}
+                    onClick={onClose}
+                    disabled={saving || sending}
+                  >
                     Cancel
                   </button>
 
@@ -635,7 +792,13 @@ export default function InvoiceModal({
 
                   {(isEditMode || !isEstimate) && (
                     <button type="submit" className={styles.saveButton} disabled={saving || sending}>
-                      {saving ? (isEditMode ? "Saving..." : "Creating...") : isEditMode ? "Save Changes" : "Create & Save"}
+                      {saving
+                        ? isEditMode
+                          ? "Saving..."
+                          : "Creating..."
+                        : isEditMode
+                        ? "Save Changes"
+                        : "Create & Save"}
                     </button>
                   )}
 

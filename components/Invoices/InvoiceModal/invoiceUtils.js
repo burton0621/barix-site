@@ -1,3 +1,5 @@
+//InvoiceUtils.js
+
 import { TAX_RATE, NEW_SERVICE_OPTION, makeBlankLineItem } from "./invoiceConstants";
 
 /** yyyy-mm-dd for <input type="date" /> */
@@ -25,20 +27,38 @@ export function generateDocumentNumber(docType = "invoice") {
   return `${prefix}-${year}${month}${day}-${rand}`;
 }
 
-export function computeTotals(lineItems) {
-  let subtotal = 0;
+export function computeTotals(lineItems, indirect) {
+  let baseSubtotal = 0;
 
   lineItems.forEach((item) => {
     const qty = parseFloat(item.quantity || "0");
     const rate = parseFloat(item.rate || "0");
-    if (!isNaN(qty) && !isNaN(rate)) subtotal += qty * rate;
+    if (!isNaN(qty) && !isNaN(rate)) baseSubtotal += qty * rate;
   });
 
+  const enabled = !!indirect?.enabled;
+  const type = indirect?.type === "percent" ? "percent" : "amount";
+  const amount = Number(indirect?.amount ?? 0);
+  const percent = Number(indirect?.percent ?? 0);
+
+  let indirectCharge = 0;
+  if (enabled) {
+    if (type === "amount") {
+      indirectCharge = Math.max(0, amount);
+    } else {
+      const pct = Math.min(100, Math.max(0, percent));
+      indirectCharge = (baseSubtotal * pct) / 100;
+    }
+  }
+
+  const subtotal = baseSubtotal + indirectCharge;
   const taxAmount = subtotal * TAX_RATE;
   const total = subtotal + taxAmount;
 
-  return { subtotal, taxAmount, total };
+  return { baseSubtotal, indirectCharge, subtotal, taxAmount, total };
 }
+
+
 
 export function validateLineItems(lineItems) {
   const valid = lineItems.filter((item) => {

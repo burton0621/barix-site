@@ -1,3 +1,4 @@
+//invoiceQueries.js
 import { supabase } from "@/lib/supabaseClient";
 import { TAX_RATE } from "./invoiceConstants";
 
@@ -89,6 +90,12 @@ export async function createInvoiceHeader({
   taxAmount,
   total,
   documentType,
+
+  // NEW:
+  enableIndirectMaterials,
+  indirectMaterialsAmount,
+  indirectMaterialsPercent,
+  indirectMaterialsDefaultType,
 }) {
   const { data, error } = await supabase
     .from("invoices")
@@ -106,6 +113,12 @@ export async function createInvoiceHeader({
       tax_amount: taxAmount,
       total,
       document_type: documentType,
+
+      // NEW:
+      enable_indirect_materials: !!enableIndirectMaterials,
+      indirect_materials_amount: Number(indirectMaterialsAmount ?? 0),
+      indirect_materials_percent: Number(indirectMaterialsPercent ?? 0),
+      indirect_materials_default_type: indirectMaterialsDefaultType,
     })
     .select("*")
     .single();
@@ -113,6 +126,7 @@ export async function createInvoiceHeader({
   if (error) throw error;
   return data;
 }
+
 
 export async function updateInvoiceHeader({
   invoiceId,
@@ -126,6 +140,12 @@ export async function updateInvoiceHeader({
   subtotal,
   taxAmount,
   total,
+
+  // NEW:
+  enableIndirectMaterials,
+  indirectMaterialsAmount,
+  indirectMaterialsPercent,
+  indirectMaterialsDefaultType,
 }) {
   const { data, error } = await supabase
     .from("invoices")
@@ -141,6 +161,12 @@ export async function updateInvoiceHeader({
       tax_rate: TAX_RATE,
       tax_amount: taxAmount,
       total,
+
+      // NEW:
+      enable_indirect_materials: !!enableIndirectMaterials,
+      indirect_materials_amount: Number(indirectMaterialsAmount ?? 0),
+      indirect_materials_percent: Number(indirectMaterialsPercent ?? 0),
+      indirect_materials_default_type: indirectMaterialsDefaultType,
     })
     .eq("id", invoiceId)
     .select("*")
@@ -149,6 +175,7 @@ export async function updateInvoiceHeader({
   if (error) throw error;
   return data;
 }
+
 
 export async function replaceInvoiceLineItems({ invoiceId, payload }) {
   const { error: delErr } = await supabase
@@ -184,4 +211,23 @@ export async function sendInvoiceEmail({ invoiceId, userId }) {
   }
 
   return json; // { clientEmail, statusUpdated, ... }
+}
+
+export async function fetchIndirectMaterialsDefaults(contractorId) {
+  const { data, error } = await supabase
+    .from("contractor_settings")
+    .select(
+      "enable_indirect_materials, indirect_materials_amount, indirect_materials_percent, indirect_materials_default_type"
+    )
+    .eq("contractor_id", contractorId)
+    .maybeSingle();
+
+  if (error) throw error;
+
+  return {
+    enabled: !!data?.enable_indirect_materials,
+    amount: Number(data?.indirect_materials_amount ?? 0),
+    percent: Number(data?.indirect_materials_percent ?? 0),
+    defaultType: data?.indirect_materials_default_type === "percent" ? "percent" : "amount",
+  };
 }
