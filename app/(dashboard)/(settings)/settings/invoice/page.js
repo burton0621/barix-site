@@ -43,6 +43,69 @@ export default function InvoiceSettingsPage() {
   const [successText, setSuccessText] = useState("");
 
   // -----------------------
+  // Persist helpers (auto-save toggles)
+  // -----------------------
+  async function persistIndirectEnabled(nextValue) {
+    if (!contractorId) return;
+
+    setSaving(true);
+    setErrorText("");
+    setSuccessText("");
+
+    const { error } = await supabase
+      .from("contractor_settings")
+      .upsert(
+        {
+          contractor_id: contractorId,
+          enable_indirect_materials: nextValue,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "contractor_id" }
+      );
+
+    if (error) {
+      setErrorText(error.message);
+      // revert UI if save fails
+      setEnableIndirectMaterials((prev) => !prev);
+      setSaving(false);
+      return;
+    }
+
+    setSuccessText("Invoice settings saved.");
+    setSaving(false);
+  }
+
+  async function persistPercentInvoicesEnabled(nextValue) {
+    if (!contractorId) return;
+
+    setSaving(true);
+    setErrorText("");
+    setSuccessText("");
+
+    const { error } = await supabase
+      .from("contractor_settings")
+      .upsert(
+        {
+          contractor_id: contractorId,
+          enable_percent_invoices: nextValue,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "contractor_id" }
+      );
+
+    if (error) {
+      setErrorText(error.message);
+      // revert UI if save fails
+      setEnablePercentInvoices((prev) => !prev);
+      setSaving(false);
+      return;
+    }
+
+    setSuccessText("Invoice settings saved.");
+    setSaving(false);
+  }
+
+  // -----------------------
   // Auth / contractor resolution
   // -----------------------
   useEffect(() => {
@@ -74,14 +137,16 @@ export default function InvoiceSettingsPage() {
       // 1) Try to load existing settings row
       const { data, error } = await supabase
         .from("contractor_settings")
-        .select(`
+        .select(
+          `
           default_invoice_due_days,
           enable_indirect_materials,
           indirect_materials_amount,
           indirect_materials_percent,
           indirect_materials_default_type,
           enable_percent_invoices
-        `)
+        `
+        )
         .eq("contractor_id", contractorId)
         .maybeSingle();
 
@@ -227,7 +292,6 @@ export default function InvoiceSettingsPage() {
   return (
     <div className={styles.page}>
       <form onSubmit={handleSave}>
-
         {/* Card 1: Default Due Date */}
         <section className={shared.card}>
           <h2 className={shared.cardTitle}>Default Invoice Due Date</h2>
@@ -240,7 +304,8 @@ export default function InvoiceSettingsPage() {
               <div className={styles.settingText}>
                 <p className={styles.settingTitle}>Due date offset (days)</p>
                 <p className={styles.settingDesc}>
-                  Example: 30 means invoices default to due 30 days after the issue date.
+                  Example: 30 means invoices default to due 30 days after the
+                  issue date.
                 </p>
               </div>
 
@@ -284,12 +349,13 @@ export default function InvoiceSettingsPage() {
                 }`}
                 onClick={() => {
                   if (saving || settingsLoading) return;
-                  setEnableIndirectMaterials((v) => !v);
+                  const next = !enableIndirectMaterials;
+                  setEnableIndirectMaterials(next);
+                  persistIndirectEnabled(next);
                 }}
               >
                 {enableIndirectMaterials ? "Enabled" : "Disabled"}
               </div>
-
             </div>
 
             {enableIndirectMaterials && (
@@ -342,7 +408,8 @@ export default function InvoiceSettingsPage() {
                   <div className={styles.settingText}>
                     <p className={styles.settingTitle}>Default type</p>
                     <p className={styles.settingDesc}>
-                      Choose which indirect material option is selected by default.
+                      Choose which indirect material option is selected by
+                      default.
                     </p>
                   </div>
 
@@ -366,7 +433,8 @@ export default function InvoiceSettingsPage() {
         <section className={shared.card}>
           <h2 className={shared.cardTitle}>Percent-Based Invoices</h2>
           <p className={shared.cardSubtitle}>
-            Enable the ability to create invoices based on a percent of an estimate or project total.
+            Enable the ability to create invoices based on a percent of an
+            estimate or project total.
           </p>
 
           <div className={styles.cardBody}>
@@ -374,7 +442,8 @@ export default function InvoiceSettingsPage() {
               <div className={styles.settingText}>
                 <p className={styles.settingTitle}>Enable % based invoices</p>
                 <p className={styles.settingDesc}>
-                  When enabled, invoice creation can support percentage-based billing flows.
+                  When enabled, invoice creation can support percentage-based
+                  billing flows.
                 </p>
               </div>
 
@@ -383,7 +452,12 @@ export default function InvoiceSettingsPage() {
                   <input
                     type="checkbox"
                     checked={enablePercentInvoices}
-                    onChange={(e) => setEnablePercentInvoices(e.target.checked)}
+                    onChange={(e) => {
+                      const next = e.target.checked;
+                      setEnablePercentInvoices(next);
+                      persistPercentInvoicesEnabled(next);
+                    }}
+                    disabled={saving || settingsLoading}
                   />
                   <span className={styles.toggleLabel}>
                     {enablePercentInvoices ? "Enabled" : "Disabled"}
