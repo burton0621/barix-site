@@ -15,6 +15,8 @@ export default function InvoiceSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [contractorId, setContractorId] = useState(null);
 
+  const [settingsLoading, setSettingsLoading] = useState(true);
+
   // -----------------------
   // Invoice defaults
   // -----------------------
@@ -65,9 +67,11 @@ export default function InvoiceSettingsPage() {
     let cancelled = false;
 
     async function load() {
+      setSettingsLoading(true);
       setErrorText("");
       setSuccessText("");
 
+      // 1) Try to load existing settings row
       const { data, error } = await supabase
         .from("contractor_settings")
         .select(`
@@ -85,17 +89,56 @@ export default function InvoiceSettingsPage() {
 
       if (error) {
         setErrorText(error.message);
+        setSettingsLoading(false);
         return;
       }
 
-      setDefaultDueDays(data?.default_invoice_due_days ?? 30);
+      // 2) If no row exists yet, create one (so future loads are stable)
+      if (!data) {
+        const defaults = {
+          contractor_id: contractorId,
+          default_invoice_due_days: 30,
+          enable_indirect_materials: false,
+          indirect_materials_amount: 0,
+          indirect_materials_percent: 0,
+          indirect_materials_default_type: "amount",
+          enable_percent_invoices: false,
+          updated_at: new Date().toISOString(),
+        };
 
-      setEnableIndirectMaterials(!!data?.enable_indirect_materials);
-      setIndirectAmount(String(data?.indirect_materials_amount ?? 0));
-      setIndirectPercent(String(data?.indirect_materials_percent ?? 0));
-      setIndirectDefaultType(data?.indirect_materials_default_type ?? "amount");
+        const { error: insertErr } = await supabase
+          .from("contractor_settings")
+          .insert(defaults);
 
-      setEnablePercentInvoices(!!data?.enable_percent_invoices);
+        if (cancelled) return;
+
+        if (insertErr) {
+          setErrorText(insertErr.message);
+          setSettingsLoading(false);
+          return;
+        }
+
+        // After insert, update UI from defaults right away
+        setDefaultDueDays(defaults.default_invoice_due_days);
+        setEnableIndirectMaterials(defaults.enable_indirect_materials);
+        setIndirectAmount(String(defaults.indirect_materials_amount));
+        setIndirectPercent(String(defaults.indirect_materials_percent));
+        setIndirectDefaultType(defaults.indirect_materials_default_type);
+        setEnablePercentInvoices(defaults.enable_percent_invoices);
+
+        setSettingsLoading(false);
+        return;
+      }
+
+      // 3) Row exists: hydrate state
+      setDefaultDueDays(data.default_invoice_due_days ?? 30);
+      setEnableIndirectMaterials(!!data.enable_indirect_materials);
+      setIndirectAmount(String(data.indirect_materials_amount ?? 0));
+      setIndirectPercent(String(data.indirect_materials_percent ?? 0));
+      setIndirectDefaultType(data.indirect_materials_default_type ?? "amount");
+      setEnablePercentInvoices(!!data.enable_percent_invoices);
+
+      setSettingsLoading(false);
     }
 
     load();
@@ -170,7 +213,7 @@ export default function InvoiceSettingsPage() {
   // -----------------------
   // Loading state
   // -----------------------
-  if (loading || isLoading) {
+  if (loading || isLoading || settingsLoading) {
     return (
       <div className={shared.loadingWrapper}>
         <p className={shared.loadingText}>Loading...</p>
@@ -239,7 +282,10 @@ export default function InvoiceSettingsPage() {
                     ? styles.statusEnabled
                     : styles.statusDisabled
                 }`}
-                onClick={() => setEnableIndirectMaterials((v) => !v)}
+                onClick={() => {
+                  if (saving || settingsLoading) return;
+                  setEnableIndirectMaterials((v) => !v);
+                }}
               >
                 {enableIndirectMaterials ? "Enabled" : "Disabled"}
               </div>
@@ -304,7 +350,7 @@ export default function InvoiceSettingsPage() {
                     <select
                       value={indirectDefaultType}
                       onChange={(e) => setIndirectDefaultType(e.target.value)}
-                      className={shared.input}
+                      className={`${shared.input} ${styles.roundedSelect}`}
                     >
                       <option value="amount">Use amount by default</option>
                       <option value="percent">Use percent by default</option>
