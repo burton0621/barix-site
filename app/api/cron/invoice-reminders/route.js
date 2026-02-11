@@ -3,12 +3,19 @@ import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
+// --- Hard env guards (prevents silent RLS / auth weirdness) ---
+function requireEnv(name) {
+  const v = process.env[name];
+  if (!v) throw new Error(`Missing required env var: ${name}`);
+  return v;
+}
+
 const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
+  requireEnv("NEXT_PUBLIC_SUPABASE_URL"),
+  requireEnv("SUPABASE_SERVICE_ROLE_KEY")
 );
 
-// Fallbacks if a contractor has no settings row yet (should be rare for you)
+// Fallbacks if a contractor has no settings row yet (safest is disabled)
 const FALLBACK_BEFORE = 3;
 const FALLBACK_AFTER = 1;
 
@@ -25,6 +32,59 @@ function addDays(date, days) {
   return d;
 }
 
+function parseDateOnly(dateStr) {
+  // Postgres DATE comes as "YYYY-MM-DD"
+  const [y, m, d] = String(dateStr).split("-").map(Number);
+  return new Date(y, (m || 1) - 1, d || 1);
+}
+
+function diffDays(a, b) {
+  // a - b in days, using local midnight
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const a0 = new Date(a.getFullYear(), a.getMonth(), a.getDate());
+  const b0 = new Date(b.getFullYear(), b.getMonth(), b.getDate());
+  return Math.floor((a0 - b0) / msPerDay);
+}
+
+// Reserve a reminder row BEFORE sending so duplicates can't happen.
+// Requires DB uniqueness to be truly bulletproof.
+// - before_due: unique (invoice_id, reminder_type) where reminder_type='before_due'
+// - after_due:  unique (invoice_id, reminder_type, overdue_step) where reminder_type='after_due'
+async function reserveReminder({ invoiceId, reminderType, sentOn, overdueStep }) {
+  const row = {
+    invoice_id: invoiceId,
+    reminder_type: reminderType,
+    sent_on: sentOn,
+    overdue_step: overdueStep, // always NOT NULL now
+  };
+
+  const { data, error } = await supabaseAdmin
+    .from("invoice_reminder_logs")
+    .upsert([row], {
+      onConflict: "invoice_id,reminder_type,overdue_step",
+      ignoreDuplicates: true,
+    })
+    .select("invoice_id");
+
+  if (error) throw error;
+
+  const reserved = Array.isArray(data) ? data.length > 0 : !!data;
+  return { reserved };
+}
+
+
+async function unreserveReminder({ invoiceId, reminderType, overdueStep }) {
+  const { error } = await supabaseAdmin
+    .from("invoice_reminder_logs")
+    .delete()
+    .eq("invoice_id", invoiceId)
+    .eq("reminder_type", reminderType)
+    .eq("overdue_step", overdueStep);
+
+  if (error) throw error;
+}
+
+
 export async function GET(req) {
   try {
     // --- 1) Auth guard ---
@@ -37,7 +97,7 @@ export async function GET(req) {
     }
 
     const token = authHeader.replace("Bearer ", "");
-    if (token !== process.env.CRON_SECRET) {
+    if (token !== requireEnv("CRON_SECRET")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -45,7 +105,7 @@ export async function GET(req) {
     const today = new Date();
     const todayStr = isoDateOnly(today);
 
-    // --- 3) Load contractor settings (per-user reminder config) ---
+    // --- 3) Load contractor settings ---
     const { data: settingsRows, error: settingsErr } = await supabaseAdmin
       .from("contractor_settings")
       .select(
@@ -54,17 +114,13 @@ export async function GET(req) {
 
     if (settingsErr) throw settingsErr;
 
-    // Map settings by contractor_id (which should match invoices.owner_id)
     const settingsByContractor = new Map();
-
     let maxBefore = FALLBACK_BEFORE;
     let maxAfter = FALLBACK_AFTER;
 
     for (const row of settingsRows || []) {
       const enabled = row.enable_invoice_reminders === true;
-      const beforeDays = Number(
-        row.reminder_days_before_due ?? FALLBACK_BEFORE
-      );
+      const beforeDays = Number(row.reminder_days_before_due ?? FALLBACK_BEFORE);
       const afterDays = Number(row.reminder_days_after_due ?? FALLBACK_AFTER);
 
       settingsByContractor.set(row.contractor_id, {
@@ -77,8 +133,7 @@ export async function GET(req) {
       if (Number.isFinite(afterDays)) maxAfter = Math.max(maxAfter, afterDays);
     }
 
-    // --- 4) Query candidate invoices in a due_date window based on max settings ---
-    // We only need invoices whose due_date falls within [today - maxAfter, today + maxBefore]
+    // --- 4) Candidate invoices in window ---
     const minDue = isoDateOnly(addDays(today, -maxAfter));
     const maxDue = isoDateOnly(addDays(today, maxBefore));
 
@@ -87,7 +142,7 @@ export async function GET(req) {
       .select("id, due_date, owner_id, paid_at, status, document_type")
       .is("paid_at", null)
       .neq("document_type", "estimate")
-      .in("status", ["sent"]) // adjust if you want to include others
+      .in("status", ["sent"]) // adjust if needed
       .gte("due_date", minDue)
       .lte("due_date", maxDue);
 
@@ -102,7 +157,7 @@ export async function GET(req) {
     for (const inv of invoices || []) {
       const s =
         settingsByContractor.get(inv.owner_id) || {
-          enabled: false, // safest default: if no settings row, do nothing
+          enabled: false, // safest default
           beforeDays: FALLBACK_BEFORE,
           afterDays: FALLBACK_AFTER,
         };
@@ -117,13 +172,28 @@ export async function GET(req) {
         continue;
       }
 
-      // Determine whether THIS invoice needs a reminder TODAY based on THIS owner's settings
-      const beforeTarget = isoDateOnly(addDays(today, s.beforeDays));
-      const afterTarget = isoDateOnly(addDays(today, -s.afterDays));
+      const due = parseDateOnly(inv.due_date);
+      const daysUntilDue = diffDays(due, today); // due - today
+      const daysPastDue = diffDays(today, due);  // today - due
 
       let reminderType = null;
-      if (inv.due_date === beforeTarget) reminderType = "before_due";
-      if (inv.due_date === afterTarget) reminderType = "after_due";
+      let overdueStep = null;
+
+      if (daysUntilDue >= 1 && daysUntilDue <= s.beforeDays) {
+        reminderType = "before_due";
+        overdueStep = 0; // IMPORTANT
+      }
+
+      if (!reminderType && s.afterDays > 0 && daysPastDue >= s.afterDays) {
+        if (daysPastDue % s.afterDays === 0) {
+          reminderType = "after_due";
+          overdueStep = daysPastDue; // 7, 14, 21, ...
+        } else {
+          // skip
+          continue;
+        }
+      }
+
 
       if (!reminderType) {
         results.push({
@@ -132,46 +202,39 @@ export async function GET(req) {
           ok: true,
           skipped: "not_due_for_reminder_today",
           due_date: inv.due_date,
-          beforeTarget,
-          afterTarget,
+          daysUntilDue,
+          daysPastDue,
           settingsUsed: s,
+        });
+        continue;
+      }
+
+      // --- 5) Reserve (dedupe) BEFORE sending ---
+      const reservation = await reserveReminder({
+        invoiceId: inv.id,
+        reminderType,
+        sentOn: todayStr,
+        overdueStep,
+      });
+
+      if (!reservation.reserved) {
+        results.push({
+          invoiceId: inv.id,
+          ownerId: inv.owner_id,
+          reminderType,
+          ok: true,
+          skipped:
+            reminderType === "before_due"
+              ? "before_due_already_sent"
+              : "after_due_step_already_sent",
+          overdueStep,
         });
         continue;
       }
 
       attempted += 1;
 
-      // --- Dedup check via log table ---
-      const { data: alreadySent, error: logCheckErr } = await supabaseAdmin
-        .from("invoice_reminder_logs")
-        .select("id")
-        .eq("invoice_id", inv.id)
-        .eq("reminder_type", reminderType)
-        .limit(1);
-
-      if (logCheckErr) {
-        results.push({
-          invoiceId: inv.id,
-          ownerId: inv.owner_id,
-          reminderType,
-          ok: false,
-          error: logCheckErr.message,
-        });
-        continue;
-      }
-
-      if (alreadySent && alreadySent.length > 0) {
-        results.push({
-          invoiceId: inv.id,
-          ownerId: inv.owner_id,
-          reminderType,
-          ok: true,
-          skipped: "already_logged",
-        });
-        continue;
-      }
-
-      // --- Send reminder (call your existing route) ---
+      // --- 6) Send reminder ---
       const res = await fetch(`${origin}/api/send-invoice-reminder`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -188,6 +251,13 @@ export async function GET(req) {
       }
 
       if (!res.ok) {
+        // Undo reservation so next cron run can retry
+        await unreserveReminder({
+          invoiceId: inv.id,
+          reminderType,
+          overdueStep,
+        });
+
         results.push({
           invoiceId: inv.id,
           ownerId: inv.owner_id,
@@ -199,29 +269,13 @@ export async function GET(req) {
         continue;
       }
 
-      // --- Write log (prevents future duplicates) ---
-      const { error: logInsertErr } = await supabaseAdmin
-        .from("invoice_reminder_logs")
-        .insert([{ invoice_id: inv.id, reminder_type: reminderType }]);
-
-      if (logInsertErr) {
-        results.push({
-          invoiceId: inv.id,
-          ownerId: inv.owner_id,
-          reminderType,
-          ok: true,
-          sent: true,
-          warning: `Sent but failed to log: ${logInsertErr.message}`,
-        });
-        sent += 1;
-        continue;
-      }
-
       sent += 1;
+
       results.push({
         invoiceId: inv.id,
         ownerId: inv.owner_id,
         reminderType,
+        overdueStep,
         ok: true,
         sent: true,
       });
