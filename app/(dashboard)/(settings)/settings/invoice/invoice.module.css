@@ -1,0 +1,118 @@
+/* =========================
+   Invoice Settings Page (local)
+   ========================= */
+
+.page {
+  display: grid;
+  gap: 16px;
+}
+
+/* Card content layouts */
+.cardBody {
+  margin-top: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.settingRow {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 14px;
+  align-items: start;
+}
+
+.settingText {
+  display: grid;
+  gap: 4px;
+}
+
+.settingTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 900;
+  color: #111827;
+}
+
+.settingDesc {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #6b7280;
+}
+
+.rightControl {
+  display: grid;
+  gap: 8px;
+}
+
+/* Helper row under controls */
+.helperRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.helperText {
+  margin: 0;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* Simple toggle switch wrapper (uses native checkbox) */
+.toggleWrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.toggleLabel {
+  font-size: 13px;
+  font-weight: 800;
+  color: #111827;
+}
+
+/* Make the page responsive */
+@media (max-width: 900px) {
+  .settingRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Compact numeric inputs */
+.compactNumberInput {
+  width: 75px;
+  text-align: right;
+  padding-right: 0.75rem;
+}
+
+/* Slightly smaller for percentages */
+.compactPercentInput {
+  width: 75px;
+  text-align: right;
+  padding-right: 0.75rem;
+}
+
+.statusToggle {
+  width: fit-content;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border: 1px solid transparent;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  user-select: none;
+}
+
+.statusEnabled {
+  background-color: #ecfdf5; /* green-50 */
+  color: #065f46;            /* green-800 */
+  border-color: #6ee7b7;     /* green-300 */
+}
+
+.statusDisabled {
+  background-color: #fef2f2; /* red-50 */
+  color: #7f1d1d;            /* red-900 */
+  border-color: #fecaca;     /* red-300 */
+}

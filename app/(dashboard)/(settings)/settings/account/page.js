@@ -18,9 +18,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/providers/AuthProvider";
-import DashboardNavbar from "@/components/Navbar/DashboardNavbar";
 
-import styles from "./settings.module.css";
+
+import styles from "../settings.module.css";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -147,12 +147,11 @@ export default function SettingsPage() {
 
   return (
     <div className={styles.page}>
-      <DashboardNavbar />
 
       <main className={styles.container}>
         {/* Page Header */}
         <div className={styles.header}>
-          <h1 className={styles.title}>Settings</h1>
+          <h1 className={styles.title}>Account</h1>
           <p className={styles.subtitle}>
             {isAdmin ? "Manage your account settings and subscription" : "Manage your account settings"}
           </p>
