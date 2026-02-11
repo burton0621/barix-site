@@ -313,3 +313,47 @@
 .dangerIconButton:hover {
   background: #fef2f2;
 }
+
+/* Hide columns on mobile */
+.hideOnMobile {
+  /* default: visible */
+}
+
+.nameCell {
+  word-break: break-word;
+}
+
+.rateCell {
+  white-space: nowrap;
+}
+
+/* Mobile table tightening */
+@media (max-width: 640px) {
+  .hideOnMobile {
+    display: none;
+  }
+
+  .table thead th {
+    padding: 10px 10px;
+    font-size: 11px;
+  }
+
+  .table tbody td {
+    padding: 12px 10px;
+    font-size: 14px;
+  }
+
+  .actionsHeader {
+    width: 92px;
+  }
+
+  .iconButton {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+  }
+
+  .actionsInline {
+    gap: 8px;
+  }
+}

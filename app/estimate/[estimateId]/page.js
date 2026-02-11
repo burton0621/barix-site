@@ -293,7 +293,7 @@ export default function EstimatePage() {
                   </td>
                   <td className={styles.tdRight}>{item.quantity}</td>
                   <td className={styles.tdRight}>${parseFloat(item.rate).toFixed(2)}</td>
-                  <td className={styles.tdRight}>${parseFloat(item.total).toFixed(2)}</td>
+                  <td className={styles.tdRight}>${parseFloat(item.line_total || item.total || 0).toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>

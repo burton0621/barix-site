@@ -1,22 +1,6 @@
 "use client";
 
-/*
-  Dashboard Navbar Component
-  --------------------------
-  This navbar appears after a user logs in. It's different from the
-  marketing navbar because it focuses on app navigation rather than
-  selling the product.
-  
-  Links include:
-  - Dashboard (home for logged-in users, will show invoicing overview)
-  - Invoices (manage and create invoices)
-  - Clients (manage customer list)
-  - Profile (contractor business settings)
-  
-  The user's company logo and name appear on the right with a sign out option.
-*/
-
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
@@ -24,100 +8,122 @@ import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/providers/AuthProvider";
 import styles from "./DashboardNavbar.module.css";
 import { FiSettings } from "react-icons/fi";
+import { FiMenu, FiX } from "react-icons/fi";
 
 export default function DashboardNavbar() {
   const router = useRouter();
   const pathname = usePathname();
-  
+
   // Get the current user session, company profile, and admin status
   const { session, profile, isAdmin } = useAuth();
 
-  /*
-    Handle sign out
-    Clears the session and sends user back to the landing page
-  */
+  const [mobileOpen, setMobileOpen] = useState(false);
+
   async function handleLogout() {
     await supabase.auth.signOut();
     router.refresh();
     router.push("/");
   }
 
-  /*
-    Auth state listener
-    Redirects to home only when user explicitly signs out.
-    This prevents logged-out users from seeing the dashboard.
-  */
   useEffect(() => {
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (event === "SIGNED_OUT") {
-          router.push("/");
-        }
+    const { data: listener } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") {
+        router.push("/");
       }
-    );
+    });
 
     return () => listener.subscription.unsubscribe();
   }, [router]);
 
-  /*
-    Helper to check if a nav link is currently active.
-    Used to highlight the current page in the navigation.
-  */
   function isActive(path) {
     return pathname === path;
   }
 
+  // Close sidebar on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  // Close on ESC
+  useEffect(() => {
+    function onKeyDown(e) {
+      if (e.key === "Escape") setMobileOpen(false);
+    }
+    if (mobileOpen) window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [mobileOpen]);
+
   return (
     <header className={styles.header}>
       <div className={styles.navContainer}>
-        
+        {/* Mobile: hamburger */}
+        <button
+          type="button"
+          className={styles.mobileMenuBtn}
+          onClick={() => setMobileOpen(true)}
+          aria-label="Open menu"
+          aria-expanded={mobileOpen}
+        >
+          <FiMenu className={styles.mobileMenuIcon} />
+        </button>
+
         {/* Logo - takes user to dashboard home */}
         <Link href="/dashboard" className={styles.brand}>
           <Image src="/logo.png" alt="Barix Billing" width={130} height={38} />
         </Link>
 
-        {/* Main dashboard navigation links */}
+        {/* Desktop nav links */}
         <nav className={styles.navCenter}>
-          <Link 
-            href="/dashboard" 
-            className={`${styles.navLink} ${isActive("/dashboard") ? styles.active : ""}`}
+          <Link
+            href="/dashboard"
+            className={`${styles.navLink} ${
+              isActive("/dashboard") ? styles.active : ""
+            }`}
           >
             Dashboard
           </Link>
-          <Link 
-            href="/invoices" 
-            className={`${styles.navLink} ${isActive("/invoices") ? styles.active : ""}`}
+          <Link
+            href="/invoices"
+            className={`${styles.navLink} ${
+              isActive("/invoices") ? styles.active : ""
+            }`}
           >
             Invoices
           </Link>
-          <Link 
-            href="/clients" 
-            className={`${styles.navLink} ${isActive("/clients") ? styles.active : ""}`}
+          <Link
+            href="/clients"
+            className={`${styles.navLink} ${
+              isActive("/clients") ? styles.active : ""
+            }`}
           >
             Clients
           </Link>
-          <Link 
-            href="/services" 
-            className={`${styles.navLink} ${isActive("/services") ? styles.active : ""}`}
+          <Link
+            href="/services"
+            className={`${styles.navLink} ${
+              isActive("/services") ? styles.active : ""
+            }`}
           >
             Services
           </Link>
-          {/* Team link - only visible to admins */}
+
           {isAdmin && (
-            <Link 
-              href="/team" 
-              className={`${styles.navLink} ${isActive("/team") ? styles.active : ""}`}
+            <Link
+              href="/team"
+              className={`${styles.navLink} ${
+                isActive("/team") ? styles.active : ""
+              }`}
             >
               Team
             </Link>
           )}
         </nav>
 
-        {/* Right side - user info and actions */}
+        {/* Desktop right side */}
         <div className={styles.navRight}>
-          {/* Profile link with company logo or initial */}
           <Link href="/profile" className={styles.profileLink}>
             {profile?.logo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={profile.logo_url}
                 alt="Company Logo"
@@ -128,6 +134,7 @@ export default function DashboardNavbar() {
                 {profile?.company_name?.charAt(0) || "B"}
               </div>
             )}
+
             <div className={styles.userInfo}>
               <span className={styles.companyName}>
                 {profile?.company_name || "My Business"}
@@ -136,24 +143,139 @@ export default function DashboardNavbar() {
             </div>
           </Link>
 
-          {/* Settings icon - links to account settings (subscription, password, etc.) */}
-          <Link 
-            href="/settings" 
-            className={`${styles.settingsBtn} ${isActive("/settings") ? styles.settingsActive : ""}`}
+          <Link
+            href="/settings"
+            className={`${styles.settingsBtn} ${
+              isActive("/settings") ? styles.settingsActive : ""
+            }`}
             title="Settings"
           >
-            <FiSettings className={styles.settingsIcon} />  
-            
+            <FiSettings className={styles.settingsIcon} />
           </Link>
 
-          {/* Sign out button */}
           <button onClick={handleLogout} className={styles.logoutBtn}>
             Sign out
           </button>
         </div>
-
       </div>
+
+      {/* Mobile overlay + drawer */}
+      <div
+        className={`${styles.mobileOverlay} ${
+          mobileOpen ? styles.mobileOverlayOpen : ""
+        }`}
+        onClick={() => setMobileOpen(false)}
+        aria-hidden={!mobileOpen}
+      />
+
+      <aside
+        className={`${styles.mobileDrawer} ${
+          mobileOpen ? styles.mobileDrawerOpen : ""
+        }`}
+        aria-hidden={!mobileOpen}
+      >
+        <div className={styles.mobileDrawerHeader}>
+          <div className={styles.mobileDrawerBrand}>
+            <Image src="/logo.png" alt="Barix Billing" width={120} height={35} />
+          </div>
+
+          <button
+            type="button"
+            className={styles.mobileCloseBtn}
+            onClick={() => setMobileOpen(false)}
+            aria-label="Close menu"
+          >
+            <FiX className={styles.mobileCloseIcon} />
+          </button>
+        </div>
+
+        {/* Profile summary (mobile) */}
+        <Link href="/profile" className={styles.mobileProfileCard}>
+          {profile?.logo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={profile.logo_url}
+              alt="Company Logo"
+              className={styles.userLogo}
+            />
+          ) : (
+            <div className={styles.userInitial}>
+              {profile?.company_name?.charAt(0) || "B"}
+            </div>
+          )}
+
+          <div className={styles.mobileProfileText}>
+            <div className={styles.mobileCompanyName}>
+              {profile?.company_name || "My Business"}
+            </div>
+            <div className={styles.mobileProfileHint}>View profile</div>
+          </div>
+        </Link>
+
+        <nav className={styles.mobileNav}>
+          <Link
+            href="/dashboard"
+            className={`${styles.mobileNavLink} ${
+              isActive("/dashboard") ? styles.mobileNavActive : ""
+            }`}
+          >
+            Dashboard
+          </Link>
+          <Link
+            href="/invoices"
+            className={`${styles.mobileNavLink} ${
+              isActive("/invoices") ? styles.mobileNavActive : ""
+            }`}
+          >
+            Invoices
+          </Link>
+          <Link
+            href="/clients"
+            className={`${styles.mobileNavLink} ${
+              isActive("/clients") ? styles.mobileNavActive : ""
+            }`}
+          >
+            Clients
+          </Link>
+          <Link
+            href="/services"
+            className={`${styles.mobileNavLink} ${
+              isActive("/services") ? styles.mobileNavActive : ""
+            }`}
+          >
+            Services
+          </Link>
+
+          {isAdmin && (
+            <Link
+              href="/team"
+              className={`${styles.mobileNavLink} ${
+                isActive("/team") ? styles.mobileNavActive : ""
+              }`}
+            >
+              Team
+            </Link>
+          )}
+
+          <Link
+            href="/settings"
+            className={`${styles.mobileNavLink} ${
+              isActive("/settings") ? styles.mobileNavActive : ""
+            }`}
+          >
+            <span className={styles.mobileNavIconWrap}>
+              <FiSettings className={styles.mobileNavIcon} />
+            </span>
+            Settings
+          </Link>
+        </nav>
+
+        <div className={styles.mobileDrawerFooter}>
+          <button onClick={handleLogout} className={styles.mobileLogoutBtn}>
+            Sign out
+          </button>
+        </div>
+      </aside>
     </header>
   );
 }
-

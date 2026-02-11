@@ -17,7 +17,7 @@ import Stripe from "stripe";
 // Debug: Log key info to verify it's loading correctly
 const stripeKey = process.env.STRIPE_SECRET_KEY;
 console.log("Subscription checkout - Stripe key loaded:", stripeKey ? `${stripeKey.substring(0, 20)}...` : "NOT FOUND");
-console.log("Using price ID:", "price_1SqQqwGkhhmcEWD4ktQoucHp");
+console.log("Using price ID:", "price_1Sw9tSKE5PK2q4ek4IFYwMEj");
 
 const stripe = new Stripe(stripeKey, {
   apiVersion: "2023-10-16",
@@ -28,8 +28,8 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// The Price ID for the subscription from your Stripe product catalog (sandbox)
-const SUBSCRIPTION_PRICE_ID = "price_1SqQqwGkhhmcEWD4ktQoucHp";
+// The Price ID for the subscription from your Stripe product catalog (live)
+const SUBSCRIPTION_PRICE_ID = "price_1Sw9tSKE5PK2q4ek4IFYwMEj";
 
 // Trial period in days
 const TRIAL_DAYS = 7;
