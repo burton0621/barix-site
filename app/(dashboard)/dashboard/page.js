@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/providers/AuthProvider";
@@ -19,6 +19,12 @@ export default function DashboardPage() {
   // Keep track of userId so we can refresh after creating invoices
   const [userId, setUserId] = useState(null);
 
+  // Weekly/Monthly toggle (shown on both desktop + mobile)
+  const [range, setRange] = useState("week"); // "week" | "month"
+
+  // Mobile detection (used only for rounding currency)
+  const [isMobile, setIsMobile] = useState(false);
+
   // Metrics
   const [metricsLoading, setMetricsLoading] = useState(false);
   const [totalInvoicesCount, setTotalInvoicesCount] = useState(0);
@@ -33,9 +39,22 @@ export default function DashboardPage() {
   const [recentInvoices, setRecentInvoices] = useState([]);
   const [recentLoading, setRecentLoading] = useState(false);
 
-  // Currency helper
+  // Track mobile width for currency rounding
+  useEffect(() => {
+    function onResize() {
+      setIsMobile(window.innerWidth <= 600);
+    }
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  // Currency helper (round to whole dollars on mobile to prevent overlap)
   const formatCurrency = (value) => {
     const num = Number(value || 0);
+    if (isMobile) {
+      return `$${Math.round(num).toLocaleString()}`;
+    }
     return `$${num.toFixed(2)}`;
   };
 
@@ -71,13 +90,40 @@ export default function DashboardPage() {
     });
   };
 
-  async function fetchInvoiceMetrics(userId) {
+  // Figure out the date window start (local time)
+  const rangeStartDate = useMemo(() => {
+    const now = new Date();
+    const start = new Date(now);
+
+    if (range === "week") {
+      start.setDate(now.getDate() - 6); // last 7 days incl today
+    } else {
+      start.setDate(now.getDate() - 29); // last 30 days incl today
+    }
+
+    // normalize to start of day
+    start.setHours(0, 0, 0, 0);
+    return start;
+  }, [range]);
+
+  // Convert to YYYY-MM-DD for issue_date filtering
+  const rangeStartISODate = useMemo(() => {
+    const y = rangeStartDate.getFullYear();
+    const m = String(rangeStartDate.getMonth() + 1).padStart(2, "0");
+    const d = String(rangeStartDate.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }, [rangeStartDate]);
+
+  async function fetchInvoiceMetrics(ownerId) {
     setMetricsLoading(true);
 
+    // We filter invoices in the selected window by issue_date
+    // (Assumes issue_date is stored as YYYY-MM-DD in your DB)
     const { data, error } = await supabase
       .from("invoices")
-      .select("id, status, total")
-      .eq("owner_id", userId);
+      .select("id, status, total, issue_date")
+      .eq("owner_id", ownerId)
+      .gte("issue_date", rangeStartISODate);
 
     if (error) {
       console.error("Error loading invoice metrics:", error);
@@ -99,7 +145,7 @@ export default function DashboardPage() {
       const status = inv.status || "";
       const total = Number(inv.total || 0);
 
-      // total invoices = everything that is not draft
+      // total invoices in range = everything that is not draft
       if (status !== "draft") {
         totalInvoices += 1;
       }
@@ -131,7 +177,7 @@ export default function DashboardPage() {
     setMetricsLoading(false);
   }
 
-  async function fetchRecentInvoices(userId) {
+  async function fetchRecentInvoices(ownerId) {
     setRecentLoading(true);
 
     const { data, error } = await supabase
@@ -146,7 +192,7 @@ export default function DashboardPage() {
         clients:client_id ( name )
       `
       )
-      .eq("owner_id", userId)
+      .eq("owner_id", ownerId)
       .neq("status", "draft")
       .order("issue_date", { ascending: false })
       .limit(5);
@@ -162,7 +208,7 @@ export default function DashboardPage() {
     setRecentLoading(false);
   }
 
-  // Auth check + load metrics + recent activity
+  // Auth check + initial load
   useEffect(() => {
     async function init() {
       const {
@@ -185,7 +231,14 @@ export default function DashboardPage() {
     }
 
     init();
-  }, [router]);
+  }, [router]); // only runs once
+
+  // Re-fetch metrics whenever the range changes (week/month)
+  useEffect(() => {
+    if (!userId) return;
+    fetchInvoiceMetrics(userId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rangeStartISODate, userId]);
 
   if (loading) {
     return (
@@ -195,7 +248,8 @@ export default function DashboardPage() {
     );
   }
 
-  const metricsLabelSuffix = metricsLoading ? "…" : "";
+  const metricsLabelSuffix = metricsLoading ? "" : "";
+  const rangeLabel = range === "week" ? "This Week" : "This Month";
 
   return (
     <div className={styles.page}>
@@ -213,6 +267,7 @@ export default function DashboardPage() {
               Here's what's happening with your invoicing today.
             </p>
           </div>
+
           <div className={styles.headerActions}>
             <CreateInvoiceButton
               onCreated={() => {
@@ -229,55 +284,103 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Quick Stats */}
-        <div className={styles.statsGrid}>
-          {/* Total invoices (non-draft) */}
-          <div className={styles.statCard}>
-            <p className={styles.statLabel}>
-              Total Invoices{metricsLabelSuffix}
-            </p>
-            <p className={styles.statValue}>{totalInvoicesCount}</p>
-            <p className={styles.statSubLabel}>Non-draft invoices</p>
+        {/* Quick Stats Panel (big card wrapping the 4 stat cards + toggle) */}
+        <div className={styles.statsPanel}>
+          <div className={styles.statsPanelHeader}>
+            <div>
+              <h2 className={styles.statsPanelTitle}>Quick Stats</h2>
+              <p className={styles.statsPanelSub}>
+                {rangeLabel} overview{metricsLabelSuffix}
+              </p>
+            </div>
           </div>
 
-          {/* Pending payments (sent) */}
-          <div className={styles.statCard}>
-            <p className={styles.statLabel}>
-              Pending Payments{metricsLabelSuffix}
-            </p>
-            <p className={styles.statValuePending}>
-              {formatCurrency(pendingAmount)}
-            </p>
-            <p className={styles.statSubLabel}>
-              {pendingCount} sent invoice{pendingCount === 1 ? "" : "s"}
-            </p>
+          {/* The 4 cards - keep your existing responsive grid */}
+          <div className={styles.statsGrid}>
+            {/* Total invoices (non-draft) */}
+            <div className={styles.statCard}>
+              <p className={styles.statLabel}>
+                Total Sent Invoices{metricsLabelSuffix}
+              </p>
+              <p className={styles.statValue}>{totalInvoicesCount}</p>
+              <p className={styles.statSubLabel}>
+                {/* Non-draft invoices in the last {range === "week" ? "7 days" : "30 days"} */}
+              </p>
+            </div>
+
+            {/* Pending payments (sent) */}
+            <div className={styles.statCard}>
+              <p className={styles.statLabel}>
+                Pending Payments{metricsLabelSuffix}
+              </p>
+              <p className={styles.statValuePending}>
+                {formatCurrency(pendingAmount)}
+              </p>
+              <p className={styles.statSubLabel}>
+                {pendingCount} sent invoices
+                {/* {pendingCount === 1 ? "" : "s"} in the last */}
+                {/* {range === "week" ? "7 days" : "30 days"} */}
+              </p>
+            </div>
+
+            {/* Revenue (paid) */}
+            <div className={styles.statCard}>
+              <p className={styles.statLabel}>
+                Invoice Revenue{metricsLabelSuffix}
+              </p>
+              <p className={styles.statValueRevenue}>
+                {formatCurrency(revenueAmount)}
+              </p>
+              <p className={styles.statSubLabel}>
+                {paidCount} paid invoice's
+                {/* {paidCount === 1 ? "" : "s"} in the last {" "} */}
+                {/* {range === "week" ? "7 days" : "30 days"} */}
+              </p>
+            </div>
+
+            {/* Overdue (count + amount) */}
+            <div className={styles.statCard}>
+              <p className={styles.statLabel}>
+                Overdue Invoices{metricsLabelSuffix}
+              </p>
+              <p className={styles.statValueOverdue}>
+                {formatCurrency(overdueAmount)}
+              </p>
+              <p className={styles.statSubLabel}>
+                {overdueCount} overdue invoice's
+                {/* {overdueCount === 1 ? "" : "s"} in the last {" "} */}
+                {/* {range === "week" ? "7 days" : "30 days"} */}
+              </p>
+            </div>
           </div>
 
-          {/* Revenue (paid) */}
-          <div className={styles.statCard}>
-            <p className={styles.statLabel}>
-              Total Revenue{metricsLabelSuffix}
-            </p>
-            <p className={styles.statValueRevenue}>
-              {formatCurrency(revenueAmount)}
-            </p>
-            <p className={styles.statSubLabel}>
-              {paidCount} paid invoice{paidCount === 1 ? "" : "s"}
-            </p>
-          </div>
+          {/* Weekly / Monthly toggle (shown on BOTH desktop + mobile) */}
+          <div className={styles.rangeToggleRow}>
+            <span
+              className={styles.rangeLabel}
+              style={{ opacity: range === "week" ? 1 : 0.65 }}
+            >
+              Weekly
+            </span>
 
-          {/* Overdue (count + amount) */}
-          <div className={styles.statCard}>
-            <p className={styles.statLabel}>
-              Overdue Invoices{metricsLabelSuffix}
-            </p>
-            <p className={styles.statValueOverdue}>
-              {formatCurrency(overdueAmount)}
-            </p>
-            <p className={styles.statSubLabel}>
-              {overdueCount} overdue invoice
-              {overdueCount === 1 ? "" : "s"}
-            </p>
+            <button
+              type="button"
+              className={`${styles.rangeToggle} ${
+                range === "month" ? styles.rangeToggleOn : ""
+              }`}
+              onClick={() => setRange((prev) => (prev === "week" ? "month" : "week"))}
+              aria-label="Toggle weekly or monthly"
+              aria-pressed={range === "month"}
+            >
+              <span className={styles.rangeToggleKnob} />
+            </button>
+
+            <span
+              className={styles.rangeLabel}
+              style={{ opacity: range === "month" ? 1 : 0.65 }}
+            >
+              Monthly
+            </span>
           </div>
         </div>
 
@@ -290,9 +393,7 @@ export default function DashboardPage() {
 
           {recentLoading ? (
             <div className={styles.recentEmpty}>
-              <p className={styles.recentEmptyText}>
-                Loading recent invoices…
-              </p>
+              <p className={styles.recentEmptyText}>Loading recent invoices…</p>
             </div>
           ) : recentInvoices.length === 0 ? (
             <div className={styles.recentEmpty}>

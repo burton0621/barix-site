@@ -2,20 +2,20 @@
   Send Invoice/Estimate Email API Route
   --------------------------------------
   This API endpoint sends an invoice OR estimate email to a client.
-  
+
   For Invoices:
   - Sends an email with a "Pay Now" button linking to the payment page
   - Updates status to "sent" if it was a draft
-  
+
   For Estimates:
   - Sends an email with a "View Estimate" button linking to the estimate page
   - Client can accept or decline from that page
   - Updates status to "sent" if it was a draft
-  
+
   The email includes:
   - Document number and dates
   - Line items with descriptions, quantities, and amounts
-  - Subtotal, tax, and total
+  - Line items total, indirect materials (if applicable), subtotal, tax, and total
   - Any notes
 */
 
@@ -76,7 +76,10 @@ export async function POST(request) {
     // Check if client has an email address
     if (!invoice.clients?.email) {
       return NextResponse.json(
-        { error: "This client doesn't have an email address. Please add one in the Clients page first." },
+        {
+          error:
+            "This client doesn't have an email address. Please add one in the Clients page first.",
+        },
         { status: 400 }
       );
     }
@@ -110,13 +113,12 @@ export async function POST(request) {
     // Determine if this is an estimate or invoice
     const isEstimate = invoice.document_type === "estimate";
     const documentLabel = isEstimate ? "Estimate" : "Invoice";
-    const documentLabelLower = isEstimate ? "estimate" : "invoice";
 
     // Build the appropriate URL based on document type
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     // Estimates link to the estimate page, invoices link to the payment page
-    const actionUrl = isEstimate 
-      ? `${appUrl}/estimate/${invoiceId}` 
+    const actionUrl = isEstimate
+      ? `${appUrl}/estimate/${invoiceId}`
       : `${appUrl}/pay/${invoiceId}`;
 
     // Format the dates nicely
@@ -138,18 +140,56 @@ export async function POST(request) {
       }).format(amount || 0);
     };
 
+    // --- Totals breakdown for email display ---
+    const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
+
+    const lineItemsTotal = round2(
+      (lineItems || []).reduce((sum, it) => sum + Number(it.line_total || 0), 0)
+    );
+
+    const indirectEnabled = !!invoice.enable_indirect_materials;
+    const indirectType =
+      invoice.indirect_materials_default_type === "percent" ? "percent" : "amount";
+
+    const indirectPercent = Number(invoice.indirect_materials_percent || 0);
+    const indirectAmount = Number(invoice.indirect_materials_amount || 0);
+
+    let indirectCharge = 0;
+    if (indirectEnabled) {
+      if (indirectType === "percent") {
+        const pct = Math.min(100, Math.max(0, indirectPercent));
+        indirectCharge = round2((lineItemsTotal * pct) / 100);
+      } else {
+        indirectCharge = round2(Math.max(0, indirectAmount));
+      }
+    }
+
+    const computedSubtotal = round2(lineItemsTotal + indirectCharge);
+    const storedSubtotal = round2(Number(invoice.subtotal || 0));
+    const subtotalForDisplay = storedSubtotal || computedSubtotal;
+
     // Build the line items HTML
-    const lineItemsHtml = lineItems
+    const lineItemsHtml = (lineItems || [])
       .map(
         (item) => `
         <tr>
           <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: left;">
             <strong>${item.name || "Service"}</strong>
-            ${item.description ? `<br><span style="color: #6b7280; font-size: 13px;">${item.description}</span>` : ""}
+            ${
+              item.description
+                ? `<br><span style="color: #6b7280; font-size: 13px;">${item.description}</span>`
+                : ""
+            }
           </td>
-          <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity}</td>
-          <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">${formatCurrency(item.rate)}</td>
-          <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">${formatCurrency(item.line_total)}</td>
+          <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">${
+            item.quantity
+          }</td>
+          <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">${formatCurrency(
+            item.rate
+          )}</td>
+          <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">${formatCurrency(
+            item.line_total
+          )}</td>
         </tr>
       `
       )
@@ -164,6 +204,11 @@ export async function POST(request) {
     ]
       .filter(Boolean)
       .join(", ");
+
+    const pctLabel =
+      indirectType === "percent"
+        ? ` (${Math.min(100, Math.max(0, indirectPercent)).toFixed(1)}%)`
+        : "";
 
     // Build the email HTML - content varies based on whether this is an estimate or invoice
     const emailHtml = `
@@ -185,9 +230,11 @@ export async function POST(request) {
           
           <!-- Greeting -->
           <p style="font-size: 16px; margin-top: 0;">Hi ${invoice.clients.name},</p>
-          <p style="font-size: 16px;">${isEstimate 
-            ? "Thank you for your interest! Please find your estimate details below." 
-            : "Please find your invoice details below."}</p>
+          <p style="font-size: 16px;">${
+            isEstimate
+              ? "Thank you for your interest! Please find your estimate details below."
+              : "Please find your invoice details below."
+          }</p>
           
           <!-- Document Summary Box -->
           <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 24px 0;">
@@ -216,7 +263,9 @@ export async function POST(request) {
                   ${formatDate(invoice.due_date)}
                 </td>
               </tr>
-              ${clientAddress ? `
+              ${
+                clientAddress
+                  ? `
               <tr>
                 <td style="padding: 4px 0;">
                   <strong>Service Address:</strong>
@@ -225,7 +274,9 @@ export async function POST(request) {
                   ${clientAddress}
                 </td>
               </tr>
-              ` : ""}
+              `
+                  : ""
+              }
             </table>
           </div>
           
@@ -249,39 +300,78 @@ export async function POST(request) {
           <div style="margin-top: 24px; text-align: right;">
             <table style="margin-left: auto; border-collapse: collapse; font-size: 14px;">
               <tr>
+                <td style="padding: 6px 16px; text-align: right; color: #6b7280;">Line items:</td>
+                <td style="padding: 6px 0; text-align: right; font-weight: 500;">${formatCurrency(
+                  lineItemsTotal
+                )}</td>
+              </tr>
+
+              ${
+                indirectEnabled && indirectCharge > 0
+                  ? `
+              <tr>
+                <td style="padding: 6px 16px; text-align: right; color: #6b7280;">Indirect materials${pctLabel}:</td>
+                <td style="padding: 6px 0; text-align: right; font-weight: 500;">${formatCurrency(
+                  indirectCharge
+                )}</td>
+              </tr>
+              `
+                  : ""
+              }
+
+              <tr>
                 <td style="padding: 6px 16px; text-align: right; color: #6b7280;">Subtotal:</td>
-                <td style="padding: 6px 0; text-align: right; font-weight: 500;">${formatCurrency(invoice.subtotal)}</td>
+                <td style="padding: 6px 0; text-align: right; font-weight: 600;">${formatCurrency(
+                  subtotalForDisplay
+                )}</td>
               </tr>
               <tr>
-                <td style="padding: 6px 16px; text-align: right; color: #6b7280;">Tax (${((invoice.tax_rate || 0) * 100).toFixed(0)}%):</td>
-                <td style="padding: 6px 0; text-align: right; font-weight: 500;">${formatCurrency(invoice.tax_amount)}</td>
+                <td style="padding: 6px 16px; text-align: right; color: #6b7280;">Tax (${(
+                  (invoice.tax_rate || 0) * 100
+                ).toFixed(0)}%):</td>
+                <td style="padding: 6px 0; text-align: right; font-weight: 500;">${formatCurrency(
+                  invoice.tax_amount
+                )}</td>
               </tr>
               <tr style="font-size: 18px;">
-                <td style="padding: 12px 16px; text-align: right; border-top: 2px solid #e5e7eb; font-weight: 600;">${isEstimate ? "Total Estimate:" : "Total Due:"}</td>
-                <td style="padding: 12px 0; text-align: right; border-top: 2px solid #e5e7eb; font-weight: 700; color: #0a2540;">${formatCurrency(invoice.total)}</td>
+                <td style="padding: 12px 16px; text-align: right; border-top: 2px solid #e5e7eb; font-weight: 600;">${
+                  isEstimate ? "Total Estimate:" : "Total Due:"
+                }</td>
+                <td style="padding: 12px 0; text-align: right; border-top: 2px solid #e5e7eb; font-weight: 700; color: #0a2540;">${formatCurrency(
+                  invoice.total
+                )}</td>
               </tr>
             </table>
           </div>
           
-          ${invoice.notes ? `
+          ${
+            invoice.notes
+              ? `
           <!-- Notes -->
           <div style="margin-top: 24px; padding: 16px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px;">
             <strong style="color: #92400e;">Note:</strong>
             <p style="margin: 8px 0 0 0; color: #78350f;">${invoice.notes}</p>
           </div>
-          ` : ""}
+          `
+              : ""
+          }
           
           <!-- Call to Action - different for estimates vs invoices -->
-          ${isEstimate ? `
+          ${
+            isEstimate
+              ? `
           <!-- Estimate CTA -->
           <div style="text-align: center; margin: 32px 0;">
             <p style="color: #6b7280; margin-bottom: 20px;">Ready to proceed? Click the button below to accept this estimate:</p>
             <a href="${actionUrl}" style="display: inline-block; background: linear-gradient(135deg, #059669, #047857); color: white; padding: 16px 40px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 18px; box-shadow: 0 4px 14px rgba(5, 150, 105, 0.4);">
               Accept Estimate
             </a>
-            <p style="color: #9ca3af; margin-top: 16px; font-size: 13px;">This estimate is valid until ${formatDate(invoice.due_date)}</p>
+            <p style="color: #9ca3af; margin-top: 16px; font-size: 13px;">This estimate is valid until ${formatDate(
+              invoice.due_date
+            )}</p>
           </div>
-          ` : `
+          `
+              : `
           <!-- Invoice Payment CTA -->
           <div style="text-align: center; margin: 32px 0;">
             <p style="color: #6b7280; margin-bottom: 20px;">Click the button below to pay securely online:</p>
@@ -290,7 +380,8 @@ export async function POST(request) {
             </a>
             <p style="color: #9ca3af; margin-top: 16px; font-size: 13px;">Or visit: ${actionUrl}</p>
           </div>
-          `}
+          `
+          }
           
           <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;">
           
@@ -349,7 +440,6 @@ export async function POST(request) {
       statusUpdated: previousStatus !== "sent",
       documentType: invoice.document_type || "invoice",
     });
-
   } catch (error) {
     console.error("Send Invoice API error:", error);
     return NextResponse.json(
@@ -358,4 +448,3 @@ export async function POST(request) {
     );
   }
 }
-

@@ -1,0 +1,610 @@
+/* =========================
+   Settings Page Styles
+   ========================= */
+
+/* Page + loading */
+
+.page {
+  min-height: 100vh;
+  background-color: #f9fafb; /* gray-50 */
+  overflow-x: hidden; /* prevent sideways scroll */
+}
+
+.loadingWrapper {
+  min-height: 100vh;
+  background-color: #f9fafb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loadingText {
+  color: #6b7280; /* gray-500 */
+  font-size: 14px;
+}
+
+/* Container + header */
+
+.container {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 16px 40px;
+}
+
+.header {
+  margin-bottom: 18px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 800;
+  color: #111827; /* gray-900 */
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.subtitle {
+  margin: 6px 0 0;
+  color: #6b7280; /* gray-500 */
+  font-size: 14px;
+}
+
+/* =========================
+   Sidebar Layout (NEW)
+   ========================= */
+
+.settingsLayout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+/* Sidebar card */
+.settingsSidebar {
+  position: sticky;
+  top: 88px; /* adjust if your navbar height differs */
+  align-self: start;
+
+  background: #ffffff;
+  border: 1px solid #e5e7eb; /* gray-200 */
+  border-radius: 14px;
+  padding: 10px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.sidebarNav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sidebarLink {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 10px 12px;
+  border-radius: 12px;
+
+  text-decoration: none;
+  color: #111827; /* gray-900 */
+  font-weight: 650;
+  font-size: 14px;
+
+  transition: background-color 120ms ease, color 120ms ease, transform 120ms ease;
+}
+
+.sidebarLink:hover {
+  background-color: #f3f4f6; /* gray-100 */
+}
+
+.sidebarLinkActive {
+  background-color: #0A2540; /* gray-900 */
+  color: #ffffff;
+}
+
+.sidebarLinkActive:hover {
+  background-color: #111827;
+}
+
+.settingsContent {
+  min-width: 0; /* prevents child overflow causing “scrunch” */
+}
+
+/* Mobile: sidebar becomes horizontal tabs */
+@media (max-width: 900px) {
+  .settingsLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .settingsSidebar {
+    position: static;
+    padding: 8px;
+  }
+
+  .sidebarNav {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 8px;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .sidebarNav::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .sidebarNav::-webkit-scrollbar-thumb {
+    background: #ffffff;
+    border-radius: 999px;
+  }
+
+  .sidebarLink {
+    white-space: nowrap;
+    border: 1px solid #0A2540;
+    background: #ffffff; /*uneselected background */
+  }
+
+  .sidebarLink:hover {
+    background: #ffffff;
+  }
+
+  .sidebarLinkActive {
+  background-color: #0A2540; /* gray-900 */
+  color: #ffffff;
+  }
+
+  .sidebarLinkActive:hover {
+  background-color: #0A2540;
+}
+
+}
+
+/* =========================
+   Cards
+   ========================= */
+
+.card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb; /* gray-200 */
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  margin-bottom: 16px;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.cardSubtitle {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* =========================
+   Account Status
+   ========================= */
+
+.statusBox {
+  margin-top: 14px;
+  border-radius: 14px;
+  padding: 14px;
+  background: #F0FDF4;
+  
+  /* Active account styling */
+  border: 1px solid #a7f3d0;        /* emerald-200 */
+  box-shadow: 0 0 0 3px #ecfdf5;    /* emerald-50 glow */
+}
+
+
+.statusBox {
+  border: 1px solid #bbf7d0; /* green-200 */
+  background: #f0fdf4; /* green-50 */
+  border-radius: 0.5rem; /* rounded-lg */
+  padding: 1.25rem; /* p-5 */
+}
+
+.statusHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem; /* mb-4 */
+}
+
+.statusPlan {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.statusDesc {
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: #4b5563;
+}
+
+.activePill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem; /* px-3 py-1 */
+  border-radius: 9999px;
+  background: #dcfce7; /* green-100 */
+  color: #15803d; /* green-700 */
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.statusDivider {
+  border-top: 1px solid #bbf7d0; /* green-200 */
+  padding-top: 1rem; /* pt-4 */
+  margin-top: 1rem; /* mt-4 */
+}
+
+.whatsIncluded {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: #4b5563;
+  font-weight: 500;
+  margin-bottom: 0.5rem; /* mb-2 */
+}
+
+.featureList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem; /* space-y-2 */
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: #4b5563;
+}
+
+.featureItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.checkIcon {
+  width: 1rem;  /* w-4 */
+  height: 1rem; /* h-4 */
+  color: #22c55e; /* green-500 */
+  flex: 0 0 auto;
+}
+
+.processingBox {
+  background: #eff6ff; /* blue-50 */
+  border: 1px solid #bfdbfe; /* blue-200 */
+  border-radius: 0.5rem;
+  padding: 0.75rem; /* p-3 */
+  margin-top: 1rem; /* mt-4 */
+}
+
+.processingText {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: #1e40af; /* blue-800 */
+}
+
+.processingStrong {
+  font-weight: 500;
+}
+
+/* =========================
+   Forms
+   ========================= */
+
+.form {
+  margin-top: 14px;
+  display: grid;
+  gap: 14px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.input {
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid #d1d5db; /* gray-300 */
+  padding: 0 12px;
+  font-size: 14px;
+  color: #111827;
+  background: #ffffff;
+  outline: none;
+  transition: box-shadow 120ms ease, border-color 120ms ease;
+}
+
+.input:focus {
+  border-color: #111827;
+  box-shadow: 0 0 0 4px rgba(17, 24, 39, 0.08);
+}
+
+.errorText {
+  margin: 0;
+  color: #b91c1c; /* red-700 */
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.successText {
+  margin: 0;
+  color: #065f46; /* emerald-800 */
+  font-size: 13px;
+  font-weight: 650;
+}
+
+/* Buttons */
+
+.primaryButton {
+  height: 42px;
+  border-radius: 12px;
+  border: none;
+  background: #111827;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  transition: transform 80ms ease, opacity 120ms ease;
+}
+
+.primaryButton:hover {
+  opacity: 0.94;
+}
+
+.primaryButton:active {
+  transform: translateY(1px);
+}
+
+.primaryButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* =========================
+   Danger Zone
+   ========================= */
+
+.dangerCard {
+  border-color: #fecaca; /* red-200 */
+  background: #fff7f7;
+}
+
+.dangerTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 900;
+  color: #991b1b; /* red-800 */
+}
+
+.dangerRow {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.dangerRowTitle {
+  margin: 0;
+  font-weight: 900;
+  color: #111827;
+  font-size: 14px;
+}
+
+.dangerRowDesc {
+  margin: 6px 0 0;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.outlineDangerButton {
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid #ef4444; /* red-500 */
+  background: transparent;
+  color: #991b1b; /* red-800 */
+  font-weight: 900;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 120ms ease, transform 80ms ease;
+  white-space: nowrap;
+}
+
+.outlineDangerButton:hover {
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.outlineDangerButton:active {
+  transform: translateY(1px);
+}
+
+.confirmBox {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid #fecaca; /* red-200 */
+  background: #ffffff;
+}
+
+.confirmTitle {
+  margin: 0;
+  font-weight: 900;
+  color: #111827;
+  font-size: 14px;
+}
+
+.confirmDesc {
+  margin: 8px 0 12px;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.confirmLabel {
+  display: block;
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.monoChip {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+}
+
+.dangerInput {
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid #fca5a5; /* red-300 */
+  padding: 0 12px;
+  font-size: 14px;
+  color: #111827;
+  background: #fff;
+  outline: none;
+  transition: box-shadow 120ms ease, border-color 120ms ease;
+  width: 100%;
+}
+
+.dangerInput:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.12);
+}
+
+.buttonRow {
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.solidDangerButton {
+  height: 42px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: none;
+  background: #ef4444; /* red-500 */
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 13px;
+  cursor: pointer;
+  transition: transform 80ms ease, opacity 120ms ease;
+}
+
+.solidDangerButton:hover {
+  opacity: 0.95;
+}
+
+.solidDangerButton:active {
+  transform: translateY(1px);
+}
+
+.solidDangerButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.cancelButton {
+  height: 42px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #111827;
+  font-weight: 900;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 120ms ease, transform 80ms ease;
+}
+
+.cancelButton:hover {
+  background: #f3f4f6;
+}
+
+.cancelButton:active {
+  transform: translateY(1px);
+}
+
+.cancelButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* =========================
+   Info card (non-admin)
+   ========================= */
+
+.infoCard {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.infoText {
+  margin: 0;
+  color: #374151;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.infoStrong {
+  font-weight: 900;
+  color: #111827;
+}
+
+/* =========================
+   Responsive tweaks
+   ========================= */
+
+@media (max-width: 520px) {
+  .title {
+    font-size: 24px;
+  }
+
+  .dangerRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .outlineDangerButton {
+    width: 100%;
+  }
+
+  .buttonRow {
+    flex-direction: column;
+  }
+
+  .solidDangerButton,
+  .cancelButton {
+    width: 100%;
+  }
+}

@@ -223,7 +223,6 @@
   gap: 20px;
 }
 
-/* Two-column grid for the invoice header fields */
 /* Top row layout - Document number on left, Client dropdown on far right */
 .topRow {
   display: flex;
@@ -366,6 +365,7 @@
   gap: 6px;
   align-items: center;
   border-top: 1px solid #f3f4f6;
+  overflow: visible; /* Allow dropdowns to overflow */
 }
 
 .lineItemRow:first-child {
@@ -380,6 +380,8 @@
 .colRemove {
   display: flex;
   min-width: 0; /* Allows content to shrink properly in grid */
+  z-index: 50;
+  position: relative;
 }
 
 .colService,
@@ -411,7 +413,7 @@
   background-color: #fef2f2;
 }
 
-/* Footer row - notes on left, totals on right */
+/* Footer row - notes on left, totals column on right */
 .footerRow {
   display: grid;
   grid-template-columns: minmax(0, 2.2fr) minmax(0, 1.1fr);
@@ -425,6 +427,106 @@
   gap: 6px;
 }
 
+/* Right column wrapper so we can stack indirect box above totals */
+.totalsColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: stretch;
+  width: 100%;
+}
+
+/* Indirect materials card */
+.indirectBox {
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  border-radius: 12px;
+  padding: 12px;
+  width: 100%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.indirectHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.indirectTitle {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #111827;
+}
+
+.indirectToggle {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: transform 0.05s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.indirectToggle:active {
+  transform: translateY(1px);
+}
+
+.indirectOn {
+  background: #ecfdf5;
+  color: #065f46;
+  border-color: #6ee7b7;
+}
+
+.indirectOff {
+  background: #fef2f2;
+  color: #7f1d1d;
+  border-color: #fecaca;
+}
+
+.indirectControls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.indirectSelect,
+.indirectInput {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: #fff;
+  font-size: 0.9rem;
+}
+
+.indirectSelect {
+  min-width: 120px;
+}
+
+.indirectInput {
+  width: 90px;
+  text-align: right;
+}
+
+.indirectPreviewRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: #374151;
+}
+
+.indirectPreviewLabel {
+  color: #6b7280;
+}
+
+.indirectPreviewValue {
+  font-weight: 700;
+  color: #111827;
+}
+
 /* Totals box - shows subtotal, tax, and total */
 .totalsBox {
   border-radius: 12px;
@@ -432,6 +534,7 @@
   padding: 10px 12px;
   background-color: #f9fafb;
   font-size: 0.9rem;
+  width: 100%;
 }
 
 .totalRow,
@@ -602,9 +705,13 @@
     grid-template-columns: 1fr;
   }
 
-  /* Totals box takes full width on tablet */
-  .totalsBox {
-    order: -1; /* Show totals above notes on tablet/mobile */
+  /*
+    IMPORTANT FIX:
+    Since totals are inside totalsColumn now, reorder the whole column,
+    not just totalsBox (otherwise indirectBox and totalsBox split apart).
+  */
+  .totalsColumn {
+    order: -1;
   }
 }
 
@@ -774,3 +881,13 @@
   }
 }
 
+/* Optional */
+.internalNotes {
+  background-color: #ffeaea;
+}
+
+.totalDivider {
+  height: 1px;
+  background: #e5e7eb; /* gray-200 */
+  margin: 10px 0;
+}

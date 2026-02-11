@@ -260,7 +260,7 @@ export default function AddServiceModal({
               type="number"
               placeholder="125.00"
               min="0"
-              step="0.01"
+              step="1"
               value={defaultRate}
               onChange={(e) => setDefaultRate(e.target.value)}
               disabled={saving || deleting}

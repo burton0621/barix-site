@@ -7,7 +7,12 @@ import { supabase } from "@/lib/supabaseClient";
 import Navbar from "@/components/Navbar/Navbar";
 import Hero from "@/components/marketing/Hero";
 import ValueProps from "@/components/marketing/ValueProps";
-import LogoCloud from "@/components/marketing/LogoCloud";
+import Features from "@/components/marketing/Features";
+import HowItWorks from "@/components/marketing/HowItWorks";
+import Stats from "@/components/marketing/Stats";
+import Testimonial from "@/components/marketing/Testimonial";
+import TrustBadges from "@/components/marketing/TrustBadges";
+import CTASection from "@/components/marketing/CTASection";
 import Footer from "@/components/marketing/Footer";
 import ContactModal from "@/components/contact/ContactModal";
 import DemoFrame from "@/components/marketing/DemoFrame";
@@ -59,37 +64,67 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
+    <div className="min-h-screen bg-white">
       <Navbar onOpenContact={() => setContactOpen(true)} />
 
       <main>
+        {/* Hero with bold headline and product screenshot */}
         <Hero onOpenContact={() => setContactOpen(true)} />
+        
+        {/* Trust badges - Stripe, security, etc */}
+        <TrustBadges />
+        
+        {/* Core value propositions */}
         <ValueProps />
-        <LogoCloud />
+        
+        {/* Detailed feature sections */}
+        <Features />
+        
+        {/* Stats section */}
+        <Stats />
+        
+        {/* How it works - 3 step process */}
+        <HowItWorks />
 
-        <section className="mx-auto max-w-6xl px-4 pb-16">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-lg font-semibold tracking-tight">
-              Sample Demo
-            </h3>
-            <a
-              href="/contact"
-              className="text-sm text-brand underline-offset-4 hover:underline"
-            >
-              Need a private walkthrough?
-            </a>
+        {/* Interactive demo section */}
+        <section className="mx-auto max-w-6xl px-4 py-20">
+          <div className="mx-auto mb-8 max-w-2xl text-center">
+            <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-brand-900">
+              See It In Action
+            </p>
+            <h2 className="text-3xl font-bold tracking-tight text-brand-900 md:text-4xl">
+              Your Billing Dashboard
+            </h2>
+            <p className="mt-4 text-lg text-gray-600">
+              Track invoices, monitor payments, and manage your billing—all from one simple dashboard.
+            </p>
           </div>
 
           <div id="demo" className="scroll-mt-28" />
 
           <DemoFrame
-            title="demo.barixbilling.com"
+            title="app.barixbilling.com"
             ratio="16/10"
-            caption="Sample client dashboard. Mock data."
+            caption="Sample dashboard. Mock data for demonstration."
           >
             <ClientPanel />
           </DemoFrame>
+          
+          <div className="mt-6 text-center">
+            <a
+              href="/contact"
+              className="text-brand-900 font-medium underline-offset-4 hover:underline"
+            >
+              Want a private walkthrough? Let's talk →
+            </a>
+          </div>
         </section>
+        
+        {/* Social proof / testimonial */}
+        <Testimonial />
+        
+        {/* Final CTA section */}
+        <CTASection onOpenContact={() => setContactOpen(true)} />
       </main>
 
       <Footer onOpenContact={() => setContactOpen(true)} />

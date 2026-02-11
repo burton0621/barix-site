@@ -416,3 +416,106 @@
   }
 }
 
+/* -------------------------------
+   Stats Panel (big container)
+   ------------------------------- */
+
+.statsPanel {
+  background: #ffffff;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  padding: 1.25rem;
+  margin-bottom: 2.5rem;
+  box-sizing: border-box;
+}
+
+.statsPanelHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.statsPanelTitle {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.statsPanelSub {
+  margin: 0.25rem 0 0 0;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+/* -------------------------------
+   Weekly/Monthly toggle
+   ------------------------------- */
+
+.rangeToggleRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+.rangeLabel {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.rangeToggle {
+  position: relative;
+  width: 72px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: #f3f4f6;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.rangeToggleOn {
+  background: #111827;
+  border-color: #111827;
+}
+
+.rangeToggleKnob {
+  position: absolute;
+  top: 50%;
+  left: 6px;
+  transform: translateY(-50%);
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(2, 6, 23, 0.18);
+  transition: left 0.2s ease;
+}
+
+.rangeToggleOn .rangeToggleKnob {
+  left: 40px;
+}
+
+/* Slightly larger on very small screens */
+@media (max-width: 600px) {
+  .rangeToggle {
+    width: 84px;
+    height: 40px;
+  }
+
+  .rangeToggleKnob {
+    width: 30px;
+    height: 30px;
+  }
+
+  .rangeToggleOn .rangeToggleKnob {
+    left: 48px;
+  }
+}
