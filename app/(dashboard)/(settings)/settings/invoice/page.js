@@ -31,9 +31,11 @@ export default function InvoiceSettingsPage() {
   const [indirectDefaultType, setIndirectDefaultType] = useState("amount"); // "amount" | "percent"
 
   // -----------------------
-  // Other settings
+  // Reminders
   // -----------------------
-  const [enablePercentInvoices, setEnablePercentInvoices] = useState(false);
+  const [enableInvoiceReminders, setEnableInvoiceReminders] = useState(false);
+  const [reminderDaysBeforeDue, setReminderDaysBeforeDue] = useState("7");
+  const [reminderDaysAfterDue, setReminderDaysAfterDue] = useState("3");
 
   // -----------------------
   // UI state
@@ -65,7 +67,6 @@ export default function InvoiceSettingsPage() {
 
     if (error) {
       setErrorText(error.message);
-      // revert UI if save fails
       setEnableIndirectMaterials((prev) => !prev);
       setSaving(false);
       return;
@@ -75,7 +76,7 @@ export default function InvoiceSettingsPage() {
     setSaving(false);
   }
 
-  async function persistPercentInvoicesEnabled(nextValue) {
+  async function persistRemindersEnabled(nextValue) {
     if (!contractorId) return;
 
     setSaving(true);
@@ -87,7 +88,7 @@ export default function InvoiceSettingsPage() {
       .upsert(
         {
           contractor_id: contractorId,
-          enable_percent_invoices: nextValue,
+          enable_invoice_reminders: nextValue,
           updated_at: new Date().toISOString(),
         },
         { onConflict: "contractor_id" }
@@ -95,8 +96,7 @@ export default function InvoiceSettingsPage() {
 
     if (error) {
       setErrorText(error.message);
-      // revert UI if save fails
-      setEnablePercentInvoices((prev) => !prev);
+      setEnableInvoiceReminders((prev) => !prev);
       setSaving(false);
       return;
     }
@@ -134,7 +134,6 @@ export default function InvoiceSettingsPage() {
       setErrorText("");
       setSuccessText("");
 
-      // 1) Try to load existing settings row
       const { data, error } = await supabase
         .from("contractor_settings")
         .select(
@@ -144,7 +143,9 @@ export default function InvoiceSettingsPage() {
           indirect_materials_amount,
           indirect_materials_percent,
           indirect_materials_default_type,
-          enable_percent_invoices
+          enable_invoice_reminders,
+          reminder_days_before_due,
+          reminder_days_after_due
         `
         )
         .eq("contractor_id", contractorId)
@@ -158,16 +159,21 @@ export default function InvoiceSettingsPage() {
         return;
       }
 
-      // 2) If no row exists yet, create one (so future loads are stable)
+      // If no row exists yet, create one
       if (!data) {
         const defaults = {
           contractor_id: contractorId,
           default_invoice_due_days: 30,
+
           enable_indirect_materials: false,
           indirect_materials_amount: 0,
           indirect_materials_percent: 0,
           indirect_materials_default_type: "amount",
-          enable_percent_invoices: false,
+
+          enable_invoice_reminders: false,
+          reminder_days_before_due: 3,
+          reminder_days_after_due: 3,
+
           updated_at: new Date().toISOString(),
         };
 
@@ -183,25 +189,30 @@ export default function InvoiceSettingsPage() {
           return;
         }
 
-        // After insert, update UI from defaults right away
         setDefaultDueDays(defaults.default_invoice_due_days);
         setEnableIndirectMaterials(defaults.enable_indirect_materials);
         setIndirectAmount(String(defaults.indirect_materials_amount));
         setIndirectPercent(String(defaults.indirect_materials_percent));
         setIndirectDefaultType(defaults.indirect_materials_default_type);
-        setEnablePercentInvoices(defaults.enable_percent_invoices);
+
+        setEnableInvoiceReminders(defaults.enable_invoice_reminders);
+        setReminderDaysBeforeDue(String(defaults.reminder_days_before_due));
+        setReminderDaysAfterDue(String(defaults.reminder_days_after_due));
 
         setSettingsLoading(false);
         return;
       }
 
-      // 3) Row exists: hydrate state
+      // Row exists: hydrate state
       setDefaultDueDays(data.default_invoice_due_days ?? 30);
       setEnableIndirectMaterials(!!data.enable_indirect_materials);
       setIndirectAmount(String(data.indirect_materials_amount ?? 0));
       setIndirectPercent(String(data.indirect_materials_percent ?? 0));
       setIndirectDefaultType(data.indirect_materials_default_type ?? "amount");
-      setEnablePercentInvoices(!!data.enable_percent_invoices);
+
+      setEnableInvoiceReminders(!!data.enable_invoice_reminders);
+      setReminderDaysBeforeDue(String(data.reminder_days_before_due ?? 3));
+      setReminderDaysAfterDue(String(data.reminder_days_after_due ?? 3));
 
       setSettingsLoading(false);
     }
@@ -248,6 +259,22 @@ export default function InvoiceSettingsPage() {
       }
     }
 
+    const beforeVal = Number(reminderDaysBeforeDue);
+    const afterVal = Number(reminderDaysAfterDue);
+
+    // Validate even if disabled, to prevent saving junk values
+    if (!Number.isFinite(beforeVal) || beforeVal < 0 || beforeVal > 365) {
+      setErrorText("Reminder days before due must be between 0 and 365.");
+      setSaving(false);
+      return;
+    }
+
+    if (!Number.isFinite(afterVal) || afterVal < 0 || afterVal > 365) {
+      setErrorText("Reminder days after due must be between 0 and 365.");
+      setSaving(false);
+      return;
+    }
+
     const payload = {
       contractor_id: contractorId,
       default_invoice_due_days: due,
@@ -257,7 +284,10 @@ export default function InvoiceSettingsPage() {
       indirect_materials_percent: percentVal,
       indirect_materials_default_type: indirectDefaultType,
 
-      enable_percent_invoices: !!enablePercentInvoices,
+      enable_invoice_reminders: !!enableInvoiceReminders,
+      reminder_days_before_due: beforeVal,
+      reminder_days_after_due: afterVal,
+
       updated_at: new Date().toISOString(),
     };
 
@@ -429,42 +459,94 @@ export default function InvoiceSettingsPage() {
           </div>
         </section>
 
-        {/* Card 3: Percent-Based Invoices */}
+        {/* Card 3: Reminders */}
         <section className={shared.card}>
-          <h2 className={shared.cardTitle}>Percent-Based Invoices</h2>
+          <h2 className={shared.cardTitle}>Reminders</h2>
           <p className={shared.cardSubtitle}>
-            Enable the ability to create invoices based on a percent of an
-            estimate or project total.
+            Setup automatic reminders for your clients for x days before due.
           </p>
 
           <div className={styles.cardBody}>
+            {/* Enable toggle */}
             <div className={styles.settingRow}>
               <div className={styles.settingText}>
-                <p className={styles.settingTitle}>Enable % based invoices</p>
+                <p className={styles.settingTitle}>Enable reminders</p>
                 <p className={styles.settingDesc}>
-                  When enabled, invoice creation can support percentage-based
-                  billing flows.
+                  When enabled, clients can receive automated invoice reminder
+                  emails based on your timing settings.
                 </p>
               </div>
 
-              <div className={styles.rightControl}>
-                <label className={styles.toggleWrap}>
-                  <input
-                    type="checkbox"
-                    checked={enablePercentInvoices}
-                    onChange={(e) => {
-                      const next = e.target.checked;
-                      setEnablePercentInvoices(next);
-                      persistPercentInvoicesEnabled(next);
-                    }}
-                    disabled={saving || settingsLoading}
-                  />
-                  <span className={styles.toggleLabel}>
-                    {enablePercentInvoices ? "Enabled" : "Disabled"}
-                  </span>
-                </label>
+              <div
+                className={`${styles.statusToggle} ${
+                  enableInvoiceReminders
+                    ? styles.statusEnabled
+                    : styles.statusDisabled
+                }`}
+                onClick={() => {
+                  if (saving || settingsLoading) return;
+                  const next = !enableInvoiceReminders;
+                  setEnableInvoiceReminders(next);
+                  persistRemindersEnabled(next);
+                }}
+              >
+                {enableInvoiceReminders ? "Enabled" : "Disabled"}
               </div>
             </div>
+
+            {enableInvoiceReminders && (
+              <>
+                {/* Days before due */}
+                <div className={styles.settingRow}>
+                  <div className={styles.settingText}>
+                    <p className={styles.settingTitle}>
+                      Days before due date to send a reminder
+                    </p>
+                    <p className={styles.settingDesc}>
+                      Example: 3 sends a reminder 3 days before the invoice due
+                      date.
+                    </p>
+                  </div>
+
+                  <div className={styles.rightControl}>
+                    <input
+                      type="number"
+                      min="0"
+                      max="365"
+                      value={reminderDaysBeforeDue}
+                      onChange={(e) => setReminderDaysBeforeDue(e.target.value)}
+                      className={`${shared.input} ${styles.compactNumberInput}`}
+                    />
+                    <p className={styles.helperText}>Allowed range: 0–365</p>
+                  </div>
+                </div>
+
+                {/* Days after due */}
+                <div className={styles.settingRow}>
+                  <div className={styles.settingText}>
+                    <p className={styles.settingTitle}>
+                      Days after due date to send a reminder
+                    </p>
+                    <p className={styles.settingDesc}>
+                      Example: 3 sends a reminder 3 days after the invoice is
+                      overdue.
+                    </p>
+                  </div>
+
+                  <div className={styles.rightControl}>
+                    <input
+                      type="number"
+                      min="0"
+                      max="365"
+                      value={reminderDaysAfterDue}
+                      onChange={(e) => setReminderDaysAfterDue(e.target.value)}
+                      className={`${shared.input} ${styles.compactNumberInput}`}
+                    />
+                    <p className={styles.helperText}>Allowed range: 0–365</p>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </section>
 
@@ -473,7 +555,7 @@ export default function InvoiceSettingsPage() {
         {successText && <p className={shared.successText}>{successText}</p>}
 
         <button type="submit" className={shared.primaryButton} disabled={saving}>
-          {saving ? "Saving..." : "Save Invoice Settings"}
+          {saving ? "Saving..." : "Save"}
         </button>
       </form>
     </div>
