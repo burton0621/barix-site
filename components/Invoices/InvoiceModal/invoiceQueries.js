@@ -70,7 +70,9 @@ export async function fetchServices() {
   return withLog("fetchServices", async () => {
     const { data, error } = await supabase
       .from("services")
-      .select("id, name, default_rate, description")
+      .select("id, name, default_rate, description, is_favorite, usage_count")
+      .order("is_favorite", { ascending: false })
+      .order("usage_count", { ascending: false, nullsFirst: false })
       .order("name", { ascending: true });
 
     if (error) throw error;

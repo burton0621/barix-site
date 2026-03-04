@@ -212,6 +212,14 @@ export default function ProfilePage() {
         `/api/stripe/connect/balance?contractorId=${userId}`
       );
       const data = await response.json();
+      
+      // Debug logging - remove after testing
+      console.log("Balance API response:", data);
+
+      if (data.error) {
+        console.error("Balance API error:", data.error);
+        showToast(`Balance error: ${data.error}`, "error");
+      }
 
       setBalance({
         available: data.available || 0,
@@ -222,6 +230,7 @@ export default function ProfilePage() {
       });
     } catch (error) {
       console.error("Error fetching balance:", error);
+      showToast(`Failed to fetch balance: ${error.message}`, "error");
       setBalance((prev) => ({ ...prev, loading: false }));
     }
   }

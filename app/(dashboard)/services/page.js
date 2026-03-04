@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import DashboardNavbar from "@/components/Navbar/DashboardNavbar";
 import AddServiceModal from "@/components/Services/AddServiceModal";
+import QuickAddServicesModal from "@/components/Services/QuickAddServicesModal";
 import ConfirmDialog from "@/components/common/ConfirmDialog/ConfirmDialog";
 import Toast from "@/components/common/Toast/Toast";
-import { FiEdit2, FiTrash2 } from "react-icons/fi";
+import { FiEdit2, FiTrash2, FiZap, FiStar } from "react-icons/fi";
 import styles from "./servicespage.module.css";
 
 export default function ServicesPage() {
@@ -20,6 +21,7 @@ export default function ServicesPage() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingService, setEditingService] = useState(null);
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
 
   // Confirm dialog state
   const [confirmAction, setConfirmAction] = useState(null); // null | "delete"
@@ -30,7 +32,7 @@ export default function ServicesPage() {
   const showToast = (message, type = "error") => setToast({ open: true, message, type });
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortField, setSortField] = useState("created_at"); // "name" | "rate" | "created_at"
+  const [sortField, setSortField] = useState("created_at"); // "name" | "rate" | "created_at" | "usage"
   const [sortDirection, setSortDirection] = useState("desc"); // "asc" | "desc"
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -104,6 +106,13 @@ export default function ServicesPage() {
     setCurrentPage(1);
   }
 
+  function handleQuickAddServices(newServices) {
+    if (!newServices || newServices.length === 0) return;
+    setServices((prev) => [...newServices, ...prev]);
+    setCurrentPage(1);
+    showToast(`Added ${newServices.length} service${newServices.length !== 1 ? 's' : ''} to your catalog`, "success");
+  }
+
   function handleServiceUpdated(updatedService) {
     if (!updatedService) return;
     setServices((prev) => prev.map((s) => (s.id === updatedService.id ? updatedService : s)));
@@ -111,6 +120,37 @@ export default function ServicesPage() {
 
   function handleServiceDeleted(deletedId) {
     setServices((prev) => prev.filter((s) => s.id !== deletedId));
+  }
+
+  async function toggleFavorite(service) {
+    const newValue = !service.is_favorite;
+    
+    // Optimistic update
+    setServices((prev) =>
+      prev.map((s) => (s.id === service.id ? { ...s, is_favorite: newValue } : s))
+    );
+
+    try {
+      const { error } = await supabase
+        .from("services")
+        .update({ is_favorite: newValue })
+        .eq("id", service.id)
+        .eq("owner_id", userId);
+
+      if (error) {
+        // Revert on error
+        setServices((prev) =>
+          prev.map((s) => (s.id === service.id ? { ...s, is_favorite: !newValue } : s))
+        );
+        showToast(`Error updating favorite: ${error.message}`);
+      }
+    } catch (err) {
+      // Revert on error
+      setServices((prev) =>
+        prev.map((s) => (s.id === service.id ? { ...s, is_favorite: !newValue } : s))
+      );
+      showToast(`Error updating favorite: ${err.message}`);
+    }
   }
 
   function requestDelete(service) {
@@ -180,8 +220,13 @@ export default function ServicesPage() {
       });
     }
 
-    // 2) Sort
+    // 2) Sort - always put favorites first, then apply selected sort
     const sorted = [...filtered].sort((a, b) => {
+      // Favorites always come first
+      const aFav = a.is_favorite ? 1 : 0;
+      const bFav = b.is_favorite ? 1 : 0;
+      if (aFav !== bFav) return bFav - aFav;
+
       const dir = sortDirection === "asc" ? 1 : -1;
 
       const stringCompare = (x, y) =>
@@ -201,6 +246,12 @@ export default function ServicesPage() {
         const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
         const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
         return (aTime - bTime) * dir;
+      }
+
+      if (sortField === "usage") {
+        const aUsage = a.usage_count || 0;
+        const bUsage = b.usage_count || 0;
+        return (aUsage - bUsage) * dir;
       }
 
       return 0;
@@ -269,9 +320,15 @@ export default function ServicesPage() {
             </div>
 
             {hasServices && (
-              <button className={styles.addButton} onClick={openCreateModal}>
-                Add Service
-              </button>
+              <div className={styles.headerActions}>
+                <button className={styles.quickAddButton} onClick={() => setQuickAddOpen(true)}>
+                  <FiZap className={styles.buttonIcon} />
+                  Quick Add
+                </button>
+                <button className={styles.addButton} onClick={openCreateModal}>
+                  Add Service
+                </button>
+              </div>
             )}
           </div>
 
@@ -279,11 +336,17 @@ export default function ServicesPage() {
             <div className={styles.emptyState}>
               <div className={styles.emptyTitle}>No Services Yet</div>
               <p className={styles.emptyMessage}>
-                Add your first service to quickly build invoices.
+                Add services to quickly build invoices. Choose from pre-built templates or create your own.
               </p>
-              <button className={styles.addFirstButton} onClick={openCreateModal}>
-                Add Your First Service
-              </button>
+              <div className={styles.emptyActions}>
+                <button className={styles.quickAddFirstButton} onClick={() => setQuickAddOpen(true)}>
+                  <FiZap className={styles.buttonIcon} />
+                  Quick Add by Trade
+                </button>
+                <button className={styles.addFirstButton} onClick={openCreateModal}>
+                  Add Custom Service
+                </button>
+              </div>
             </div>
           ) : (
             <>
@@ -348,8 +411,20 @@ export default function ServicesPage() {
 
                     <tbody>
                       {processed.pageItems.map((service) => (
-                        <tr key={service.id}>
-                          <td className={styles.nameCell}>{service.name}</td>
+                        <tr key={service.id} className={service.is_favorite ? styles.favoriteRow : ""}>
+                          <td className={styles.nameCell}>
+                            <div className={styles.nameWithStar}>
+                              <button
+                                className={`${styles.starButton} ${service.is_favorite ? styles.starActive : ""}`}
+                                onClick={() => toggleFavorite(service)}
+                                aria-label={service.is_favorite ? "Remove from favorites" : "Add to favorites"}
+                                title={service.is_favorite ? "Remove from favorites" : "Add to favorites"}
+                              >
+                                <FiStar className={styles.starIcon} />
+                              </button>
+                              <span>{service.name}</span>
+                            </div>
+                          </td>
 
                           {/*hidden on mobile */}
                           <td className={`${styles.descriptionCell} ${styles.hideOnMobile}`}>
@@ -442,6 +517,12 @@ export default function ServicesPage() {
             onCreated={handleServiceCreated}
             onUpdated={handleServiceUpdated}
             onDeleted={(id) => handleServiceDeleted(id)}
+          />
+
+          <QuickAddServicesModal
+            open={quickAddOpen}
+            onClose={() => setQuickAddOpen(false)}
+            onServicesAdded={handleQuickAddServices}
           />
 
           {confirmAction === "delete" && (

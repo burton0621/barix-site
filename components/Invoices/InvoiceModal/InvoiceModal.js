@@ -585,7 +585,10 @@ export default function InvoiceModal({
                             onChange={(val) => handleServiceSelect(index, val)}
                             options={[
                               { value: NEW_SERVICE_OPTION, label: "Custom Service" },
-                              ...services.map((s) => ({ value: s.id, label: s.name })),
+                              ...services.map((s) => ({ 
+                                value: s.id, 
+                                label: s.is_favorite ? `⭐ ${s.name}` : s.name 
+                              })),
                             ]}
                             placeholder="Select service"
                             disabled={saving || sending}
