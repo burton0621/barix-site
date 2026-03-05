@@ -134,6 +134,14 @@ export async function GET(request) {
     const instantPayoutEnabled = account.capabilities?.card_payments === "active" ||
                                   balance.instant_available?.length > 0;
 
+    // Debug logging
+    console.log("Balance for account", contractor.stripe_account_id, {
+      availableAmount,
+      pendingAmount,
+      instantAvailable,
+      rawBalance: balance,
+    });
+
     return NextResponse.json({
       connected: true,
       payoutsEnabled: contractor.stripe_payouts_enabled,
@@ -144,6 +152,7 @@ export async function GET(request) {
       instantPayoutEnabled,
       // Include the raw balance for debugging if needed
       currency: "usd",
+      stripeAccountId: contractor.stripe_account_id, // Added for debugging
     });
 
   } catch (error) {
