@@ -820,9 +820,7 @@
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
-}
-
-.instantPayoutBtn:hover:not(:disabled) {
+}.instantPayoutBtn:hover:not(:disabled) {
   background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
   transform: translateY(-1px);
 }.instantPayoutBtn:disabled {

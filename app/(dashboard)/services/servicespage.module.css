@@ -44,6 +44,12 @@
   font-size: 14px;
 }
 
+.headerActions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
 .addButton {
   border: none;
   background: #111827;
@@ -62,6 +68,30 @@
 
 .addButton:active {
   transform: translateY(1px);
+}
+
+.quickAddButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #111827;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.quickAddButton:hover {
+  border-color: #0a2540;
+  background: #f0f7ff;
+}
+
+.buttonIcon {
+  font-size: 16px;
 }
 
 .toolbarRow {
@@ -265,22 +295,53 @@
 .emptyMessage {
   font-size: 14px;
   color: #6b7280;
-  margin: 0 0 14px;
+  margin: 0 0 18px;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-.addFirstButton {
+.emptyActions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.quickAddFirstButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   border: none;
-  background: #111827;
+  background: linear-gradient(to right, #0a2540, #1a4060);
   color: #ffffff;
-  padding: 11px 14px;
+  padding: 12px 20px;
   border-radius: 12px;
   font-weight: 700;
   font-size: 14px;
   cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.quickAddFirstButton:hover {
+  opacity: 0.92;
+}
+
+.addFirstButton {
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #111827;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
 .addFirstButton:hover {
-  opacity: 0.92;
+  border-color: #0a2540;
+  background: #f0f7ff;
 }
 
 @media (max-width: 640px) {
@@ -291,6 +352,25 @@
   .headerRow {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .headerActions {
+    width: 100%;
+  }
+
+  .headerActions .quickAddButton,
+  .headerActions .addButton {
+    flex: 1;
+  }
+
+  .emptyActions {
+    flex-direction: column;
+  }
+
+  .quickAddFirstButton,
+  .addFirstButton {
+    width: 100%;
+    justify-content: center;
   }
 
   .actionsHeader,
@@ -321,6 +401,46 @@
 
 .nameCell {
   word-break: break-word;
+}
+
+.nameWithStar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.starButton {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: #d1d5db;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease, transform 0.1s ease;
+  flex-shrink: 0;
+}
+
+.starButton:hover {
+  color: #fbbf24;
+  transform: scale(1.1);
+}
+
+.starActive {
+  color: #fbbf24;
+}
+
+.starActive .starIcon {
+  fill: #fbbf24;
+}
+
+.starIcon {
+  font-size: 16px;
+}
+
+.favoriteRow {
+  background: #fffbeb;
 }
 
 .rateCell {
