@@ -33,9 +33,12 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// Platform fee percentage - this is what Barix keeps from each transaction
-// Currently set to 0 for free demo mode - only Stripe's processing fees apply
-const PLATFORM_FEE_PERCENT = 0;
+// When routing to a connected account, we take Stripe's processing fee as the
+// application fee so the contractor's balance shows their net (after Stripe fee).
+// Otherwise the full charge would land in their account and the platform would pay the fee.
+// US card: 2.9% + $0.30 (Stripe standard)
+const STRIPE_FEE_PERCENT = 2.9;
+const STRIPE_FEE_FIXED_CENTS = 30;
 
 export async function POST(request) {
   try {
@@ -123,10 +126,11 @@ export async function POST(request) {
     // Calculate amounts in cents for Stripe
     const totalAmountCents = Math.round((invoice.total || 0) * 100);
     
-    // Calculate the platform fee (what Barix keeps)
-    // Only apply if we're routing to a connected account
-    const platformFeeCents = connectedAccountId 
-      ? Math.round(totalAmountCents * (PLATFORM_FEE_PERCENT / 100))
+    // When using Connect: take Stripe's fee as application fee so the contractor
+    // receives the net amount (pending/available balance = what they actually get).
+    // Fee = 2.9% + 30¢ (US card). Platform keeps this and pays Stripe.
+    const platformFeeCents = connectedAccountId
+      ? Math.round(totalAmountCents * (STRIPE_FEE_PERCENT / 100) + STRIPE_FEE_FIXED_CENTS)
       : 0;
 
     // Build the checkout session configuration
