@@ -33,10 +33,8 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// When routing to a connected account, we take Stripe's processing fee as the
-// application fee so the contractor's balance shows their net (after Stripe fee).
-// Otherwise the full charge would land in their account and the platform would pay the fee.
-// US card: 2.9% + $0.30 (Stripe standard)
+// Stripe's processing fee (US card: 2.9% + $0.30).
+// The contractor pays this fee: we transfer (invoice − fee) to them; Barix keeps the remainder to pay Stripe.
 const STRIPE_FEE_PERCENT = 2.9;
 const STRIPE_FEE_FIXED_CENTS = 30;
 
@@ -112,12 +110,10 @@ export async function POST(request) {
     // Calculate amounts in cents for Stripe
     const totalAmountCents = Math.round((invoice.total || 0) * 100);
     
-    // When using Connect: take Stripe's fee as application fee so the contractor
-    // receives the net amount (pending/available balance = what they actually get).
-    // Fee = 2.9% + 30¢ (US card). Platform keeps this and pays Stripe.
-    const platformFeeCents = connectedAccountId
-      ? Math.round(totalAmountCents * (STRIPE_FEE_PERCENT / 100) + STRIPE_FEE_FIXED_CENTS)
-      : 0;
+    // Contractor pays Stripe fee: we transfer (invoice − fee) to them; Barix keeps the remainder to pay Stripe.
+    // Customer pays full invoice; contractor receives net amount.
+    const feeCents = Math.round(totalAmountCents * (STRIPE_FEE_PERCENT / 100) + STRIPE_FEE_FIXED_CENTS);
+    const transferToContractorCents = Math.max(1, totalAmountCents - feeCents); // Min 1 cent to contractor
 
     // Build the checkout session configuration
     const sessionConfig = {
@@ -139,7 +135,6 @@ export async function POST(request) {
                 ? `Services for ${invoice.clients.name}`
                 : "Professional services",
             },
-            // Stripe expects amount in cents
             unit_amount: totalAmountCents,
           },
           quantity: 1,
@@ -159,15 +154,13 @@ export async function POST(request) {
     };
 
     // If we have a connected account, route the payment there
-    // The platform fee goes to Barix, the rest goes to the contractor
+    // Contractor receives (invoice - fee); Barix keeps the fee to cover Stripe's processing cost
     if (connectedAccountId) {
       sessionConfig.payment_intent_data = {
-        // This tells Stripe to transfer funds to the connected account
         transfer_data: {
           destination: connectedAccountId,
+          amount: transferToContractorCents, // Explicit: contractor gets this much (invoice minus fee)
         },
-        // The platform fee that Barix keeps from this transaction
-        application_fee_amount: platformFeeCents,
       };
     }
 
