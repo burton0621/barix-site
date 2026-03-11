@@ -29,11 +29,27 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: "Invoice ID required" }, { status: 400 });
     }
 
-    // If we have a session ID, verify with Stripe that payment was successful
+    // If we have a session ID, verify with Stripe that payment was successful.
+    // For direct charges the session lives on the connected account, so we must retrieve it with stripeAccount.
     if (sessionId && stripe) {
       try {
-        const session = await stripe.checkout.sessions.retrieve(sessionId);
-        
+        let connectedAccountId = null;
+        const { data: invoiceRow } = await supabaseAdmin
+          .from("invoices")
+          .select("contractor_id")
+          .eq("id", invoiceId)
+          .single();
+        if (invoiceRow?.contractor_id) {
+          const { data: contractor } = await supabaseAdmin
+            .from("contractor_profiles")
+            .select("stripe_account_id")
+            .eq("id", invoiceRow.contractor_id)
+            .single();
+          if (contractor?.stripe_account_id) connectedAccountId = contractor.stripe_account_id;
+        }
+        const retrieveOptions = connectedAccountId ? { stripeAccount: connectedAccountId } : {};
+        const session = await stripe.checkout.sessions.retrieve(sessionId, retrieveOptions);
+
         if (session.payment_status !== "paid") {
           return NextResponse.json(
             { error: "Payment not completed" },

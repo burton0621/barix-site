@@ -1,20 +1,20 @@
 /*
-  Stripe Checkout Session API (with Connect)
-  -------------------------------------------
+  Stripe Checkout Session API (with Connect – direct charges)
+  -----------------------------------------------------------
   Creates a Stripe Checkout session for paying an invoice.
   
-  With Stripe Connect, payments are routed to the contractor's connected
-  account. Barix can optionally take a platform fee from each transaction.
+  Uses direct charges: the charge is created on the contractor's connected
+  account. With application_fee_amount: 0, the contractor receives the
+  full amount minus Stripe's processing fee; the platform keeps nothing.
   
   Flow:
   1. Receive invoice ID
   2. Fetch invoice details and contractor's Stripe account ID
-  3. Create Stripe Checkout session with payment routed to contractor
+  3. Create Stripe Checkout session on the connected account (or platform if none)
   4. Return the checkout URL for redirect
   
   If the contractor hasn't connected their Stripe account yet, we still
   create the checkout but the payment goes to the platform account.
-  The contractor will need to connect Stripe to receive future payouts.
 */
 
 import { NextResponse } from "next/server";
@@ -32,11 +32,6 @@ const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
-
-// Stripe's processing fee (US card: 2.9% + $0.30).
-// The contractor pays this fee: we transfer (invoice − fee) to them; Barix keeps the remainder to pay Stripe.
-const STRIPE_FEE_PERCENT = 2.9;
-const STRIPE_FEE_FIXED_CENTS = 30;
 
 export async function POST(request) {
   try {
@@ -109,21 +104,15 @@ export async function POST(request) {
 
     // Calculate amounts in cents for Stripe
     const totalAmountCents = Math.round((invoice.total || 0) * 100);
-    
-    // Contractor pays Stripe fee: we transfer (invoice − fee) to them; Barix keeps the remainder to pay Stripe.
-    // Customer pays full invoice; contractor receives net amount.
-    const feeCents = Math.round(totalAmountCents * (STRIPE_FEE_PERCENT / 100) + STRIPE_FEE_FIXED_CENTS);
-    const transferToContractorCents = Math.max(1, totalAmountCents - feeCents); // Min 1 cent to contractor
 
     // Build the checkout session configuration
     const sessionConfig = {
-      payment_method_types: ["card"],
-      // You can add 'us_bank_account' here for ACH payments
+      payment_method_types: ["card", "us_bank_account"],
       mode: "payment",
-      
+
       // Customer info - pre-fill if we have it
       customer_email: invoice.clients?.email || undefined,
-      
+
       // Line items shown on checkout page
       line_items: [
         {
@@ -131,7 +120,7 @@ export async function POST(request) {
             currency: "usd",
             product_data: {
               name: `Invoice ${invoice.invoice_number || invoiceId}`,
-              description: invoice.clients?.name 
+              description: invoice.clients?.name
                 ? `Services for ${invoice.clients.name}`
                 : "Professional services",
             },
@@ -140,12 +129,13 @@ export async function POST(request) {
           quantity: 1,
         },
       ],
-      
+
       // Store invoice ID in metadata so we can update it when paid
       metadata: {
         invoice_id: invoiceId,
         invoice_number: invoice.invoice_number || "",
         contractor_id: invoice.contractor_id || "",
+        connected_account_id: connectedAccountId || "",
       },
 
       // Where to redirect after payment
@@ -153,19 +143,17 @@ export async function POST(request) {
       cancel_url: `${appUrl}/pay/${invoiceId}?canceled=true`,
     };
 
-    // If we have a connected account, route the payment there
-    // Contractor receives (invoice - fee); Barix keeps the fee to cover Stripe's processing cost
+    // Direct charge: create the charge on the contractor's connected account.
+    // With application_fee_amount: 0, the contractor receives (invoice − Stripe fee); platform keeps nothing.
     if (connectedAccountId) {
       sessionConfig.payment_intent_data = {
-        transfer_data: {
-          destination: connectedAccountId,
-          amount: transferToContractorCents, // Explicit: contractor gets this much (invoice minus fee)
-        },
+        application_fee_amount: 0,
       };
     }
 
-    // Create the Stripe Checkout session
-    const session = await stripe.checkout.sessions.create(sessionConfig);
+    // Create the Stripe Checkout session (on connected account for direct charge, else on platform)
+    const createOptions = connectedAccountId ? { stripeAccount: connectedAccountId } : {};
+    const session = await stripe.checkout.sessions.create(sessionConfig, createOptions);
 
     // Return the checkout session URL
     return NextResponse.json({
