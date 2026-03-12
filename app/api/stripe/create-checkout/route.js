@@ -1,20 +1,20 @@
 /*
-  Stripe Checkout Session API (with Connect)
-  -------------------------------------------
+  Stripe Checkout Session API (with Connect – direct charges)
+  -----------------------------------------------------------
   Creates a Stripe Checkout session for paying an invoice.
   
-  With Stripe Connect, payments are routed to the contractor's connected
-  account. Barix can optionally take a platform fee from each transaction.
+  Uses direct charges: the charge is created on the contractor's connected
+  account. With application_fee_amount: 0, the contractor receives the
+  full amount minus Stripe's processing fee; the platform keeps nothing.
   
   Flow:
   1. Receive invoice ID
   2. Fetch invoice details and contractor's Stripe account ID
-  3. Create Stripe Checkout session with payment routed to contractor
+  3. Create Stripe Checkout session on the connected account (or platform if none)
   4. Return the checkout URL for redirect
   
   If the contractor hasn't connected their Stripe account yet, we still
   create the checkout but the payment goes to the platform account.
-  The contractor will need to connect Stripe to receive future payouts.
 */
 
 import { NextResponse } from "next/server";
@@ -32,10 +32,6 @@ const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
-
-// Platform fee percentage - this is what Barix keeps from each transaction
-// Currently set to 0 for free demo mode - only Stripe's processing fees apply
-const PLATFORM_FEE_PERCENT = 0;
 
 export async function POST(request) {
   try {
@@ -90,17 +86,31 @@ export async function POST(request) {
 
     // Get the contractor's connected Stripe account ID
     // This is needed to route the payment to their bank account
+    // Note: invoices use owner_id (not contractor_id) to link to the contractor
     let connectedAccountId = null;
-    if (invoice.contractor_id) {
+    const contractorId = invoice.owner_id || invoice.contractor_id;
+    
+    if (contractorId) {
       const { data: contractor, error: contractorError } = await supabaseAdmin
         .from("contractor_profiles")
         .select("stripe_account_id, stripe_payouts_enabled")
-        .eq("id", invoice.contractor_id)
+        .eq("id", contractorId)
         .single();
+
+      console.log("Looking up contractor:", contractorId, "Result:", contractor, "Error:", contractorError);
 
       if (!contractorError && contractor?.stripe_account_id && contractor?.stripe_payouts_enabled) {
         connectedAccountId = contractor.stripe_account_id;
+        console.log("Payment will be routed to connected account:", connectedAccountId);
+      } else {
+        console.log("Payment will go to platform account. Reason:", 
+          !contractor ? "Contractor not found" : 
+          !contractor.stripe_account_id ? "No Stripe account connected" :
+          !contractor.stripe_payouts_enabled ? "Payouts not enabled" : "Unknown"
+        );
       }
+    } else {
+      console.log("No contractor ID found on invoice - payment will go to platform account");
     }
 
     // Get the app URL for success/cancel redirects
@@ -108,22 +118,15 @@ export async function POST(request) {
 
     // Calculate amounts in cents for Stripe
     const totalAmountCents = Math.round((invoice.total || 0) * 100);
-    
-    // Calculate the platform fee (what Barix keeps)
-    // Only apply if we're routing to a connected account
-    const platformFeeCents = connectedAccountId 
-      ? Math.round(totalAmountCents * (PLATFORM_FEE_PERCENT / 100))
-      : 0;
 
     // Build the checkout session configuration
     const sessionConfig = {
-      payment_method_types: ["card"],
-      // You can add 'us_bank_account' here for ACH payments
+      payment_method_types: ["card", "us_bank_account"],
       mode: "payment",
-      
+
       // Customer info - pre-fill if we have it
       customer_email: invoice.clients?.email || undefined,
-      
+
       // Line items shown on checkout page
       line_items: [
         {
@@ -131,22 +134,21 @@ export async function POST(request) {
             currency: "usd",
             product_data: {
               name: `Invoice ${invoice.invoice_number || invoiceId}`,
-              description: invoice.clients?.name 
+              description: invoice.clients?.name
                 ? `Services for ${invoice.clients.name}`
                 : "Professional services",
             },
-            // Stripe expects amount in cents
             unit_amount: totalAmountCents,
           },
           quantity: 1,
         },
       ],
-      
+
       // Store invoice ID in metadata so we can update it when paid
       metadata: {
         invoice_id: invoiceId,
         invoice_number: invoice.invoice_number || "",
-        contractor_id: invoice.contractor_id || "",
+        contractor_id: contractorId || "",
       },
 
       // Where to redirect after payment
@@ -154,21 +156,17 @@ export async function POST(request) {
       cancel_url: `${appUrl}/pay/${invoiceId}?canceled=true`,
     };
 
-    // If we have a connected account, route the payment there
-    // The platform fee goes to Barix, the rest goes to the contractor
+    // Direct charge: create the charge on the contractor's connected account.
+    // With application_fee_amount: 0, the contractor receives (invoice − Stripe fee); platform keeps nothing.
     if (connectedAccountId) {
       sessionConfig.payment_intent_data = {
-        // This tells Stripe to transfer funds to the connected account
-        transfer_data: {
-          destination: connectedAccountId,
-        },
-        // The platform fee that Barix keeps from this transaction
-        application_fee_amount: platformFeeCents,
+        application_fee_amount: 0,
       };
     }
 
-    // Create the Stripe Checkout session
-    const session = await stripe.checkout.sessions.create(sessionConfig);
+    // Create the Stripe Checkout session (on connected account for direct charge, else on platform)
+    const createOptions = connectedAccountId ? { stripeAccount: connectedAccountId } : {};
+    const session = await stripe.checkout.sessions.create(sessionConfig, createOptions);
 
     // Return the checkout session URL
     return NextResponse.json({
