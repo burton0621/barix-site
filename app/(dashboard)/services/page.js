@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import DashboardNavbar from "@/components/Navbar/DashboardNavbar";
+import DashboardNavbar from "@/components/Navbar/DashboardNav/DashboardNavbar";
 import AddServiceModal from "@/components/Services/AddServiceModal";
 import QuickAddServicesModal from "@/components/Services/QuickAddServicesModal";
 import ConfirmDialog from "@/components/common/ConfirmDialog/ConfirmDialog";

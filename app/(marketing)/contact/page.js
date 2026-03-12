@@ -1,6 +1,6 @@
 "use client";
 //barix-site\app\(marketing)\contact\page.js
-import Navbar from "@/components/Navbar/Navbar";
+import Navbar from "@/components/Navbar/Navbar/Navbar";
 import Footer from "@/components/marketing/Footer";
 import ContactForm from "@/components/contact/ContactForm";
 

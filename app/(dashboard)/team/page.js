@@ -19,7 +19,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/providers/AuthProvider";
-import DashboardNavbar from "@/components/Navbar/DashboardNavbar";
+import DashboardNavbar from "@/components/Navbar/DashboardNav/DashboardNavbar";
 import Toast from "@/components/common/Toast/Toast";
 import ConfirmDialog from "@/components/common/ConfirmDialog/ConfirmDialog";
 

@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
-import Navbar from "@/components/Navbar/Navbar";
+import Navbar from "@/components/Navbar/Navbar/Navbar";
 import Hero from "@/components/marketing/Hero";
 import ValueProps from "@/components/marketing/ValueProps";
 import Features from "@/components/marketing/Features";

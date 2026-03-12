@@ -16,7 +16,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
-import DashboardNavbar from "@/components/Navbar/DashboardNavbar";
+import DashboardNavbar from "@/components/Navbar/DashboardNav/DashboardNavbar";
 import AddServiceModal from "@/components/Services/AddServiceModal";
 import CreateInvoiceButton from "@/components/Invoices/CreateInvoiceButton/createInvoiceButton";
 import InvoiceModal from "@/components/Invoices/InvoiceModal/InvoiceModal";

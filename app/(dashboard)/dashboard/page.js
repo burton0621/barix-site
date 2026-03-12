@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/providers/AuthProvider";
-import DashboardNavbar from "@/components/Navbar/DashboardNavbar";
+import DashboardNavbar from "@/components/Navbar/DashboardNav/DashboardNavbar";
 import GetStartedCard from "@/components/dashboard/getStartedCard/getStartedCard";
 import CreateInvoiceButton from "@/components/Invoices/CreateInvoiceButton/createInvoiceButton";
 
