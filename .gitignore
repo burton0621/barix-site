@@ -5,6 +5,8 @@ out/
 # Env
 .env
 .env*.local
+.env.development
+.env.production
 # Logs
 npm-debug.log*
 yarn-debug.log*

@@ -55,7 +55,7 @@ export async function POST(request) {
       );
     }
 
-    console.log("Webhook received:", event.type);
+    console.log("Webhook received:", event.type, "id:", event.id);
 
     // Handle the event based on type
     switch (event.type) {
@@ -76,8 +76,14 @@ export async function POST(request) {
           console.log("Subscription checkout completed:", { contractorId, subscriptionId });
 
           if (contractorId && subscriptionId) {
-            // Fetch the subscription to get trial info
-            const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+            // Fetch the subscription to get trial info (lives on platform, not Connect)
+            let subscription;
+            try {
+              subscription = await stripe.subscriptions.retrieve(subscriptionId);
+            } catch (retrieveErr) {
+              console.error("Webhook: failed to retrieve subscription:", subscriptionId, retrieveErr.message);
+              throw retrieveErr; // rethrow so Stripe retries
+            }
 
             // Update the contractor's subscription info
             const { error: updateError } = await supabaseAdmin
@@ -269,7 +275,9 @@ export async function POST(request) {
     // Return 200 to acknowledge receipt of the event
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error("Webhook error:", error);
+    const eventType = typeof event !== "undefined" ? event.type : "unknown";
+    const eventId = typeof event !== "undefined" ? event.id : "unknown";
+    console.error("Webhook error:", error?.message || error, "eventType:", eventType, "eventId:", eventId);
     return NextResponse.json({ error: "Webhook handler failed" }, { status: 500 });
   }
 }
