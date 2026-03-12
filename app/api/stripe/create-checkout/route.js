@@ -86,17 +86,31 @@ export async function POST(request) {
 
     // Get the contractor's connected Stripe account ID
     // This is needed to route the payment to their bank account
+    // Note: invoices use owner_id (not contractor_id) to link to the contractor
     let connectedAccountId = null;
-    if (invoice.contractor_id) {
+    const contractorId = invoice.owner_id || invoice.contractor_id;
+    
+    if (contractorId) {
       const { data: contractor, error: contractorError } = await supabaseAdmin
         .from("contractor_profiles")
         .select("stripe_account_id, stripe_payouts_enabled")
-        .eq("id", invoice.contractor_id)
+        .eq("id", contractorId)
         .single();
+
+      console.log("Looking up contractor:", contractorId, "Result:", contractor, "Error:", contractorError);
 
       if (!contractorError && contractor?.stripe_account_id && contractor?.stripe_payouts_enabled) {
         connectedAccountId = contractor.stripe_account_id;
+        console.log("Payment will be routed to connected account:", connectedAccountId);
+      } else {
+        console.log("Payment will go to platform account. Reason:", 
+          !contractor ? "Contractor not found" : 
+          !contractor.stripe_account_id ? "No Stripe account connected" :
+          !contractor.stripe_payouts_enabled ? "Payouts not enabled" : "Unknown"
+        );
       }
+    } else {
+      console.log("No contractor ID found on invoice - payment will go to platform account");
     }
 
     // Get the app URL for success/cancel redirects
@@ -134,8 +148,7 @@ export async function POST(request) {
       metadata: {
         invoice_id: invoiceId,
         invoice_number: invoice.invoice_number || "",
-        contractor_id: invoice.contractor_id || "",
-        connected_account_id: connectedAccountId || "",
+        contractor_id: contractorId || "",
       },
 
       // Where to redirect after payment

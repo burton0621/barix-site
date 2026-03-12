@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 const features = [
   {
     tag: "Invoicing",
@@ -17,6 +19,8 @@ const features = [
       </svg>
     ),
     image: "/features/invoicing.png",
+    hasImage: true,
+    imageSize: { width: 550, height: 700 },
     reverse: false,
   },
   {
@@ -35,6 +39,7 @@ const features = [
       </svg>
     ),
     image: "/features/payments.png",
+    hasImage: true,
     reverse: true,
   },
   {
@@ -47,12 +52,7 @@ const features = [
       "Email and SMS notifications",
       "Payment receipt automation",
     ],
-    icon: (
-      <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
-      </svg>
-    ),
-    image: "/features/automation.png",
+    hideImage: true,
     reverse: false,
   },
 ];
@@ -79,10 +79,10 @@ export default function Features() {
           {features.map((feature, index) => (
             <div 
               key={feature.tag}
-              className={`flex flex-col items-center gap-12 lg:flex-row ${feature.reverse ? 'lg:flex-row-reverse' : ''}`}
+              className={`flex flex-col items-center gap-12 ${feature.hideImage ? 'max-w-2xl mx-auto' : 'lg:flex-row'} ${feature.reverse ? 'lg:flex-row-reverse' : ''}`}
             >
               {/* Content */}
-              <div className="flex-1">
+              <div className={feature.hideImage ? 'text-center' : 'flex-1'}>
                 <span className="inline-block rounded-full bg-gradient-to-r from-brand-900 to-brand-700 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white">
                   {feature.tag}
                 </span>
@@ -119,19 +119,33 @@ export default function Features() {
                 </a>
               </div>
               
-              {/* Image placeholder */}
-              <div className="flex-1">
-                <div className="relative">
-                  <div className="absolute -inset-4 rounded-3xl bg-gradient-to-br from-brand-900/20 to-brand-700/10 blur-xl opacity-60" />
-                  <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-8 shadow-xl">
-                    <div className="flex h-64 items-center justify-center rounded-xl bg-gradient-to-br from-brand-50 to-brand-100">
-                      <div className="text-brand-900">
-                        {feature.icon}
-                      </div>
+              {/* Feature image */}
+              {!feature.hideImage && (
+                <div className="flex-1 flex justify-center">
+                  <div className="relative max-w-lg">
+                    <div className="absolute -inset-4 rounded-3xl bg-gradient-to-br from-brand-900/20 to-brand-700/10 blur-xl opacity-60" />
+                    <div className="relative overflow-hidden rounded-2xl border-2 border-gray-200 shadow-xl">
+                      {feature.hasImage ? (
+                        <Image
+                          src={feature.image}
+                          alt={feature.title}
+                          width={feature.imageSize?.width || 450}
+                          height={feature.imageSize?.height || 600}
+                          className="block"
+                        />
+                      ) : (
+                        <div className="p-8">
+                          <div className="flex h-64 items-center justify-center rounded-xl bg-gradient-to-br from-brand-50 to-brand-100">
+                            <div className="text-brand-900">
+                              {feature.icon}
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           ))}
         </div>
