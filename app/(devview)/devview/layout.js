@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import DevViewNavbar from "@/components/Navbar/DevviewNav/DevViewNavbar";
 
 export default function DevViewLayout({ children }) {
   const router = useRouter();
@@ -79,5 +80,10 @@ export default function DevViewLayout({ children }) {
     );
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      <DevViewNavbar />
+      {children}
+    </>
+  );
 }

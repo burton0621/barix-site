@@ -18,12 +18,17 @@ export default function DevViewHome() {
     async function load() {
       setLoading(true);
 
-      // NOTE: Replace these table names with your real ones.
-      // This is intentionally simple so it won’t break your app if some tables differ.
+      const usersQ = supabase
+        .from("user_directory")
+        .select("user_id", { count: "exact", head: true });
 
-      const usersQ = supabase.from("profiles").select("id", { count: "exact", head: true });
-      const invoicesQ = supabase.from("invoices").select("id", { count: "exact", head: true });
-      const clientsQ = supabase.from("clients").select("id", { count: "exact", head: true });
+      const invoicesQ = supabase
+        .from("invoices")
+        .select("id", { count: "exact", head: true });
+
+      const clientsQ = supabase
+        .from("clients")
+        .select("id", { count: "exact", head: true });
 
       const [u, i, c] = await Promise.all([usersQ, invoicesQ, clientsQ]);
 
@@ -39,34 +44,44 @@ export default function DevViewHome() {
     }
 
     load();
+
     return () => {
       mounted = false;
     };
   }, []);
 
   return (
-    <div className={styles.wrap}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>DevView Overview</h1>
-        <p className={styles.subtitle}>
-          Internal insights across all accounts (admins only).
-        </p>
-      </div>
-
-      <div className={styles.grid}>
-        <div className={styles.card}>
-          <div className={styles.label}>Total users</div>
-          <div className={styles.value}>{loading ? "…" : stats.users}</div>
+    <div className={styles.page}>
+      <div className={styles.wrap}>
+        <div className={styles.header}>
+          <div className={styles.headerTop}>
+            <div>
+              <h1 className={styles.title}>DevView Overview</h1>
+              <p className={styles.subtitle}>
+                Internal platform insights across all user accounts.
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div className={styles.card}>
-          <div className={styles.label}>Total invoices</div>
-          <div className={styles.value}>{loading ? "…" : stats.invoices}</div>
-        </div>
+        <div className={styles.grid}>
+          <div className={styles.statCard}>
+            <div className={styles.statLabel}>Total users</div>
+            <div className={styles.statValue}>{loading ? "…" : stats.users}</div>
+            <div className={styles.statHelp}>Count from user_directory</div>
+          </div>
 
-        <div className={styles.card}>
-          <div className={styles.label}>Total clients</div>
-          <div className={styles.value}>{loading ? "…" : stats.clients}</div>
+          <div className={styles.statCard}>
+            <div className={styles.statLabel}>Total invoices</div>
+            <div className={styles.statValue}>{loading ? "…" : stats.invoices}</div>
+            <div className={styles.statHelp}>All invoices across the platform</div>
+          </div>
+
+          <div className={styles.statCard}>
+            <div className={styles.statLabel}>Total clients</div>
+            <div className={styles.statValue}>{loading ? "…" : stats.clients}</div>
+            <div className={styles.statHelp}>All clients added by all users</div>
+          </div>
         </div>
       </div>
     </div>
