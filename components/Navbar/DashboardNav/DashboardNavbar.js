@@ -89,7 +89,19 @@ export default function DashboardNavbar() {
             }`}
           >
             Invoices
+            </Link>
+
+            
+          <Link
+            href="/jobs"
+            className={`${styles.navLink} ${
+              isActive("/jobs") ? styles.active : ""
+            }`}
+          >
+            Jobs
           </Link>
+
+
           <Link
             href="/clients"
             className={`${styles.navLink} ${
@@ -98,6 +110,8 @@ export default function DashboardNavbar() {
           >
             Clients
           </Link>
+
+
           <Link
             href="/services"
             className={`${styles.navLink} ${

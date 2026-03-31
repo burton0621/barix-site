@@ -155,39 +155,36 @@ export async function createInvoiceHeader({
   taxAmount,
   total,
   documentType,
-
-  // NEW: indirect materials (per invoice)
-  enableIndirectMaterials = false,
-  indirectMaterialsAmount = 0,
-  indirectMaterialsPercent = 0,
-  indirectMaterialsDefaultType = "amount", // "amount" | "percent"
+  jobId = null,
+  enableIndirectMaterials,
+  indirectMaterialsAmount,
+  indirectMaterialsPercent,
+  indirectMaterialsDefaultType,
 }) {
   const { data, error } = await supabase
     .from("invoices")
-    .insert({
-      owner_id: userId,
-      client_id: clientId,
-      invoice_number: invoiceNumber || null,
-      issue_date: issueDate,
-      due_date: dueDate,
-      status,
-      notes: notes || null,
-      internal_notes: internalNotes || null,
-
-      subtotal, // should already include indirect materials (your computeTotals subtotal)
-      tax_rate: TAX_RATE,
-      tax_amount: taxAmount,
-      total,
-      document_type: documentType,
-
-      // NEW columns
-      enable_indirect_materials: !!enableIndirectMaterials,
-      indirect_materials_amount: Number(indirectMaterialsAmount) || 0,
-      indirect_materials_percent: Number(indirectMaterialsPercent) || 0,
-      indirect_materials_default_type:
-        indirectMaterialsDefaultType === "percent" ? "percent" : "amount",
-    })
-    .select("*")
+    .insert([
+      {
+        owner_id: userId,
+        client_id: clientId,
+        invoice_number: invoiceNumber,
+        issue_date: issueDate,
+        due_date: dueDate,
+        status,
+        notes,
+        internal_notes: internalNotes,
+        subtotal,
+        tax_amount: taxAmount,
+        total,
+        document_type: documentType,
+        job_id: jobId || null,
+        enable_indirect_materials: enableIndirectMaterials,
+        indirect_materials_amount: indirectMaterialsAmount,
+        indirect_materials_percent: indirectMaterialsPercent,
+        indirect_materials_default_type: indirectMaterialsDefaultType,
+      },
+    ])
+    .select()
     .single();
 
   if (error) throw error;
