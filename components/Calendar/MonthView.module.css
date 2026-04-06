@@ -1,0 +1,158 @@
+.container {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(10, 37, 64, 0.06);
+}
+
+/* Day name header row */
+.headerRow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  background: #f5f8fa;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.headerCell {
+  text-align: center;
+  padding: 12px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Day grid */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-auto-rows: minmax(88px, auto);
+}
+
+/* Individual day cell */
+.dayCell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 6px 8px;
+  border-right: 1px solid #f3f4f6;
+  border-bottom: 1px solid #f3f4f6;
+  cursor: pointer;
+  background: #fff;
+  transition: background 0.12s;
+  gap: 6px;
+  /* reset button styles */
+  font-family: inherit;
+  text-align: left;
+}
+
+.dayCell:nth-child(7n) {
+  border-right: none;
+}
+
+.dayCell:hover {
+  background: #f5f8fa;
+}
+
+.dayCellOutside {
+  background: #fafafa;
+}
+
+.dayCellOutside:hover {
+  background: #f3f4f6;
+}
+
+.dayCellToday {
+  background: #f5f8fa;
+}
+
+.dayCellSelected {
+  background: #eef3f8 !important;
+  border-color: #c1d5e4 !important;
+}
+
+/* Day number */
+.dayNumber {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  flex-shrink: 0;
+  transition: background 0.12s, color 0.12s;
+  line-height: 1;
+}
+
+.dayNumberToday {
+  background: #0a2540;
+  color: #fff;
+}
+
+.dayNumberSelected {
+  background: #0a2540;
+  color: #fff;
+}
+
+.dayNumberOutside {
+  color: #d1d5db;
+  font-weight: 400;
+}
+
+/* Appointment dots row */
+.dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  flex-wrap: wrap;
+  min-height: 8px;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dotExtra {
+  font-size: 9px;
+  font-weight: 600;
+  color: #6b7280;
+  line-height: 1;
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  .grid {
+    grid-auto-rows: minmax(56px, auto);
+  }
+
+  .dayCell {
+    padding: 6px 3px 5px;
+    gap: 4px;
+  }
+
+  .dayNumber {
+    width: 24px;
+    height: 24px;
+    font-size: 11px;
+  }
+
+  .headerCell {
+    font-size: 9px;
+    padding: 8px 2px;
+  }
+
+  .dot {
+    width: 5px;
+    height: 5px;
+  }
+}
