@@ -6,6 +6,8 @@ import { supabase } from "@/lib/supabaseClient";
 import DashboardNavbar from "@/components/Navbar/DashboardNav/DashboardNavbar";
 import InvoiceModal from "@/components/Invoices/InvoiceModal/InvoiceModal";
 import styles from "./jobDetailPage.module.css";
+import { FiTrash2 } from "react-icons/fi";
+
 
 export default function JobDetailPage() {
   const params = useParams();
@@ -29,6 +31,7 @@ export default function JobDetailPage() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(null);
+  const [deletingPhotoId, setDeletingPhotoId] = useState(null);
 
   useEffect(() => {
     if (!jobId) return;
@@ -266,6 +269,65 @@ export default function JobDetailPage() {
     loadJob();
   }
 
+  async function handleDeletePhoto(photoId) {
+  const photo = photos.find((p) => p.id === photoId);
+  if (!photo) return;
+
+  const confirmed = window.confirm("Delete this photo?");
+  if (!confirmed) return;
+
+  setDeletingPhotoId(photoId);
+
+  try {
+    if (photo.file_path) {
+      const { error: storageError } = await supabase.storage
+        .from("job-photos")
+        .remove([photo.file_path]);
+
+      if (storageError) {
+        console.error("Error deleting photo from storage:", storageError);
+        setDeletingPhotoId(null);
+        return;
+      }
+    }
+
+    const { error: dbError } = await supabase
+      .from("job_photos")
+      .delete()
+      .eq("id", photoId);
+
+    if (dbError) {
+      console.error("Error deleting photo record:", dbError);
+      setDeletingPhotoId(null);
+      return;
+    }
+
+    await touchJobActivity(job.id);
+
+    if (selectedPhotoIndex !== null) {
+      const newPhotos = photos.filter((p) => p.id !== photoId);
+
+      if (newPhotos.length === 0) {
+        setSelectedPhotoIndex(null);
+      } else {
+        const deletedIndex = photos.findIndex((p) => p.id === photoId);
+
+        if (deletedIndex === selectedPhotoIndex) {
+          setSelectedPhotoIndex(0);
+        } else if (deletedIndex < selectedPhotoIndex) {
+          setSelectedPhotoIndex((prev) => Math.max(0, prev - 1));
+        }
+      }
+    }
+
+    await loadJob();
+  } catch (err) {
+    console.error("Unexpected error deleting photo:", err);
+  } finally {
+    setDeletingPhotoId(null);
+  }
+}
+
   async function touchJobActivity(currentJobId) {
     await supabase
       .from("jobs")
@@ -477,25 +539,40 @@ export default function JobDetailPage() {
             ) : (
               <div className={styles.photoGrid}>
                 {photos.map((photo, index) => (
-                  <button
-                    key={photo.id}
-                    type="button"
-                    className={styles.photoItemButton}
-                    onClick={() => openPhotoGallery(index)}
-                  >
-                    <div className={styles.photoItem}>
-                      {photo.resolvedUrl ? (
-                        <img
-                          src={photo.resolvedUrl}
-                          alt={photo.file_name || "Job photo"}
-                          className={styles.photo}
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className={styles.photoFallback}>Photo unavailable</div>
-                      )}
-                    </div>
-                  </button>
+                  <div key={photo.id} className={styles.photoTile}>
+                    <button
+                      type="button"
+                      className={styles.photoItemButton}
+                      onClick={() => openPhotoGallery(index)}
+                    >
+                      <div className={styles.photoItem}>
+                        {photo.resolvedUrl ? (
+                          <img
+                            src={photo.resolvedUrl}
+                            alt={photo.file_name || "Job photo"}
+                            className={styles.photo}
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className={styles.photoFallback}>Photo unavailable</div>
+                        )}
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      className={styles.photoDeleteButton}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeletePhoto(photo.id);
+                      }}
+                      disabled={deletingPhotoId === photo.id}
+                      aria-label="Delete photo"
+                      title="Delete photo"
+                    >
+                      {deletingPhotoId === photo.id ? "…" : <FiTrash2 />}
+                    </button>
+                  </div>
                 ))}
               </div>
             )}
