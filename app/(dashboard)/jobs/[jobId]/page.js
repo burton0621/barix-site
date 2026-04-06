@@ -28,6 +28,8 @@ export default function JobDetailPage() {
   const [savingNote, setSavingNote] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(null);
+
   useEffect(() => {
     if (!jobId) return;
     loadJob();
@@ -54,6 +56,23 @@ export default function JobDetailPage() {
       }, 100);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if (selectedPhotoIndex === null) return;
+
+      if (e.key === "Escape") {
+        setSelectedPhotoIndex(null);
+      } else if (e.key === "ArrowLeft") {
+        showPrevPhoto();
+      } else if (e.key === "ArrowRight") {
+        showNextPhoto();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedPhotoIndex, photos]);
 
   async function loadJob() {
     setLoading(true);
@@ -107,10 +126,27 @@ export default function JobDetailPage() {
     if (notesRes.error) console.error("Error loading notes:", notesRes.error);
     if (photosRes.error) console.error("Error loading photos:", photosRes.error);
 
+    const normalizedPhotos = (photosRes.data || []).map((photo) => {
+      let resolvedUrl = photo.public_url || null;
+
+      if (!resolvedUrl && photo.file_path) {
+        const { data } = supabase.storage
+          .from("job-photos")
+          .getPublicUrl(photo.file_path);
+
+        resolvedUrl = data?.publicUrl || null;
+      }
+
+      return {
+        ...photo,
+        resolvedUrl,
+      };
+    });
+
     setClient(clientRes.data || null);
     setDocuments(docsRes.data || []);
     setNotes(notesRes.data || []);
-    setPhotos(photosRes.data || []);
+    setPhotos(normalizedPhotos);
     setLoading(false);
   }
 
@@ -140,6 +176,11 @@ export default function JobDetailPage() {
 
     return invoiceTotal + estimateTotal;
   }, [invoices, estimates]);
+
+  const selectedPhoto =
+    selectedPhotoIndex !== null && photos[selectedPhotoIndex]
+      ? photos[selectedPhotoIndex]
+      : null;
 
   async function handleAddNote() {
     if (!newNote.trim() || !job) return;
@@ -184,7 +225,8 @@ export default function JobDetailPage() {
 
     const currentUserId = session?.user?.id;
     const fileExt = file.name.split(".").pop();
-    const fileName = `${job.id}/${Date.now()}.${fileExt}`;
+    const safeName = file.name.replace(/\s+/g, "-");
+    const fileName = `${job.id}/${Date.now()}-${safeName || `photo.${fileExt}`}`;
 
     const { error: uploadError } = await supabase.storage
       .from("job-photos")
@@ -193,6 +235,7 @@ export default function JobDetailPage() {
     if (uploadError) {
       console.error("Error uploading photo:", uploadError);
       setUploadingPhoto(false);
+      e.target.value = "";
       return;
     }
 
@@ -213,11 +256,13 @@ export default function JobDetailPage() {
     if (insertError) {
       console.error("Error saving photo record:", insertError);
       setUploadingPhoto(false);
+      e.target.value = "";
       return;
     }
 
     await touchJobActivity(job.id);
     setUploadingPhoto(false);
+    e.target.value = "";
     loadJob();
   }
 
@@ -239,6 +284,30 @@ export default function JobDetailPage() {
   function handleOpenCreateInvoice() {
     setInvoiceModalType("invoice");
     setShowInvoiceModal(true);
+  }
+
+  function openPhotoGallery(index) {
+    setSelectedPhotoIndex(index);
+  }
+
+  function closePhotoGallery() {
+    setSelectedPhotoIndex(null);
+  }
+
+  function showPrevPhoto() {
+    if (!photos.length) return;
+    setSelectedPhotoIndex((prev) => {
+      if (prev === null) return 0;
+      return prev === 0 ? photos.length - 1 : prev - 1;
+    });
+  }
+
+  function showNextPhoto() {
+    if (!photos.length) return;
+    setSelectedPhotoIndex((prev) => {
+      if (prev === null) return 0;
+      return prev === photos.length - 1 ? 0 : prev + 1;
+    });
   }
 
   if (loading) {
@@ -278,16 +347,6 @@ export default function JobDetailPage() {
             <button type="button" className={styles.secondaryBtn} onClick={handleOpenCreateInvoice}>
               Create Invoice
             </button>
-            <label className={styles.secondaryBtn}>
-              {uploadingPhoto ? "Uploading..." : "Upload Photo"}
-              <input
-                type="file"
-                accept="image/*"
-                className={styles.hiddenInput}
-                onChange={handlePhotoUpload}
-                disabled={uploadingPhoto}
-              />
-            </label>
           </div>
         </section>
 
@@ -417,24 +476,106 @@ export default function JobDetailPage() {
               <p className={styles.emptyText}>No photos uploaded yet.</p>
             ) : (
               <div className={styles.photoGrid}>
-                {photos.map((photo) => (
-                  <div key={photo.id} className={styles.photoItem}>
-                    {photo.public_url ? (
-                      <img
-                        src={photo.public_url}
-                        alt={photo.file_name || "Job photo"}
-                        className={styles.photo}
-                      />
-                    ) : (
-                      <div className={styles.photoFallback}>Photo</div>
-                    )}
-                  </div>
+                {photos.map((photo, index) => (
+                  <button
+                    key={photo.id}
+                    type="button"
+                    className={styles.photoItemButton}
+                    onClick={() => openPhotoGallery(index)}
+                  >
+                    <div className={styles.photoItem}>
+                      {photo.resolvedUrl ? (
+                        <img
+                          src={photo.resolvedUrl}
+                          alt={photo.file_name || "Job photo"}
+                          className={styles.photo}
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className={styles.photoFallback}>Photo unavailable</div>
+                      )}
+                    </div>
+                  </button>
                 ))}
               </div>
             )}
+
+            <div className={styles.photoActions}>
+              <label className={styles.secondaryBtn}>
+                {uploadingPhoto ? "Uploading..." : "Upload Photo"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className={styles.hiddenInput}
+                  onChange={handlePhotoUpload}
+                  disabled={uploadingPhoto}
+                />
+              </label>
+            </div>
           </div>
         </section>
       </main>
+
+      {selectedPhoto ? (
+        <div
+          className={styles.galleryOverlay}
+          onClick={closePhotoGallery}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className={styles.galleryContent}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className={styles.galleryClose}
+              onClick={closePhotoGallery}
+              aria-label="Close photo gallery"
+            >
+              ×
+            </button>
+
+            {photos.length > 1 ? (
+              <button
+                type="button"
+                className={`${styles.galleryArrow} ${styles.galleryArrowLeft}`}
+                onClick={showPrevPhoto}
+                aria-label="Previous photo"
+              >
+                ‹
+              </button>
+            ) : null}
+
+            <div className={styles.galleryImageWrap}>
+              <img
+                src={selectedPhoto.resolvedUrl}
+                alt={selectedPhoto.file_name || "Job photo"}
+                className={styles.galleryImage}
+              />
+              <div className={styles.galleryMeta}>
+                <span className={styles.galleryCounter}>
+                  {selectedPhotoIndex + 1} / {photos.length}
+                </span>
+                <span className={styles.galleryFileName}>
+                  {selectedPhoto.file_name || "Photo"}
+                </span>
+              </div>
+            </div>
+
+            {photos.length > 1 ? (
+              <button
+                type="button"
+                className={`${styles.galleryArrow} ${styles.galleryArrowRight}`}
+                onClick={showNextPhoto}
+                aria-label="Next photo"
+              >
+                ›
+              </button>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
 
       {showInvoiceModal && job ? (
         <InvoiceModal

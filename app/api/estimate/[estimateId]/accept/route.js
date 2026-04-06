@@ -5,7 +5,7 @@
   1. Update the estimate status to "accepted"
   2. Record the acceptance timestamp
   3. Create a new invoice from the estimate with status "pending"
-  
+
   The "pending" status signals to the business owner that they need to review
   and send the invoice to the client.
 */
@@ -116,17 +116,26 @@ export async function POST(request, { params }) {
       .insert({
         owner_id: estimate.owner_id,
         client_id: estimate.client_id,
+        job_id: estimate.job_id || null, // carry job linkage forward
         invoice_number: generateInvoiceNumber(),
         issue_date: new Date().toISOString().split("T")[0], // Today's date
         due_date: estimate.due_date, // Keep the same due date
         status: "pending", // Pending means the business owner needs to take action
         notes: estimate.notes,
+        internal_notes: estimate.internal_notes,
         subtotal: estimate.subtotal,
         tax_rate: estimate.tax_rate,
         tax_amount: estimate.tax_amount,
         total: estimate.total,
         document_type: "invoice",
         converted_from_id: estimateId, // Link back to the original estimate
+
+        // Carry over indirect materials snapshot values too
+        enable_indirect_materials: estimate.enable_indirect_materials ?? false,
+        indirect_materials_amount: estimate.indirect_materials_amount ?? 0,
+        indirect_materials_percent: estimate.indirect_materials_percent ?? 0,
+        indirect_materials_default_type:
+          estimate.indirect_materials_default_type || "amount",
       })
       .select("*")
       .single();
@@ -176,6 +185,3 @@ export async function POST(request, { params }) {
     );
   }
 }
-
-
-

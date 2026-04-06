@@ -47,7 +47,7 @@
 .backButton {
   border: none;
   background: transparent;
-  color: #475569;
+  color: #694747;
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
@@ -314,5 +314,165 @@
   .docsGrid,
   .photoGrid {
     grid-template-columns: 1fr;
+  }
+}
+
+.photoActions {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 16px;
+}
+
+.photoItemButton {
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.photoItemButton:focus-visible {
+  outline: 2px solid #eb2525;
+  outline-offset: 4px;
+  border-radius: 14px;
+}
+
+.galleryOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.92);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.galleryContent {
+  position: relative;
+  width: 100%;
+  max-width: 1200px;
+  height: 100%;
+  max-height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.galleryImageWrap {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+}
+
+.galleryImage {
+  max-width: 100%;
+  max-height: calc(90vh - 72px);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 16px;
+  display: block;
+  background: #0f172a;
+}
+
+.galleryClose {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.galleryArrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 52px;
+  height: 52px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  font-size: 34px;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.galleryArrowLeft {
+  left: 8px;
+}
+
+.galleryArrowRight {
+  right: 8px;
+}
+
+.galleryMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  color: #ffffff;
+  font-size: 14px;
+  text-align: center;
+}
+
+.galleryCounter {
+  font-weight: 700;
+}
+
+.galleryFileName {
+  opacity: 0.9;
+  word-break: break-word;
+}
+
+@media (max-width: 768px) {
+  .galleryOverlay {
+    padding: 12px;
+  }
+
+  .galleryArrow {
+    width: 44px;
+    height: 44px;
+    font-size: 28px;
+  }
+
+  .galleryArrowLeft {
+    left: 0;
+  }
+
+  .galleryArrowRight {
+    right: 0;
+  }
+
+  .galleryClose {
+    top: -4px;
+    right: -4px;
+  }
+
+  .galleryImage {
+    max-height: calc(88vh - 88px);
+  }
+
+  .galleryMeta {
+    font-size: 13px;
   }
 }
