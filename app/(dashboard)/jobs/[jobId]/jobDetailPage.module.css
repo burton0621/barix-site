@@ -531,3 +531,41 @@
     bottom: 8px;
   }
 }
+
+.docMain {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.docActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.docEditButton {
+  width: 34px;
+  height: 34px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #334155;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.docEditButton:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.docEditButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

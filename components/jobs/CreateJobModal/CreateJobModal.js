@@ -9,9 +9,7 @@ export default function CreateJobModal({ open, onClose, ownerId, onCreated }) {
   const [clients, setClients] = useState([]);
 
   const [title, setTitle] = useState("");
-  const [jobNumber, setJobNumber] = useState("");
   const [clientId, setClientId] = useState("");
-  const [status, setStatus] = useState("active");
   const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState("");
   const [dueDate, setDueDate] = useState("");
@@ -42,13 +40,45 @@ export default function CreateJobModal({ open, onClose, ownerId, onCreated }) {
     if (!open) return;
 
     setTitle("");
-    setJobNumber("");
     setClientId("");
-    setStatus("active");
     setDescription("");
     setStartDate("");
     setDueDate("");
   }, [open]);
+
+  async function generateJobNumber() {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
+    const datePart = `${yyyy}${mm}${dd}`;
+
+    const prefix = `JOB_${datePart}_`;
+
+    const { data, error } = await supabase
+      .from("jobs")
+      .select("job_number")
+      .ilike("job_number", `${prefix}%`);
+
+    if (error) {
+      console.error("Error generating job number:", error);
+      throw error;
+    }
+
+    const existingNumbers = (data || [])
+      .map((row) => row.job_number)
+      .filter(Boolean)
+      .map((jobNumber) => {
+        const parts = jobNumber.split("_");
+        const numericPart = parts[2];
+        return Number.parseInt(numericPart, 10) || 0;
+      });
+
+    const nextNumber = (existingNumbers.length ? Math.max(...existingNumbers) : 0) + 1;
+    const sequence = String(nextNumber).padStart(6, "0");
+
+    return `${prefix}${sequence}`;
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -56,33 +86,39 @@ export default function CreateJobModal({ open, onClose, ownerId, onCreated }) {
 
     setSaving(true);
 
-    const payload = {
-      owner_id: ownerId,
-      client_id: clientId,
-      title: title.trim(),
-      job_number: jobNumber.trim() || null,
-      status,
-      description: description.trim() || null,
-      start_date: startDate || null,
-      due_date: dueDate || null,
-      updated_at: new Date().toISOString(),
-      last_activity_at: new Date().toISOString(),
-    };
+    try {
+      const jobNumber = await generateJobNumber();
 
-    const { data, error } = await supabase
-      .from("jobs")
-      .insert([payload])
-      .select("*")
-      .single();
+      const payload = {
+        owner_id: ownerId,
+        client_id: clientId,
+        title: title.trim(),
+        job_number: jobNumber,
+        status: "active",
+        description: description.trim() || null,
+        start_date: startDate || null,
+        due_date: dueDate || null,
+        updated_at: new Date().toISOString(),
+        last_activity_at: new Date().toISOString(),
+      };
 
-    setSaving(false);
+      const { data, error } = await supabase
+        .from("jobs")
+        .insert([payload])
+        .select("*")
+        .single();
 
-    if (error) {
+      if (error) {
+        console.error("Error creating job:", error);
+        return;
+      }
+
+      if (onCreated) onCreated(data);
+    } catch (error) {
       console.error("Error creating job:", error);
-      return;
+    } finally {
+      setSaving(false);
     }
-
-    if (onCreated) onCreated(data);
   }
 
   if (!open) return null;
@@ -120,16 +156,6 @@ export default function CreateJobModal({ open, onClose, ownerId, onCreated }) {
             </div>
 
             <div className={styles.field}>
-              <label className={styles.label}>Job Number</label>
-              <input
-                className={styles.input}
-                value={jobNumber}
-                onChange={(e) => setJobNumber(e.target.value)}
-                placeholder="JOB-1001"
-              />
-            </div>
-
-            <div className={styles.field}>
               <label className={styles.label}>Client</label>
               <select
                 className={styles.input}
@@ -143,20 +169,6 @@ export default function CreateJobModal({ open, onClose, ownerId, onCreated }) {
                     {client.name || "Unnamed Client"}
                   </option>
                 ))}
-              </select>
-            </div>
-
-            <div className={styles.field}>
-              <label className={styles.label}>Status</label>
-              <select
-                className={styles.input}
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-              >
-                <option value="active">Active</option>
-                <option value="pending">Pending</option>
-                <option value="completed">Completed</option>
-                <option value="on_hold">On Hold</option>
               </select>
             </div>
 

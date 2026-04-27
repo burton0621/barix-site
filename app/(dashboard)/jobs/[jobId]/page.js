@@ -6,8 +6,7 @@ import { supabase } from "@/lib/supabaseClient";
 import DashboardNavbar from "@/components/Navbar/DashboardNav/DashboardNavbar";
 import InvoiceModal from "@/components/Invoices/InvoiceModal/InvoiceModal";
 import styles from "./jobDetailPage.module.css";
-import { FiTrash2 } from "react-icons/fi";
-
+import { FiTrash2, FiEdit2 } from "react-icons/fi";
 
 export default function JobDetailPage() {
   const params = useParams();
@@ -25,6 +24,7 @@ export default function JobDetailPage() {
 
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [invoiceModalType, setInvoiceModalType] = useState("invoice");
+  const [selectedDocument, setSelectedDocument] = useState(null);
 
   const [newNote, setNewNote] = useState("");
   const [savingNote, setSavingNote] = useState(false);
@@ -43,6 +43,7 @@ export default function JobDetailPage() {
     const tab = searchParams.get("tab");
 
     if (createType === "invoice" || createType === "estimate") {
+      setSelectedDocument(null);
       setInvoiceModalType(createType);
       setShowInvoiceModal(true);
     }
@@ -270,63 +271,63 @@ export default function JobDetailPage() {
   }
 
   async function handleDeletePhoto(photoId) {
-  const photo = photos.find((p) => p.id === photoId);
-  if (!photo) return;
+    const photo = photos.find((p) => p.id === photoId);
+    if (!photo) return;
 
-  const confirmed = window.confirm("Delete this photo?");
-  if (!confirmed) return;
+    const confirmed = window.confirm("Delete this photo?");
+    if (!confirmed) return;
 
-  setDeletingPhotoId(photoId);
+    setDeletingPhotoId(photoId);
 
-  try {
-    if (photo.file_path) {
-      const { error: storageError } = await supabase.storage
-        .from("job-photos")
-        .remove([photo.file_path]);
+    try {
+      if (photo.file_path) {
+        const { error: storageError } = await supabase.storage
+          .from("job-photos")
+          .remove([photo.file_path]);
 
-      if (storageError) {
-        console.error("Error deleting photo from storage:", storageError);
+        if (storageError) {
+          console.error("Error deleting photo from storage:", storageError);
+          setDeletingPhotoId(null);
+          return;
+        }
+      }
+
+      const { error: dbError } = await supabase
+        .from("job_photos")
+        .delete()
+        .eq("id", photoId);
+
+      if (dbError) {
+        console.error("Error deleting photo record:", dbError);
         setDeletingPhotoId(null);
         return;
       }
-    }
 
-    const { error: dbError } = await supabase
-      .from("job_photos")
-      .delete()
-      .eq("id", photoId);
+      await touchJobActivity(job.id);
 
-    if (dbError) {
-      console.error("Error deleting photo record:", dbError);
-      setDeletingPhotoId(null);
-      return;
-    }
+      if (selectedPhotoIndex !== null) {
+        const newPhotos = photos.filter((p) => p.id !== photoId);
 
-    await touchJobActivity(job.id);
+        if (newPhotos.length === 0) {
+          setSelectedPhotoIndex(null);
+        } else {
+          const deletedIndex = photos.findIndex((p) => p.id === photoId);
 
-    if (selectedPhotoIndex !== null) {
-      const newPhotos = photos.filter((p) => p.id !== photoId);
-
-      if (newPhotos.length === 0) {
-        setSelectedPhotoIndex(null);
-      } else {
-        const deletedIndex = photos.findIndex((p) => p.id === photoId);
-
-        if (deletedIndex === selectedPhotoIndex) {
-          setSelectedPhotoIndex(0);
-        } else if (deletedIndex < selectedPhotoIndex) {
-          setSelectedPhotoIndex((prev) => Math.max(0, prev - 1));
+          if (deletedIndex === selectedPhotoIndex) {
+            setSelectedPhotoIndex(0);
+          } else if (deletedIndex < selectedPhotoIndex) {
+            setSelectedPhotoIndex((prev) => Math.max(0, prev - 1));
+          }
         }
       }
-    }
 
-    await loadJob();
-  } catch (err) {
-    console.error("Unexpected error deleting photo:", err);
-  } finally {
-    setDeletingPhotoId(null);
+      await loadJob();
+    } catch (err) {
+      console.error("Unexpected error deleting photo:", err);
+    } finally {
+      setDeletingPhotoId(null);
+    }
   }
-}
 
   async function touchJobActivity(currentJobId) {
     await supabase
@@ -339,13 +340,26 @@ export default function JobDetailPage() {
   }
 
   function handleOpenCreateEstimate() {
+    setSelectedDocument(null);
     setInvoiceModalType("estimate");
     setShowInvoiceModal(true);
   }
 
   function handleOpenCreateInvoice() {
+    setSelectedDocument(null);
     setInvoiceModalType("invoice");
     setShowInvoiceModal(true);
+  }
+
+  function handleEditDocument(doc) {
+    setSelectedDocument(doc);
+    setInvoiceModalType(doc.document_type || "invoice");
+    setShowInvoiceModal(true);
+  }
+
+  function handleCloseInvoiceModal() {
+    setShowInvoiceModal(false);
+    setSelectedDocument(null);
   }
 
   function openPhotoGallery(index) {
@@ -453,13 +467,27 @@ export default function JobDetailPage() {
                 <div className={styles.docList}>
                   {estimates.map((doc) => (
                     <div key={doc.id} className={styles.docRow}>
-                      <div>
-                        <p className={styles.docName}>{doc.invoice_number || "Estimate"}</p>
-                        <p className={styles.docMeta}>
-                          {formatDate(doc.issue_date || doc.created_at)} • {formatStatus(doc.status)}
-                        </p>
+                      <div className={styles.docMain}>
+                        <div>
+                          <p className={styles.docName}>{doc.invoice_number || "Estimate"}</p>
+                          <p className={styles.docMeta}>
+                            {formatDate(doc.issue_date || doc.created_at)} • {formatStatus(doc.status)}
+                          </p>
+                        </div>
                       </div>
-                      <span className={styles.docAmount}>{formatCurrency(doc.total)}</span>
+
+                      <div className={styles.docActions}>
+                        <span className={styles.docAmount}>{formatCurrency(doc.total)}</span>
+                        <button
+                          type="button"
+                          className={styles.docEditButton}
+                          onClick={() => handleEditDocument(doc)}
+                          aria-label={`Edit ${doc.invoice_number || "estimate"}`}
+                          title="Edit estimate"
+                        >
+                          <FiEdit2 />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -474,13 +502,27 @@ export default function JobDetailPage() {
                 <div className={styles.docList}>
                   {invoices.map((doc) => (
                     <div key={doc.id} className={styles.docRow}>
-                      <div>
-                        <p className={styles.docName}>{doc.invoice_number || "Invoice"}</p>
-                        <p className={styles.docMeta}>
-                          {formatDate(doc.issue_date || doc.created_at)} • {formatStatus(doc.status)}
-                        </p>
+                      <div className={styles.docMain}>
+                        <div>
+                          <p className={styles.docName}>{doc.invoice_number || "Invoice"}</p>
+                          <p className={styles.docMeta}>
+                            {formatDate(doc.issue_date || doc.created_at)} • {formatStatus(doc.status)}
+                          </p>
+                        </div>
                       </div>
-                      <span className={styles.docAmount}>{formatCurrency(doc.total)}</span>
+
+                      <div className={styles.docActions}>
+                        <span className={styles.docAmount}>{formatCurrency(doc.total)}</span>
+                        <button
+                          type="button"
+                          className={styles.docEditButton}
+                          onClick={() => handleEditDocument(doc)}
+                          aria-label={`Edit ${doc.invoice_number || "invoice"}`}
+                          title="Edit invoice"
+                        >
+                          <FiEdit2 />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -657,13 +699,15 @@ export default function JobDetailPage() {
       {showInvoiceModal && job ? (
         <InvoiceModal
           open={showInvoiceModal}
-          onClose={() => setShowInvoiceModal(false)}
+          onClose={handleCloseInvoiceModal}
           onSaved={async () => {
             setShowInvoiceModal(false);
+            setSelectedDocument(null);
             await touchJobActivity(job.id);
-            loadJob();
+            await loadJob();
           }}
-          documentType={invoiceModalType}
+          documentType={selectedDocument?.document_type || invoiceModalType}
+          invoice={selectedDocument || null}
           jobId={job.id}
           clientId={job.client_id}
         />
