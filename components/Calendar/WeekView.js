@@ -24,7 +24,8 @@ function positionInDay(appointment) {
   const start = new Date(appointment.start_time);
   const end = new Date(appointment.end_time);
   const startMinutes = start.getHours() * 60 + start.getMinutes();
-  const endMinutes = end.getHours() * 60 + end.getMinutes();
+  const rawEndMinutes = end.getHours() * 60 + end.getMinutes();
+  const endMinutes = Math.min(rawEndMinutes, VISIBLE_END * 60);
   const durationMinutes = Math.max(endMinutes - startMinutes, 30);
   const top = ((startMinutes - VISIBLE_START * 60) / 60) * HOUR_HEIGHT;
   const height = (durationMinutes / 60) * HOUR_HEIGHT;
