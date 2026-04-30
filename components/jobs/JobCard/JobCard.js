@@ -29,17 +29,10 @@ export default function JobCard({ job, onOpen }) {
           <span className={styles.statLabel}>Estimates</span>
           <span className={styles.statValue}>{job.estimateCount || 0}</span>
         </div>
+
         <div className={styles.stat}>
           <span className={styles.statLabel}>Invoices</span>
           <span className={styles.statValue}>{job.invoiceCount || 0}</span>
-        </div>
-        <div className={styles.stat}>
-          <span className={styles.statLabel}>Photos</span>
-          <span className={styles.statValue}>{job.photoCount || 0}</span>
-        </div>
-        <div className={styles.stat}>
-          <span className={styles.statLabel}>Notes</span>
-          <span className={styles.statValue}>{job.noteCount || 0}</span>
         </div>
       </div>
 
@@ -49,11 +42,9 @@ export default function JobCard({ job, onOpen }) {
           <span className={styles.totalValue}>{formatCurrency(job.dedupedTotal || 0)}</span>
         </div>
 
-        <div className={styles.actions}>
-          <button type="button" className={styles.primaryBtn} onClick={onOpen}>
-            View Job
-          </button>
-        </div>
+        <button type="button" className={styles.primaryBtn} onClick={onOpen}>
+          View Job
+        </button>
       </div>
     </article>
   );

@@ -100,7 +100,7 @@ export default function JobDetailPage() {
 
     if (jobError || !jobData) {
       console.error("Error loading job:", jobError);
-      router.push("/dashboard/jobs");
+      router.push("/jobs");
       return;
     }
 
@@ -404,7 +404,7 @@ export default function JobDetailPage() {
             <button
               type="button"
               className={styles.backButton}
-              onClick={() => router.push("/dashboard/jobs")}
+              onClick={() => router.push("jobs")}
             >
               Back to Jobs
             </button>

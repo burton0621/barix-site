@@ -18,8 +18,6 @@ export default function JobsPage() {
   const [jobs, setJobs] = useState([]);
   const [clientsMap, setClientsMap] = useState({});
   const [jobDocsMap, setJobDocsMap] = useState({});
-  const [jobNotesCountMap, setJobNotesCountMap] = useState({});
-  const [jobPhotosCountMap, setJobPhotosCountMap] = useState({});
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -63,8 +61,6 @@ export default function JobsPage() {
     if (safeJobs.length === 0) {
       setClientsMap({});
       setJobDocsMap({});
-      setJobNotesCountMap({});
-      setJobPhotosCountMap({});
       setLoading(false);
       return;
     }
@@ -72,46 +68,25 @@ export default function JobsPage() {
     const clientIds = [...new Set(safeJobs.map((j) => j.client_id).filter(Boolean))];
     const jobIds = safeJobs.map((j) => j.id);
 
-    const [
-      clientsRes,
-      docsRes,
-      notesRes,
-      photosRes,
-    ] = await Promise.all([
+    const [clientsRes, docsRes] = await Promise.all([
       clientIds.length
-        ? supabase
-            .from("clients")
-            .select("id, name")
-            .in("id", clientIds)
+        ? supabase.from("clients").select("id, name").in("id", clientIds)
         : Promise.resolve({ data: [], error: null }),
 
       supabase
         .from("invoices")
-        .select("id, job_id, document_type, total, converted_from_id, updated_at, created_at, status")
-        .in("job_id", jobIds),
-
-      supabase
-        .from("job_notes")
-        .select("id, job_id, created_at, updated_at")
-        .in("job_id", jobIds),
-
-      supabase
-        .from("job_photos")
-        .select("id, job_id, created_at")
+        .select(
+          "id, job_id, document_type, total, converted_from_id, updated_at, created_at, status"
+        )
         .in("job_id", jobIds),
     ]);
 
     if (clientsRes.error) {
       console.error("Error loading clients:", clientsRes.error);
     }
+
     if (docsRes.error) {
       console.error("Error loading job docs:", docsRes.error);
-    }
-    if (notesRes.error) {
-      console.error("Error loading job notes:", notesRes.error);
-    }
-    if (photosRes.error) {
-      console.error("Error loading job photos:", photosRes.error);
     }
 
     const nextClientsMap = {};
@@ -126,20 +101,8 @@ export default function JobsPage() {
       nextJobDocsMap[doc.job_id].push(doc);
     }
 
-    const nextNotesCountMap = {};
-    for (const note of notesRes.data || []) {
-      nextNotesCountMap[note.job_id] = (nextNotesCountMap[note.job_id] || 0) + 1;
-    }
-
-    const nextPhotosCountMap = {};
-    for (const photo of photosRes.data || []) {
-      nextPhotosCountMap[photo.job_id] = (nextPhotosCountMap[photo.job_id] || 0) + 1;
-    }
-
     setClientsMap(nextClientsMap);
     setJobDocsMap(nextJobDocsMap);
-    setJobNotesCountMap(nextNotesCountMap);
-    setJobPhotosCountMap(nextPhotosCountMap);
 
     setLoading(false);
   }, [router]);
@@ -152,8 +115,6 @@ export default function JobsPage() {
     return jobs.map((job) => {
       const client = clientsMap[job.client_id] || null;
       const docs = jobDocsMap[job.id] || [];
-      const noteCount = jobNotesCountMap[job.id] || 0;
-      const photoCount = jobPhotosCountMap[job.id] || 0;
 
       const invoices = docs.filter((d) => d.document_type === "invoice");
       const estimates = docs.filter((d) => d.document_type === "estimate");
@@ -171,19 +132,15 @@ export default function JobsPage() {
         return sum + Number(inv.total || 0);
       }, 0);
 
-      const dedupedTotal = invoiceTotal + dedupedEstimateTotal;
-
       return {
         ...job,
         client,
         invoiceCount: invoices.length,
         estimateCount: estimates.length,
-        noteCount,
-        photoCount,
-        dedupedTotal,
+        dedupedTotal: invoiceTotal + dedupedEstimateTotal,
       };
     });
-  }, [jobs, clientsMap, jobDocsMap, jobNotesCountMap, jobPhotosCountMap]);
+  }, [jobs, clientsMap, jobDocsMap]);
 
   const filteredJobs = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -212,8 +169,6 @@ export default function JobsPage() {
   function handleOpenJob(jobId) {
     router.push(`/jobs/${jobId}`);
   }
-
-
 
   if (loading) {
     return (
@@ -270,11 +225,7 @@ export default function JobsPage() {
           ) : (
             <div className={styles.jobsList}>
               {filteredJobs.map((job) => (
-                <JobCard
-                  key={job.id}
-                  job={job}
-                  onOpen={() => handleOpenJob(job.id)}
-                />
+                <JobCard key={job.id} job={job} onOpen={() => handleOpenJob(job.id)} />
               ))}
             </div>
           )}
