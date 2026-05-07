@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import styles from "./feedbackButton.module.css";
+import styles from "./FeedbackButton.module.css";
 
 export default function FeedbackButton() {
   const pathname = usePathname();
