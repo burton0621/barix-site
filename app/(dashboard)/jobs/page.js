@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import DashboardNavbar from "@/components/Navbar/DashboardNav/DashboardNavbar";
+
 import CreateJobModal from "@/components/jobs/CreateJobModal/CreateJobModal";
 import JobsFilters from "@/components/jobs/JobsFilters/JobsFilters";
 import JobCard from "@/components/jobs/JobCard/JobCard";
@@ -180,7 +180,7 @@ export default function JobsPage() {
 
   return (
     <div className={styles.page}>
-      <DashboardNavbar />
+
 
       <main className={styles.main}>
         <section className={styles.headerCard}>

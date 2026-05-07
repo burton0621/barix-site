@@ -19,7 +19,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/providers/AuthProvider";
-import DashboardNavbar from "@/components/Navbar/DashboardNav/DashboardNavbar";
+
 import Toast from "@/components/common/Toast/Toast";
 import ConfirmDialog from "@/components/common/ConfirmDialog/ConfirmDialog";
 
@@ -245,7 +245,7 @@ export default function TeamPage() {
   if (!isAdmin) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <DashboardNavbar />
+
         <main className="max-w-3xl mx-auto px-6 py-10">
           <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
             <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
@@ -286,7 +286,7 @@ export default function TeamPage() {
       />
       
       <div className="min-h-screen bg-gray-50">
-        <DashboardNavbar />
+
         
         <main className="max-w-4xl mx-auto px-6 py-10">
           {/* Page Header */}

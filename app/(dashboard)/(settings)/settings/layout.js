@@ -1,6 +1,6 @@
 "use client";
 
-import DashboardNavbar from "@/components/Navbar/DashboardNav/DashboardNavbar";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import styles from "./settings.module.css";
@@ -13,7 +13,7 @@ export default function SettingsLayout({ children }) {
 
   return (
     <div className={styles.page}>
-      <DashboardNavbar />
+
 
       <main className={styles.container}>
         <div className={styles.header}>

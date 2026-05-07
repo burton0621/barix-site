@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import DashboardNavbar from "@/components/Navbar/DashboardNav/DashboardNavbar";
+
 import InvoiceModal from "@/components/Invoices/InvoiceModal/InvoiceModal";
 import styles from "./jobDetailPage.module.css";
 import { FiTrash2, FiEdit2 } from "react-icons/fi";
@@ -351,7 +351,7 @@ export default function JobDetailPage() {
 
   return (
     <div className={styles.page}>
-      <DashboardNavbar />
+
 
       <main className={styles.main}>
         {/* Header */}
