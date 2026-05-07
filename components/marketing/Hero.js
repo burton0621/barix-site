@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 
@@ -45,33 +44,6 @@ export default function Hero({ onOpenContact }) {
           </p>
         </div>
 
-        {/* Hero image with clean presentation */}
-        <div className="relative mt-16 md:mt-20">
-          <div className="relative mx-auto max-w-4xl">
-            {/* Glow effect behind image */}
-            <div className="absolute -inset-4 rounded-3xl bg-gradient-to-r from-brand-200/40 via-brand-100/20 to-brand-200/40 blur-2xl" />
-            
-            <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl shadow-brand/10">
-              <Image
-                src="/hero/hero-image.png"
-                alt="Tradesperson using Barix Billing on tablet"
-                width={1200}
-                height={3600}
-                priority
-                className="w-full object-cover"
-              />
-              {/* Text overlay */}
-              <div className="absolute inset-0 flex flex-col justify-start p-8 md:p-12">
-                <h2 className="text-3xl font-bold text-white md:text-5xl lg:text-6xl" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
-                  BARIX BILLING
-                </h2>
-                <p className="mt-4 max-w-xs text-base font-semibold text-white md:max-w-sm md:text-lg" style={{ textShadow: '2px 2px 6px rgba(0,0,0,0.8)' }}>
-                  The billing platform for trades and service businesses
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </section>
   );

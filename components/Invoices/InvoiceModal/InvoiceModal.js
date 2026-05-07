@@ -4,6 +4,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./InvoiceModal.module.css";
+import { supabase } from "@/lib/supabaseClient";
 
 import SearchableSelect from "@/components/common/SearchableSelect/SearchableSelect";
 import Toast from "@/components/common/Toast/Toast";
@@ -39,6 +40,61 @@ import {
   fetchIndirectMaterialsDefaults,
 } from "./invoiceQueries";
 
+// ── Calendar sync helpers (non-fatal) ──────────────────────────────────────
+async function syncInvoiceDueAppointment({ invoiceId, dueDate, invoiceNumber, clientName, accessToken, existingId }) {
+  if (!dueDate || !accessToken) return existingId || null;
+  try {
+    const title = `${invoiceNumber} due — ${clientName || "Client"}`;
+    const body = {
+      title,
+      type: "invoice_due",
+      all_day: true,
+      invoice_id: invoiceId,
+      start_time: new Date(dueDate + "T00:00:00").toISOString(),
+      end_time: new Date(dueDate + "T23:59:00").toISOString(),
+    };
+    const url = existingId ? `/api/calendar/appointments/${existingId}` : "/api/calendar/appointments";
+    const res = await fetch(url, {
+      method: existingId ? "PATCH" : "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) return existingId || null;
+    const json = await res.json();
+    return json.data?.id || existingId || null;
+  } catch {
+    return existingId || null;
+  }
+}
+
+async function syncInvoiceJobAppointment({ invoiceId, jobStart, jobEnd, jobLocation, invoiceNumber, clientName, accessToken, existingId }) {
+  if (!jobStart || !jobEnd || !accessToken) return existingId || null;
+  try {
+    const title = `${invoiceNumber} — ${clientName || "Job"}`;
+    const body = {
+      title,
+      type: "job_site_visit",
+      all_day: false,
+      invoice_id: invoiceId,
+      start_time: new Date(jobStart).toISOString(),
+      end_time: new Date(jobEnd).toISOString(),
+      location: jobLocation?.trim() || null,
+    };
+    const url = existingId ? `/api/calendar/appointments/${existingId}` : "/api/calendar/appointments";
+    const res = await fetch(url, {
+      method: existingId ? "PATCH" : "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) return existingId || null;
+    const json = await res.json();
+    return json.data?.id || existingId || null;
+  } catch {
+    return existingId || null;
+  }
+}
+// ───────────────────────────────────────────────────────────────────────────
+
 export default function InvoiceModal({
   open,
   onClose,
@@ -66,7 +122,18 @@ export default function InvoiceModal({
   const dueDateTouchedRef = useRef(false);
 
   const [user, setUser] = useState(null);
+  const [accessToken, setAccessToken] = useState(null);
   const [defaultDueDays, setDefaultDueDays] = useState(30);
+
+  // Calendar appointment IDs linked to this invoice
+  const [dueAppointmentId, setDueAppointmentId] = useState(null);
+  const [jobAppointmentId, setJobAppointmentId] = useState(null);
+
+  // Schedule appointment section
+  const [scheduleJob, setScheduleJob] = useState(false);
+  const [jobStart, setJobStart] = useState("");
+  const [jobEnd, setJobEnd] = useState("");
+  const [jobLocation, setJobLocation] = useState("");
 
   const [clients, setClients] = useState([]);
   const [services, setServices] = useState([]);
@@ -140,6 +207,13 @@ export default function InvoiceModal({
         setIndirectPercent("0");
       }
 
+      setDueAppointmentId(null);
+      setJobAppointmentId(null);
+      setScheduleJob(false);
+      setJobStart("");
+      setJobEnd("");
+      setJobLocation("");
+
       dueDateTouchedRef.current = false;
       sendAfterCreateRef.current = false;
     },
@@ -167,6 +241,10 @@ export default function InvoiceModal({
 
     if (invoiceData.clients) setSelectedClient(invoiceData.clients);
 
+    setDueAppointmentId(invoiceData.due_appointment_id || null);
+    setJobAppointmentId(invoiceData.job_appointment_id || null);
+    setScheduleJob(!!invoiceData.job_appointment_id);
+
     const rows = await fetchInvoiceLineItems(invoiceData.id);
     setLineItems(toEditableLineItems(rows));
   }, []);
@@ -178,8 +256,12 @@ export default function InvoiceModal({
     const init = async () => {
       setLoadingData(true);
       try {
-        const authedUser = await getAuthedUser();
+        const [authedUser, sessionData] = await Promise.all([
+          getAuthedUser(),
+          supabase.auth.getSession(),
+        ]);
         setUser(authedUser);
+        setAccessToken(sessionData?.data?.session?.access_token || null);
 
         const contractorId = await resolveContractorId(authedUser.id);
 
@@ -368,6 +450,42 @@ export default function InvoiceModal({
         const payload = toLineItemsInsertPayload({ invoiceId: invoice.id, lineItems: valid });
         await replaceInvoiceLineItems({ invoiceId: invoice.id, payload });
 
+        // Sync calendar appointments (non-fatal)
+        if (!isEstimate) {
+          try {
+            const newDueId = await syncInvoiceDueAppointment({
+              invoiceId: invoice.id,
+              dueDate,
+              invoiceNumber,
+              clientName: selectedClient?.name,
+              accessToken,
+              existingId: dueAppointmentId,
+            });
+            if (newDueId && newDueId !== dueAppointmentId) {
+              await supabase.from("invoices").update({ due_appointment_id: newDueId }).eq("id", invoice.id);
+              setDueAppointmentId(newDueId);
+            }
+            if (scheduleJob && jobStart && jobEnd) {
+              const newJobId = await syncInvoiceJobAppointment({
+                invoiceId: invoice.id,
+                jobStart,
+                jobEnd,
+                jobLocation,
+                invoiceNumber,
+                clientName: selectedClient?.name,
+                accessToken,
+                existingId: jobAppointmentId,
+              });
+              if (newJobId && newJobId !== jobAppointmentId) {
+                await supabase.from("invoices").update({ job_appointment_id: newJobId }).eq("id", invoice.id);
+                setJobAppointmentId(newJobId);
+              }
+            }
+          } catch (calErr) {
+            console.warn("Calendar sync failed (non-fatal):", calErr);
+          }
+        }
+
         if (typeof onSaved === "function") onSaved(updated);
         onClose();
         return;
@@ -395,6 +513,40 @@ export default function InvoiceModal({
 
       const payload = toLineItemsInsertPayload({ invoiceId: created.id, lineItems: valid });
       await insertInvoiceLineItems(payload);
+
+      // Sync calendar appointments (non-fatal)
+      if (!isEstimate) {
+        try {
+          const newDueId = await syncInvoiceDueAppointment({
+            invoiceId: created.id,
+            dueDate,
+            invoiceNumber,
+            clientName: selectedClient?.name,
+            accessToken,
+            existingId: null,
+          });
+          if (newDueId) {
+            await supabase.from("invoices").update({ due_appointment_id: newDueId }).eq("id", created.id);
+          }
+          if (scheduleJob && jobStart && jobEnd) {
+            const newJobId = await syncInvoiceJobAppointment({
+              invoiceId: created.id,
+              jobStart,
+              jobEnd,
+              jobLocation,
+              invoiceNumber,
+              clientName: selectedClient?.name,
+              accessToken,
+              existingId: null,
+            });
+            if (newJobId) {
+              await supabase.from("invoices").update({ job_appointment_id: newJobId }).eq("id", created.id);
+            }
+          }
+        } catch (calErr) {
+          console.warn("Calendar sync failed (non-fatal):", calErr);
+        }
+      }
 
       if (sendAfterCreateRef.current) {
         sendAfterCreateRef.current = false;
@@ -778,6 +930,67 @@ export default function InvoiceModal({
                     </div>
                   </div>
                 </div>
+
+                {/* Schedule appointment (invoices only) */}
+                {!isEstimate && (
+                  <div className={styles.scheduleSection}>
+                    <label className={styles.scheduleToggle}>
+                      <input
+                        type="checkbox"
+                        checked={scheduleJob}
+                        onChange={(e) => setScheduleJob(e.target.checked)}
+                        disabled={saving || sending}
+                        className={styles.scheduleCheckbox}
+                      />
+                      <span className={styles.scheduleToggleLabel}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="3" y="4" width="18" height="18" rx="2" />
+                          <line x1="16" y1="2" x2="16" y2="6" />
+                          <line x1="8" y1="2" x2="8" y2="6" />
+                          <line x1="3" y1="10" x2="21" y2="10" />
+                        </svg>
+                        Schedule a job appointment
+                      </span>
+                    </label>
+                    {scheduleJob && (
+                      <div className={styles.scheduleFields}>
+                        <div className={styles.gridTwoCols}>
+                          <div className={styles.field}>
+                            <label className={styles.label}>Start</label>
+                            <input
+                              className={styles.input}
+                              type="datetime-local"
+                              value={jobStart}
+                              onChange={(e) => setJobStart(e.target.value)}
+                              disabled={saving || sending}
+                            />
+                          </div>
+                          <div className={styles.field}>
+                            <label className={styles.label}>End</label>
+                            <input
+                              className={styles.input}
+                              type="datetime-local"
+                              value={jobEnd}
+                              onChange={(e) => setJobEnd(e.target.value)}
+                              disabled={saving || sending}
+                            />
+                          </div>
+                        </div>
+                        <div className={styles.field}>
+                          <label className={styles.label}>Location (optional)</label>
+                          <input
+                            className={styles.input}
+                            type="text"
+                            value={jobLocation}
+                            onChange={(e) => setJobLocation(e.target.value)}
+                            placeholder="123 Main St, City, State"
+                            disabled={saving || sending}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Actions row (separate from footerRow) */}
                 <div className={styles.actions}>

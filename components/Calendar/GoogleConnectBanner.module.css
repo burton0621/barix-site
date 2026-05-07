@@ -1,0 +1,148 @@
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+
+.bannerLeft {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.googleIconLarge {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.bannerTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0a2540;
+  margin: 0 0 2px;
+}
+
+.bannerDesc {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.connectBtn {
+  background: #0a2540;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.connectBtn:hover {
+  background: #133a5d;
+}
+
+/* Connected state */
+.connectedBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #f5f8fa;
+  border: 1px solid #e6edf3;
+  border-radius: 10px;
+  padding: 10px 16px;
+  margin-bottom: 20px;
+}
+
+.connectedLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.googleIcon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.connectedText {
+  font-size: 13px;
+  font-weight: 500;
+  color: #0a2540;
+}
+
+.connectedEmail {
+  font-weight: 400;
+  color: #31679b;
+}
+
+.connectedActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.syncBtn {
+  background: #e6edf3;
+  color: #0a2540;
+  border: 1px solid #c1d5e4;
+  border-radius: 7px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.syncBtn:hover:not(:disabled) {
+  background: #c1d5e4;
+}
+
+.syncBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.disconnectBtn {
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 6px;
+  transition: color 0.15s;
+}
+
+.disconnectBtn:hover {
+  color: #ef4444;
+}
+
+@media (max-width: 640px) {
+  .banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .connectBtn {
+    width: 100%;
+    text-align: center;
+  }
+
+  .connectedBar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

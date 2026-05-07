@@ -16,3 +16,4 @@ pnpm-debug.log*
 .vscode/*
 !.vscode/extensions.json
 .DS_Store
+.claude/settings.local.json
