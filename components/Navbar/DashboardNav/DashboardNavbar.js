@@ -120,6 +120,14 @@ export default function DashboardNavbar() {
           >
             Services
           </Link>
+          <Link
+            href="/calendar"
+            className={`${styles.navLink} ${
+              isActive("/calendar") ? styles.active : ""
+            }`}
+          >
+            Calendar
+          </Link>
 
           {isAdmin && (
             <Link
@@ -258,6 +266,14 @@ export default function DashboardNavbar() {
             }`}
           >
             Services
+          </Link>
+          <Link
+            href="/calendar"
+            className={`${styles.mobileNavLink} ${
+              isActive("/calendar") ? styles.mobileNavActive : ""
+            }`}
+          >
+            Calendar
           </Link>
 
           {isAdmin && (
