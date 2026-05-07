@@ -4,7 +4,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import DashboardNavbar from "@/components/Navbar/DashboardNavbar";
+
 import AddClientForm from "@/components/clients/AddClientForm";
 import { FiEdit2, FiX } from "react-icons/fi";
 import styles from "./clientsPage.module.css";
@@ -207,7 +207,7 @@ export default function ClientsPage() {
 
   return (
     <div className={styles.pageWrapper}>
-      <DashboardNavbar />
+  
 
       <main className={styles.main}>
         {/* Header */}
