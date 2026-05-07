@@ -135,6 +135,307 @@ export async function POST(request) {
         break;
       }
 
+      // ============================================
+      // CHECKOUT SESSION COMPLETED - Subscription Mode
+      // Fires when customer completes subscription checkout
+      // ============================================
+      case "checkout.session.completed": {
+        const session = event.data.object;
+
+        // Only handle subscription checkouts (ignore payment mode)
+        if (session.mode === "subscription" && session.metadata?.contract_id) {
+          const contractId = session.metadata.contract_id;
+          const subscriptionId = session.subscription;
+
+          console.log("Subscription checkout completed:", {
+            contractId,
+            subscriptionId,
+          });
+
+          // Fetch the subscription to get current period end
+          try {
+            const subscription = await stripe.subscriptions.retrieve(
+              subscriptionId,
+              { stripeAccount: event.account }
+            );
+
+            // Update the contract with subscription details
+            const { error: updateError } = await supabaseAdmin
+              .from("recurring_contracts")
+              .update({
+                status: "active",
+                stripe_subscription_id: subscriptionId,
+                activated_at: new Date().toISOString(),
+                next_billing_date: new Date(
+                  subscription.current_period_end * 1000
+                ).toISOString(),
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", contractId);
+
+            if (updateError) {
+              console.error("Error updating contract:", updateError);
+            } else {
+              console.log("Activated contract:", contractId);
+            }
+          } catch (err) {
+            console.error(
+              "Error retrieving subscription details:",
+              err.message
+            );
+          }
+        }
+        break;
+      }
+
+      // ============================================
+      // INVOICE PAYMENT SUCCEEDED - Recurring Payment
+      // Fires when a recurring subscription payment succeeds
+      // ============================================
+      case "invoice.payment_succeeded": {
+        const invoice = event.data.object;
+
+        // Only handle subscription invoices
+        if (invoice.subscription) {
+          console.log("Subscription payment succeeded:", {
+            invoiceId: invoice.id,
+            subscriptionId: invoice.subscription,
+            amount: invoice.amount_paid / 100,
+          });
+
+          try {
+            // Find the contract by subscription ID
+            const { data: contract, error: contractError } =
+              await supabaseAdmin
+                .from("recurring_contracts")
+                .select("*")
+                .eq("stripe_subscription_id", invoice.subscription)
+                .single();
+
+            if (contractError || !contract) {
+              console.warn("Contract not found for subscription:", invoice.subscription);
+              break;
+            }
+
+            // Guard against duplicate invoices
+            const { data: existingInvoice } = await supabaseAdmin
+              .from("invoices")
+              .select("id")
+              .eq("stripe_invoice_id", invoice.id)
+              .single();
+
+            if (existingInvoice) {
+              console.log("Invoice already exists:", invoice.id);
+              break;
+            }
+
+            // Create invoice record for the recurring payment
+            const invoiceNumber = `REC-${contract.id.slice(0, 8).toUpperCase()}-${Date.now().toString().slice(-6)}`;
+
+            const { data: newInvoice, error: insertError } =
+              await supabaseAdmin
+                .from("invoices")
+                .insert([
+                  {
+                    owner_id: contract.owner_id,
+                    client_id: contract.client_id,
+                    contract_id: contract.id,
+                    invoice_number: invoiceNumber,
+                    status: "paid",
+                    total: contract.amount,
+                    paid_at: new Date().toISOString(),
+                    issue_date: new Date().toISOString().split("T")[0],
+                    due_date: new Date().toISOString().split("T")[0],
+                    stripe_invoice_id: invoice.id,
+                    document_type: "invoice",
+                  },
+                ])
+                .select()
+                .single();
+
+            if (insertError) {
+              console.error("Error creating invoice:", insertError);
+              break;
+            }
+
+            // Create line item
+            const { error: lineItemError } = await supabaseAdmin
+              .from("invoice_line_items")
+              .insert([
+                {
+                  invoice_id: newInvoice.id,
+                  name: contract.title,
+                  description: contract.description,
+                  quantity: 1,
+                  rate: contract.amount,
+                  line_total: contract.amount,
+                  position: 0,
+                },
+              ]);
+
+            if (lineItemError) {
+              console.error("Error creating line item:", lineItemError);
+            }
+
+            // Update contract next_billing_date
+            const { error: contractUpdateError } = await supabaseAdmin
+              .from("recurring_contracts")
+              .update({
+                next_billing_date: new Date(
+                  invoice.lines.data[0].period.end * 1000
+                ).toISOString(),
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", contract.id);
+
+            if (contractUpdateError) {
+              console.error("Error updating contract billing date:", contractUpdateError);
+            } else {
+              console.log("Created recurring invoice:", newInvoice.id);
+            }
+          } catch (err) {
+            console.error("Error processing payment_succeeded:", err.message);
+          }
+        }
+        break;
+      }
+
+      // ============================================
+      // INVOICE PAYMENT FAILED - Dunning Event
+      // Fires when subscription payment fails
+      // ============================================
+      case "invoice.payment_failed": {
+        const invoice = event.data.object;
+
+        // Only handle subscription invoices
+        if (invoice.subscription) {
+          console.log("Subscription payment failed:", {
+            invoiceId: invoice.id,
+            subscriptionId: invoice.subscription,
+          });
+
+          try {
+            // Find the contract and update status
+            const { data: contract } = await supabaseAdmin
+              .from("recurring_contracts")
+              .select("*")
+              .eq("stripe_subscription_id", invoice.subscription)
+              .single();
+
+            if (contract) {
+              const { error: updateError } = await supabaseAdmin
+                .from("recurring_contracts")
+                .update({
+                  status: "payment_failed",
+                  updated_at: new Date().toISOString(),
+                })
+                .eq("id", contract.id);
+
+              if (updateError) {
+                console.error("Error updating contract status:", updateError);
+              } else {
+                console.log("Marked contract as payment_failed:", contract.id);
+              }
+            }
+          } catch (err) {
+            console.error("Error processing payment_failed:", err.message);
+          }
+        }
+        break;
+      }
+
+      // ============================================
+      // CUSTOMER SUBSCRIPTION DELETED
+      // Fires when subscription is canceled (via cancel_at or explicit cancel)
+      // ============================================
+      case "customer.subscription.deleted": {
+        const subscription = event.data.object;
+
+        console.log("Subscription deleted:", subscription.id);
+
+        try {
+          // Find the contract
+          const { data: contract } = await supabaseAdmin
+            .from("recurring_contracts")
+            .select("*")
+            .eq("stripe_subscription_id", subscription.id)
+            .single();
+
+          if (contract) {
+            // Determine status: expired if cancel_at was set (auto-canceled), canceled if manual
+            const status = subscription.cancel_at ? "expired" : "canceled";
+
+            const { error: updateError } = await supabaseAdmin
+              .from("recurring_contracts")
+              .update({
+                status: status,
+                canceled_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", contract.id);
+
+            if (updateError) {
+              console.error("Error updating contract status:", updateError);
+            } else {
+              console.log(`Marked contract as ${status}:`, contract.id);
+            }
+          }
+        } catch (err) {
+          console.error("Error processing subscription.deleted:", err.message);
+        }
+        break;
+      }
+
+      // ============================================
+      // CUSTOMER SUBSCRIPTION UPDATED
+      // Fires when subscription status changes (e.g., trial ends, past_due)
+      // ============================================
+      case "customer.subscription.updated": {
+        const subscription = event.data.object;
+
+        console.log("Subscription updated:", {
+          id: subscription.id,
+          status: subscription.status,
+        });
+
+        try {
+          // Find the contract
+          const { data: contract } = await supabaseAdmin
+            .from("recurring_contracts")
+            .select("*")
+            .eq("stripe_subscription_id", subscription.id)
+            .single();
+
+          if (contract) {
+            const updates = {
+              next_billing_date: new Date(
+                subscription.current_period_end * 1000
+              ).toISOString(),
+              updated_at: new Date().toISOString(),
+            };
+
+            // If subscription is past_due, update contract status
+            if (subscription.status === "past_due") {
+              updates.status = "payment_failed";
+            }
+
+            const { error: updateError } = await supabaseAdmin
+              .from("recurring_contracts")
+              .update(updates)
+              .eq("id", contract.id);
+
+            if (updateError) {
+              console.error("Error updating contract:", updateError);
+            } else {
+              console.log("Updated contract subscription info:", contract.id);
+            }
+          }
+        } catch (err) {
+          console.error("Error processing subscription.updated:", err.message);
+        }
+        break;
+      }
+
       default:
         // Log unhandled events for debugging, but don't error
         console.log("Unhandled Connect webhook event:", event.type);

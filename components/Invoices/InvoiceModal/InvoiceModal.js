@@ -158,6 +158,12 @@ export default function InvoiceModal({
   const [indirectAmount, setIndirectAmount] = useState("0");
   const [indirectPercent, setIndirectPercent] = useState("0");
 
+  // Recurring invoice options
+  // -----------------------
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurringInterval, setRecurringInterval] = useState("month");
+  const [recurringDuration, setRecurringDuration] = useState(null);
+
   // Totals (memo)
   const totals = useMemo(
     () =>
@@ -193,6 +199,9 @@ export default function InvoiceModal({
       setNotes("");
       setInternalNotes("");
       setLineItems([makeBlankLineItem()]);
+      setIsRecurring(false);
+      setRecurringInterval("month");
+      setRecurringDuration(null);
 
       // Indirect defaults
       if (indirectDefaults) {
@@ -514,6 +523,46 @@ export default function InvoiceModal({
       const payload = toLineItemsInsertPayload({ invoiceId: created.id, lineItems: valid });
       await insertInvoiceLineItems(payload);
 
+      // Create recurring contract if enabled
+      if (isRecurring && accessToken) {
+        try {
+          const contractPayload = {
+            client_id: clientId,
+            title: lineItems[0]?.description || "Recurring Service",
+            amount: total,
+            interval: recurringInterval,
+            interval_count: 1,
+            duration_months: recurringDuration,
+          };
+
+          const contractRes = await fetch("/api/contracts", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify(contractPayload),
+          });
+
+          if (contractRes.ok) {
+            const contractData = await contractRes.json();
+            const contractId = contractData.data?.id;
+
+            // Send setup link email
+            if (contractId) {
+              await fetch(`/api/contracts/${contractId}/send-setup`, {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                },
+              });
+            }
+          }
+        } catch (err) {
+          console.warn("Recurring contract creation failed (non-fatal):", err);
+        }
+      }
+
       // Sync calendar appointments (non-fatal)
       if (!isEstimate) {
         try {
@@ -706,6 +755,60 @@ export default function InvoiceModal({
                     />
                   </div>
                 </div>
+
+                {/* Recurring Invoice Options */}
+                {!isEstimate && (
+                  <div className={styles.section}>
+                    <label className={styles.checkboxLabel}>
+                      <input
+                        type="checkbox"
+                        checked={isRecurring}
+                        onChange={(e) => setIsRecurring(e.target.checked)}
+                        disabled={saving || sending}
+                      />
+                      <span>Make this invoice recurring</span>
+                    </label>
+
+                    {isRecurring && (
+                      <div className={styles.recurringOptions}>
+                        <div className={styles.recurringRow}>
+                          <div className={styles.formGroup}>
+                            <label className={styles.label}>Billing Interval</label>
+                            <select
+                              className={styles.input}
+                              value={recurringInterval}
+                              onChange={(e) => setRecurringInterval(e.target.value)}
+                              disabled={saving || sending}
+                            >
+                              <option value="month">Monthly</option>
+                              <option value="quarter">Quarterly</option>
+                              <option value="year">Annually</option>
+                            </select>
+                          </div>
+
+                          <div className={styles.formGroup}>
+                            <label className={styles.label}>Duration</label>
+                            <select
+                              className={styles.input}
+                              value={recurringDuration || ""}
+                              onChange={(e) => setRecurringDuration(e.target.value ? parseInt(e.target.value) : null)}
+                              disabled={saving || sending}
+                            >
+                              <option value="">Ongoing (no end date)</option>
+                              <option value="3">3 months</option>
+                              <option value="6">6 months</option>
+                              <option value="12">12 months</option>
+                              <option value="24">24 months</option>
+                            </select>
+                          </div>
+                        </div>
+                        <p className={styles.recurringInfo}>
+                          Client will be sent a setup link to activate automatic payments. Each billing period, an invoice will be auto-generated.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className={styles.section}>
                   <div className={styles.sectionHeader}>

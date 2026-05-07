@@ -937,3 +937,49 @@
   background: #e5e7eb; /* gray-200 */
   margin: 10px 0;
 }
+
+/* Recurring invoice options */
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  color: #111827;
+  user-select: none;
+}
+
+.checkboxLabel input[type="checkbox"] {
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+  accent-color: #2563eb;
+}
+
+.recurringOptions {
+  margin-top: 12px;
+  padding: 12px;
+  background: #f0f9ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+}
+
+.recurringRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.recurringInfo {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #0369a1;
+  line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .recurringRow {
+    grid-template-columns: 1fr;
+  }
+}
