@@ -64,16 +64,10 @@ export default function JobDetailPage() {
   useEffect(() => {
     function handleKeyDown(e) {
       if (selectedPhotoIndex === null) return;
-
-      if (e.key === "Escape") {
-        setSelectedPhotoIndex(null);
-      } else if (e.key === "ArrowLeft") {
-        showPrevPhoto();
-      } else if (e.key === "ArrowRight") {
-        showNextPhoto();
-      }
+      if (e.key === "Escape") setSelectedPhotoIndex(null);
+      else if (e.key === "ArrowLeft") showPrevPhoto();
+      else if (e.key === "ArrowRight") showNextPhoto();
     }
-
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedPhotoIndex, photos]);
@@ -81,10 +75,7 @@ export default function JobDetailPage() {
   async function loadJob() {
     setLoading(true);
 
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
+    const { data: { session } } = await supabase.auth.getSession();
     const currentUserId = session?.user?.id;
     if (!currentUserId) {
       router.push("/login");
@@ -132,19 +123,11 @@ export default function JobDetailPage() {
 
     const normalizedPhotos = (photosRes.data || []).map((photo) => {
       let resolvedUrl = photo.public_url || null;
-
       if (!resolvedUrl && photo.file_path) {
-        const { data } = supabase.storage
-          .from("job-photos")
-          .getPublicUrl(photo.file_path);
-
+        const { data } = supabase.storage.from("job-photos").getPublicUrl(photo.file_path);
         resolvedUrl = data?.publicUrl || null;
       }
-
-      return {
-        ...photo,
-        resolvedUrl,
-      };
+      return { ...photo, resolvedUrl };
     });
 
     setClient(clientRes.data || null);
@@ -166,18 +149,13 @@ export default function JobDetailPage() {
 
   const dedupedTotal = useMemo(() => {
     const convertedEstimateIds = new Set(
-      invoices.map((invoice) => invoice.converted_from_id).filter(Boolean)
+      invoices.map((inv) => inv.converted_from_id).filter(Boolean)
     );
-
-    const estimateTotal = estimates.reduce((sum, estimate) => {
-      if (convertedEstimateIds.has(estimate.id)) return sum;
-      return sum + Number(estimate.total || 0);
+    const estimateTotal = estimates.reduce((sum, est) => {
+      if (convertedEstimateIds.has(est.id)) return sum;
+      return sum + Number(est.total || 0);
     }, 0);
-
-    const invoiceTotal = invoices.reduce((sum, invoice) => {
-      return sum + Number(invoice.total || 0);
-    }, 0);
-
+    const invoiceTotal = invoices.reduce((sum, inv) => sum + Number(inv.total || 0), 0);
     return invoiceTotal + estimateTotal;
   }, [invoices, estimates]);
 
@@ -188,22 +166,16 @@ export default function JobDetailPage() {
 
   async function handleAddNote() {
     if (!newNote.trim() || !job) return;
-
     setSavingNote(true);
 
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
+    const { data: { session } } = await supabase.auth.getSession();
     const currentUserId = session?.user?.id;
 
-    const { error } = await supabase.from("job_notes").insert([
-      {
-        job_id: job.id,
-        owner_id: currentUserId,
-        note: newNote.trim(),
-      },
-    ]);
+    const { error } = await supabase.from("job_notes").insert([{
+      job_id: job.id,
+      owner_id: currentUserId,
+      note: newNote.trim(),
+    }]);
 
     if (error) {
       console.error("Error adding note:", error);
@@ -223,10 +195,7 @@ export default function JobDetailPage() {
 
     setUploadingPhoto(true);
 
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
+    const { data: { session } } = await supabase.auth.getSession();
     const currentUserId = session?.user?.id;
     const fileExt = file.name.split(".").pop();
     const safeName = file.name.replace(/\s+/g, "-");
@@ -243,19 +212,15 @@ export default function JobDetailPage() {
       return;
     }
 
-    const { data: publicUrlData } = supabase.storage
-      .from("job-photos")
-      .getPublicUrl(fileName);
+    const { data: publicUrlData } = supabase.storage.from("job-photos").getPublicUrl(fileName);
 
-    const { error: insertError } = await supabase.from("job_photos").insert([
-      {
-        job_id: job.id,
-        owner_id: currentUserId,
-        file_name: file.name,
-        file_path: fileName,
-        public_url: publicUrlData?.publicUrl || null,
-      },
-    ]);
+    const { error: insertError } = await supabase.from("job_photos").insert([{
+      job_id: job.id,
+      owner_id: currentUserId,
+      file_name: file.name,
+      file_path: fileName,
+      public_url: publicUrlData?.publicUrl || null,
+    }]);
 
     if (insertError) {
       console.error("Error saving photo record:", insertError);
@@ -307,12 +272,10 @@ export default function JobDetailPage() {
 
       if (selectedPhotoIndex !== null) {
         const newPhotos = photos.filter((p) => p.id !== photoId);
-
         if (newPhotos.length === 0) {
           setSelectedPhotoIndex(null);
         } else {
           const deletedIndex = photos.findIndex((p) => p.id === photoId);
-
           if (deletedIndex === selectedPhotoIndex) {
             setSelectedPhotoIndex(0);
           } else if (deletedIndex < selectedPhotoIndex) {
@@ -362,14 +325,6 @@ export default function JobDetailPage() {
     setSelectedDocument(null);
   }
 
-  function openPhotoGallery(index) {
-    setSelectedPhotoIndex(index);
-  }
-
-  function closePhotoGallery() {
-    setSelectedPhotoIndex(null);
-  }
-
   function showPrevPhoto() {
     if (!photos.length) return;
     setSelectedPhotoIndex((prev) => {
@@ -399,65 +354,66 @@ export default function JobDetailPage() {
       <DashboardNavbar />
 
       <main className={styles.main}>
+        {/* Header */}
         <section className={styles.headerCard}>
           <div>
             <button
               type="button"
               className={styles.backButton}
-              onClick={() => router.push("jobs")}
+              onClick={() => router.push("/jobs")}
             >
-              Back to Jobs
+              ← Back to Jobs
             </button>
-
             <h1 className={styles.title}>{job?.title || "Untitled Job"}</h1>
             <p className={styles.subtitle}>
               {client?.name || "Unknown Client"}
-              {job?.job_number ? ` • #${job.job_number}` : ""}
+              {job?.job_number ? ` · #${job.job_number}` : ""}
             </p>
           </div>
 
           <div className={styles.headerActions}>
             <button type="button" className={styles.secondaryBtn} onClick={handleOpenCreateEstimate}>
-              Create Estimate
+              + Estimate
             </button>
             <button type="button" className={styles.secondaryBtn} onClick={handleOpenCreateInvoice}>
-              Create Invoice
+              + Invoice
             </button>
           </div>
         </section>
 
-        <section className={styles.summaryGrid}>
-          <div className={styles.summaryCard}>
-            <span className={styles.summaryLabel}>Status</span>
-            <span className={styles.summaryValue}>{formatStatus(job?.status)}</span>
+        {/* Unified Stat Bar */}
+        <div className={styles.statBar}>
+          <div className={styles.statItem}>
+            <span className={styles.statLabel}>Status</span>
+            <span className={styles.statValue}>{formatStatus(job?.status)}</span>
           </div>
-          <div className={styles.summaryCard}>
-            <span className={styles.summaryLabel}>Estimates</span>
-            <span className={styles.summaryValue}>{estimates.length}</span>
+          <div className={styles.statItem}>
+            <span className={styles.statLabel}>Estimates</span>
+            <span className={styles.statValue}>{estimates.length}</span>
           </div>
-          <div className={styles.summaryCard}>
-            <span className={styles.summaryLabel}>Invoices</span>
-            <span className={styles.summaryValue}>{invoices.length}</span>
+          <div className={styles.statItem}>
+            <span className={styles.statLabel}>Invoices</span>
+            <span className={styles.statValue}>{invoices.length}</span>
           </div>
-          <div className={styles.summaryCard}>
-            <span className={styles.summaryLabel}>Photos</span>
-            <span className={styles.summaryValue}>{photos.length}</span>
+          <div className={styles.statItem}>
+            <span className={styles.statLabel}>Photos</span>
+            <span className={styles.statValue}>{photos.length}</span>
           </div>
-          <div className={styles.summaryCard}>
-            <span className={styles.summaryLabel}>Notes</span>
-            <span className={styles.summaryValue}>{notes.length}</span>
+          <div className={styles.statItem}>
+            <span className={styles.statLabel}>Notes</span>
+            <span className={styles.statValue}>{notes.length}</span>
           </div>
-          <div className={styles.summaryCard}>
-            <span className={styles.summaryLabel}>Total</span>
-            <span className={styles.summaryValue}>{formatCurrency(dedupedTotal)}</span>
+          <div className={styles.statItem}>
+            <span className={styles.statLabel}>Total</span>
+            <span className={styles.statValueTotal}>{formatCurrency(dedupedTotal)}</span>
           </div>
-        </section>
+        </div>
 
+        {/* Documents */}
         <section className={styles.section}>
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>Documents</h2>
           </div>
-
           <div className={styles.docsGrid}>
             <div className={styles.docsCard}>
               <h3 className={styles.cardTitle}>Estimates</h3>
@@ -471,11 +427,10 @@ export default function JobDetailPage() {
                         <div>
                           <p className={styles.docName}>{doc.invoice_number || "Estimate"}</p>
                           <p className={styles.docMeta}>
-                            {formatDate(doc.issue_date || doc.created_at)} • {formatStatus(doc.status)}
+                            {formatDate(doc.issue_date || doc.created_at)} · {formatStatus(doc.status)}
                           </p>
                         </div>
                       </div>
-
                       <div className={styles.docActions}>
                         <span className={styles.docAmount}>{formatCurrency(doc.total)}</span>
                         <button
@@ -506,11 +461,10 @@ export default function JobDetailPage() {
                         <div>
                           <p className={styles.docName}>{doc.invoice_number || "Invoice"}</p>
                           <p className={styles.docMeta}>
-                            {formatDate(doc.issue_date || doc.created_at)} • {formatStatus(doc.status)}
+                            {formatDate(doc.issue_date || doc.created_at)} · {formatStatus(doc.status)}
                           </p>
                         </div>
                       </div>
-
                       <div className={styles.docActions}>
                         <span className={styles.docAmount}>{formatCurrency(doc.total)}</span>
                         <button
@@ -531,11 +485,11 @@ export default function JobDetailPage() {
           </div>
         </section>
 
+        {/* Notes */}
         <section className={styles.section} id="job-notes-section">
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>Notes</h2>
           </div>
-
           <div className={styles.notesCard}>
             <textarea
               className={styles.noteInput}
@@ -554,7 +508,6 @@ export default function JobDetailPage() {
                 {savingNote ? "Saving..." : "Add Note"}
               </button>
             </div>
-
             <div className={styles.noteList}>
               {notes.length === 0 ? (
                 <p className={styles.emptyText}>No notes yet.</p>
@@ -570,11 +523,11 @@ export default function JobDetailPage() {
           </div>
         </section>
 
+        {/* Photos */}
         <section className={styles.section} id="job-photos-section">
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>Photos</h2>
           </div>
-
           <div className={styles.photosCard}>
             {photos.length === 0 ? (
               <p className={styles.emptyText}>No photos uploaded yet.</p>
@@ -585,7 +538,7 @@ export default function JobDetailPage() {
                     <button
                       type="button"
                       className={styles.photoItemButton}
-                      onClick={() => openPhotoGallery(index)}
+                      onClick={() => setSelectedPhotoIndex(index)}
                     >
                       <div className={styles.photoItem}>
                         {photo.resolvedUrl ? (
@@ -596,11 +549,10 @@ export default function JobDetailPage() {
                             loading="lazy"
                           />
                         ) : (
-                          <div className={styles.photoFallback}>Photo unavailable</div>
+                          <div className={styles.photoFallback}>Unavailable</div>
                         )}
                       </div>
                     </button>
-
                     <button
                       type="button"
                       className={styles.photoDeleteButton}
@@ -618,9 +570,8 @@ export default function JobDetailPage() {
                 ))}
               </div>
             )}
-
             <div className={styles.photoActions}>
-              <label className={styles.secondaryBtn}>
+              <label className={styles.secondaryBtn} style={{ cursor: "pointer" }}>
                 {uploadingPhoto ? "Uploading..." : "Upload Photo"}
                 <input
                   type="file"
@@ -635,27 +586,25 @@ export default function JobDetailPage() {
         </section>
       </main>
 
+      {/* Photo Gallery */}
       {selectedPhoto ? (
         <div
           className={styles.galleryOverlay}
-          onClick={closePhotoGallery}
+          onClick={() => setSelectedPhotoIndex(null)}
           role="dialog"
           aria-modal="true"
         >
-          <div
-            className={styles.galleryContent}
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className={styles.galleryContent} onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
               className={styles.galleryClose}
-              onClick={closePhotoGallery}
+              onClick={() => setSelectedPhotoIndex(null)}
               aria-label="Close photo gallery"
             >
               ×
             </button>
 
-            {photos.length > 1 ? (
+            {photos.length > 1 && (
               <button
                 type="button"
                 className={`${styles.galleryArrow} ${styles.galleryArrowLeft}`}
@@ -664,7 +613,7 @@ export default function JobDetailPage() {
               >
                 ‹
               </button>
-            ) : null}
+            )}
 
             <div className={styles.galleryImageWrap}>
               <img
@@ -682,7 +631,7 @@ export default function JobDetailPage() {
               </div>
             </div>
 
-            {photos.length > 1 ? (
+            {photos.length > 1 && (
               <button
                 type="button"
                 className={`${styles.galleryArrow} ${styles.galleryArrowRight}`}
@@ -691,11 +640,12 @@ export default function JobDetailPage() {
               >
                 ›
               </button>
-            ) : null}
+            )}
           </div>
         </div>
       ) : null}
 
+      {/* Invoice / Estimate Modal */}
       {showInvoiceModal && job ? (
         <InvoiceModal
           open={showInvoiceModal}
@@ -735,7 +685,6 @@ function formatDate(value) {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
-
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
@@ -747,7 +696,6 @@ function formatDateTime(value) {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
-
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
