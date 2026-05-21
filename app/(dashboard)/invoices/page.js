@@ -34,6 +34,9 @@ export default function InvoicesPage() {
   const [invoices, setInvoices] = useState([]);
   const [invoicesLoading, setInvoicesLoading] = useState(false);
 
+  const [contracts, setContracts] = useState([]);
+  const [contractsLoading, setContractsLoading] = useState(false);
+
   const [isAddServiceOpen, setIsAddServiceOpen] = useState(false);
 
   // State for the edit invoice modal
@@ -55,7 +58,7 @@ export default function InvoicesPage() {
     setToast({ open: true, message, type });
   };
 
-  // Tab state: "all" | "estimate" | "invoice"
+  // Tab state: "all" | "estimate" | "invoice" | "recurring"
   const [activeTab, setActiveTab] = useState("all");
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -169,6 +172,30 @@ export default function InvoicesPage() {
     setInvoicesLoading(false);
   };
 
+  // Fetch recurring contracts for current user
+  const fetchContracts = async (currentUser, accessToken) => {
+    if (!currentUser || !accessToken) return;
+    setContractsLoading(true);
+
+    try {
+      const res = await fetch("/api/contracts", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setContracts(data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching contracts:", error);
+      setContracts([]);
+    }
+
+    setContractsLoading(false);
+  };
+
   useEffect(() => {
     const updatePageSize = () => {
       if (window.innerWidth < 640) {
@@ -188,16 +215,17 @@ export default function InvoicesPage() {
   useEffect(() => {
     async function init() {
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
+        data: { session },
+      } = await supabase.auth.getSession();
 
-      if (!user) {
+      if (!session?.user) {
         router.push("/login");
         return;
       }
 
-      setUser(user);
-      await fetchInvoices(user);
+      setUser(session.user);
+      await fetchInvoices(session.user);
+      await fetchContracts(session.user, session.access_token);
       setLoading(false);
     }
 
@@ -279,7 +307,7 @@ export default function InvoicesPage() {
     }
   };
 
-  const hasInvoices = invoices.length > 0;
+  const hasInvoices = invoices.length > 0 || contracts.length > 0;
 
   // reset page when search/sort/tab changes
   useEffect(() => {
@@ -420,12 +448,14 @@ export default function InvoicesPage() {
   const tabCounts = useMemo(() => {
     const estimates = invoices.filter((inv) => inv.document_type === "estimate").length;
     const invoiceCount = invoices.filter((inv) => inv.document_type === "invoice" || !inv.document_type).length;
+    const activeRecurring = contracts.filter((c) => c.status === "active").length;
     return {
       all: invoices.length,
       estimate: estimates,
       invoice: invoiceCount,
+      recurring: activeRecurring,
     };
-  }, [invoices]);
+  }, [invoices, contracts]);
 
   if (loading) {
     return (
@@ -506,6 +536,12 @@ export default function InvoicesPage() {
           >
             Invoices ({tabCounts.invoice})
           </button>
+          <button
+            className={`${styles.tab} ${activeTab === "recurring" ? styles.tabActive : ""}`}
+            onClick={() => setActiveTab("recurring")}
+          >
+            Recurring ({tabCounts.recurring})
+          </button>
         </div>
 
         {/* Content: table or empty state */}
@@ -535,17 +571,82 @@ export default function InvoicesPage() {
         ) : (
           <>
             {/* Toolbar: search */}
-            <div className={styles.toolbarRow}>
-              <input
-                type="text"
-                className={styles.searchInput}
-                placeholder="Search estimates and invoices..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
+            {activeTab !== "recurring" && (
+              <div className={styles.toolbarRow}>
+                <input
+                  type="text"
+                  className={styles.searchInput}
+                  placeholder="Search estimates and invoices..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+            )}
 
-            {invoicesLoading ? (
+            {activeTab === "recurring" ? (
+              // Recurring Contracts View
+              contractsLoading ? (
+                <div className={styles.tableLoading}>Loading recurring contracts...</div>
+              ) : contracts.length === 0 ? (
+                <div className={styles.noResultsBox}>
+                  <p className={styles.noResultsText}>
+                    No recurring contracts yet. Create an invoice and mark it as recurring to get started!
+                  </p>
+                </div>
+              ) : (
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>Client</th>
+                      <th>Contract</th>
+                      <th>Amount</th>
+                      <th>Frequency</th>
+                      <th>Status</th>
+                      <th>Next Billing</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {contracts.map((contract) => (
+                      <tr key={contract.id} className={styles.tableRow}>
+                        <td className={styles.td}>{contract.clients?.name || "—"}</td>
+                        <td className={styles.td}>{contract.title}</td>
+                        <td className={`${styles.td} ${styles.tdAmount}`}>
+                          {formatCurrency(contract.amount)}
+                        </td>
+                        <td className={styles.td}>
+                          {contract.interval_count > 1
+                            ? `Every ${contract.interval_count} ${contract.interval}s`
+                            : `${contract.interval}`}
+                        </td>
+                        <td className={styles.td}>
+                          <span
+                            className={`${styles.statusBadge} ${
+                              contract.status === "active"
+                                ? styles.statusPaid
+                                : contract.status === "pending_setup"
+                                ? styles.statusPending
+                                : contract.status === "payment_failed"
+                                ? styles.statusOverdue
+                                : styles.statusDraft
+                            }`}
+                          >
+                            {contract.status
+                              .split("_")
+                              .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                              .join(" ")}
+                          </span>
+                        </td>
+                        <td className={styles.td}>
+                          {contract.next_billing_date
+                            ? formatDate(contract.next_billing_date)
+                            : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )
+            ) : invoicesLoading ? (
               <div className={styles.tableLoading}>Loading invoices...</div>
             ) : processed.totalItems === 0 ? (
               <div className={styles.noResultsBox}>
