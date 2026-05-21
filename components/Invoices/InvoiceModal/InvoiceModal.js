@@ -101,10 +101,12 @@ export default function InvoiceModal({
   onSaved,
   invoice = null,
   documentType = "invoice",
+  jobId = null,
 }) {
   const isEditMode = !!invoice;
   const actualDocType = isEditMode ? invoice?.document_type || "invoice" : documentType;
   const isEstimate = actualDocType === "estimate";
+  const showLinkedJobField = !isEditMode && !!jobId;
 
   const [loadingData, setLoadingData] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -203,7 +205,6 @@ export default function InvoiceModal({
       setRecurringInterval("month");
       setRecurringDuration(null);
 
-      // Indirect defaults
       if (indirectDefaults) {
         setIndirectEnabled(!!indirectDefaults.enabled);
         setIndirectType(indirectDefaults.defaultType === "percent" ? "percent" : "amount");
@@ -240,7 +241,6 @@ export default function InvoiceModal({
     setNotes(invoiceData.notes || "");
     setInternalNotes(invoiceData.internal_notes || "");
 
-    // Load per-invoice indirect settings
     setIndirectEnabled(!!invoiceData.enable_indirect_materials);
     setIndirectAmount(String(invoiceData.indirect_materials_amount ?? 0));
     setIndirectPercent(String(invoiceData.indirect_materials_percent ?? 0));
@@ -258,7 +258,6 @@ export default function InvoiceModal({
     setLineItems(toEditableLineItems(rows));
   }, []);
 
-  // Init when modal opens
   useEffect(() => {
     if (!open) return;
 
@@ -308,8 +307,6 @@ export default function InvoiceModal({
     init();
   }, [open, isEditMode, invoice, loadInvoiceIntoForm, resetForm, showToast]);
 
-  // Auto-adjust due date when issue date changes (create mode only),
-  // unless user manually edited due date.
   useEffect(() => {
     if (!open) return;
     if (isEditMode) return;
@@ -419,7 +416,6 @@ export default function InvoiceModal({
       return;
     }
 
-    // basic validation for indirect inputs
     const amt = Number(indirectAmount);
     const pct = Number(indirectPercent);
     if (indirectEnabled) {
@@ -513,6 +509,7 @@ export default function InvoiceModal({
         taxAmount,
         total,
         documentType: actualDocType,
+        jobId,
 
         enableIndirectMaterials: indirectEnabled,
         indirectMaterialsAmount: Number(indirectAmount),
@@ -607,21 +604,20 @@ export default function InvoiceModal({
       if (typeof onSaved === "function") onSaved(created);
       onClose();
     } catch (err) {
-  console.error("Save invoice failed:", err);
+      console.error("Save invoice failed:", err);
 
-  // Try common shapes: Error, Supabase error, Postgrest error
-  const msg =
-    err?.message ||
-    err?.error?.message ||
-    err?.details ||
-    err?.hint ||
-    "Unexpected error saving. Please try again.";
+      const msg =
+        err?.message ||
+        err?.error?.message ||
+        err?.details ||
+        err?.hint ||
+        "Unexpected error saving. Please try again.";
 
-  showToast(msg);
-} finally {
-  setSaving(false);
-  sendAfterCreateRef.current = false;
-}
+      showToast(msg);
+    } finally {
+      setSaving(false);
+      sendAfterCreateRef.current = false;
+    }
   };
 
   return (
@@ -726,6 +722,13 @@ export default function InvoiceModal({
                     </div>
                   </div>
                 </div>
+
+                {showLinkedJobField && (
+                  <div className={styles.field}>
+                    <label className={styles.label}>Linked Job ID</label>
+                    <div className={styles.readonlyValue}>{jobId}</div>
+                  </div>
+                )}
 
                 <div className={styles.gridTwoCols}>
                   <div className={styles.field}>
@@ -840,9 +843,9 @@ export default function InvoiceModal({
                             onChange={(val) => handleServiceSelect(index, val)}
                             options={[
                               { value: NEW_SERVICE_OPTION, label: "Custom Service" },
-                              ...services.map((s) => ({ 
-                                value: s.id, 
-                                label: s.is_favorite ? `⭐ ${s.name}` : s.name 
+                              ...services.map((s) => ({
+                                value: s.id,
+                                label: s.is_favorite ? `⭐ ${s.name}` : s.name,
                               })),
                             ]}
                             placeholder="Select service"
@@ -909,7 +912,6 @@ export default function InvoiceModal({
                   </div>
                 </div>
 
-                {/* Footer row (notes + right column) */}
                 <div className={styles.footerRow}>
                   <div className={styles.notesField}>
                     <label className={styles.label}>Notes (shown on invoice)</label>
@@ -987,7 +989,6 @@ export default function InvoiceModal({
                     </div>
 
                     <div className={styles.totalsBox}>
-                      {/* Line items */}
                       <div className={styles.totalRow}>
                         <span className={styles.totalLabel}>Line items</span>
                         <span className={styles.totalValue}>
@@ -995,7 +996,6 @@ export default function InvoiceModal({
                         </span>
                       </div>
 
-                      {/* Indirect materials */}
                       {indirectEnabled && Number(indirectCharge ?? 0) > 0 && (
                         <div className={styles.totalRow}>
                           <span className={styles.totalLabel}>Indirect materials</span>
@@ -1005,7 +1005,6 @@ export default function InvoiceModal({
                         </div>
                       )}
 
-                      {/* Subtotal (line items + indirect) */}
                       <div className={styles.totalRow}>
                         <span className={styles.totalLabel}>Subtotal</span>
                         <span className={styles.totalValue}>
@@ -1013,7 +1012,6 @@ export default function InvoiceModal({
                         </span>
                       </div>
 
-                      {/* Tax */}
                       <div className={styles.totalRow}>
                         <span className={styles.totalLabel}>Tax ({(TAX_RATE * 100).toFixed(0)}%)</span>
                         <span className={styles.totalValue}>
@@ -1023,7 +1021,6 @@ export default function InvoiceModal({
 
                       <div className={styles.totalDivider} />
 
-                      {/* Total */}
                       <div className={styles.totalRowFinal}>
                         <span className={styles.totalLabelFinal}>Total</span>
                         <span className={styles.totalValueFinal}>
@@ -1034,68 +1031,6 @@ export default function InvoiceModal({
                   </div>
                 </div>
 
-                {/* Schedule appointment (invoices only) */}
-                {!isEstimate && (
-                  <div className={styles.scheduleSection}>
-                    <label className={styles.scheduleToggle}>
-                      <input
-                        type="checkbox"
-                        checked={scheduleJob}
-                        onChange={(e) => setScheduleJob(e.target.checked)}
-                        disabled={saving || sending}
-                        className={styles.scheduleCheckbox}
-                      />
-                      <span className={styles.scheduleToggleLabel}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <rect x="3" y="4" width="18" height="18" rx="2" />
-                          <line x1="16" y1="2" x2="16" y2="6" />
-                          <line x1="8" y1="2" x2="8" y2="6" />
-                          <line x1="3" y1="10" x2="21" y2="10" />
-                        </svg>
-                        Schedule a job appointment
-                      </span>
-                    </label>
-                    {scheduleJob && (
-                      <div className={styles.scheduleFields}>
-                        <div className={styles.gridTwoCols}>
-                          <div className={styles.field}>
-                            <label className={styles.label}>Start</label>
-                            <input
-                              className={styles.input}
-                              type="datetime-local"
-                              value={jobStart}
-                              onChange={(e) => setJobStart(e.target.value)}
-                              disabled={saving || sending}
-                            />
-                          </div>
-                          <div className={styles.field}>
-                            <label className={styles.label}>End</label>
-                            <input
-                              className={styles.input}
-                              type="datetime-local"
-                              value={jobEnd}
-                              onChange={(e) => setJobEnd(e.target.value)}
-                              disabled={saving || sending}
-                            />
-                          </div>
-                        </div>
-                        <div className={styles.field}>
-                          <label className={styles.label}>Location (optional)</label>
-                          <input
-                            className={styles.input}
-                            type="text"
-                            value={jobLocation}
-                            onChange={(e) => setJobLocation(e.target.value)}
-                            placeholder="123 Main St, City, State"
-                            disabled={saving || sending}
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Actions row (separate from footerRow) */}
                 <div className={styles.actions}>
                   <button
                     type="button"

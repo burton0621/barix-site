@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/providers/AuthProvider";
-import DashboardNavbar from "@/components/Navbar/DashboardNavbar";
+
 import GetStartedCard from "@/components/dashboard/getStartedCard/getStartedCard";
 import CreateInvoiceButton from "@/components/Invoices/CreateInvoiceButton/createInvoiceButton";
 
@@ -253,7 +253,7 @@ export default function DashboardPage() {
 
   return (
     <div className={styles.page}>
-      <DashboardNavbar />
+
 
       <main className={styles.main}>
         {/* Welcome Header */}
@@ -332,7 +332,7 @@ export default function DashboardPage() {
                 {formatCurrency(revenueAmount)}
               </p>
               <p className={styles.statSubLabel}>
-                {paidCount} paid invoice's
+                {paidCount} paid invoices
                 {/* {paidCount === 1 ? "" : "s"} in the last {" "} */}
                 {/* {range === "week" ? "7 days" : "30 days"} */}
               </p>
@@ -347,7 +347,7 @@ export default function DashboardPage() {
                 {formatCurrency(overdueAmount)}
               </p>
               <p className={styles.statSubLabel}>
-                {overdueCount} overdue invoice's
+                {overdueCount} overdue invoices
                 {/* {overdueCount === 1 ? "" : "s"} in the last {" "} */}
                 {/* {range === "week" ? "7 days" : "30 days"} */}
               </p>

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import DashboardNavbar from "@/components/Navbar/DashboardNavbar";
+
 import AddServiceModal from "@/components/Services/AddServiceModal";
 import QuickAddServicesModal from "@/components/Services/QuickAddServicesModal";
 import ConfirmDialog from "@/components/common/ConfirmDialog/ConfirmDialog";
@@ -310,7 +310,6 @@ export default function ServicesPage() {
       />
 
       <div className={styles.pageWrapper}>
-        <DashboardNavbar />
 
         <main className={styles.main}>
           <div className={styles.headerRow}>

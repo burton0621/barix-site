@@ -19,7 +19,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/providers/AuthProvider";
-import DashboardNavbar from "@/components/Navbar/DashboardNavbar";
+
 import Toast from "@/components/common/Toast/Toast";
 import ConfirmDialog from "@/components/common/ConfirmDialog/ConfirmDialog";
 import styles from "./profile.module.css";
@@ -632,7 +632,7 @@ export default function ProfilePage() {
   if (loading || authLoading) {
     return (
       <div className={styles.page}>
-        <DashboardNavbar />
+
         <main className={styles.main}>
           <div className={styles.loading}>Loading...</div>
         </main>
@@ -665,7 +665,7 @@ export default function ProfilePage() {
       />
       
       <div className={styles.page}>
-        <DashboardNavbar />
+
 
         <main className={styles.main}>
           {/* Header */}
