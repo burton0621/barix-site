@@ -1,6 +1,6 @@
 "use client";
 
-import styles from "./jobCard.Module.css";
+import styles from "./jobCard.module.css";
 
 export default function JobCard({ job, onOpen }) {
   const clientName = getClientDisplayName(job.client);
